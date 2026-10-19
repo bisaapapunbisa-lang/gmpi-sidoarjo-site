@@ -203,7 +203,7 @@
     { key: 'shop_bank', label: 'Rekening untuk transfer', help: 'Tampil sebagai alternatif QRIS dan di bagian Legalitas. Hanya rekening atas nama organisasi.', placeholder: 'Bank bjb · 0163336219100 · a.n. GMPI DPD SIDOARJO' },
     { key: 'legal_npwp', label: 'NPWP organisasi', help: 'Kosongkan bila belum ada; kartu NPWP di bagian Legalitas otomatis disembunyikan.', placeholder: '00.000.000.0-000.000' }
   ];
-  const PRODUCT_CATEGORIES = ['Seragam', 'Kaos & Jaket', 'Atribut', 'Perlengkapan', 'Keanggotaan'];
+  const PRODUCT_CATEGORIES = ['Seragam', 'Kaos', 'Jaket', 'Atribut', 'Perlengkapan', 'Keanggotaan'];
   const STOCK_LABELS = { tersedia: 'Tersedia', 'pre-order': 'Pre-order', habis: 'Habis' };
   const rupiahAdmin = n => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n || 0);
 
@@ -269,7 +269,7 @@
     // Katalog
     const listHead = make('div', 'workspace-heading');
     const lh = make('div');
-    lh.append(make('h3', '', 'Katalog barang'), make('p', '', 'Barang hanya tampil di situs bila “Tampilkan di situs” dicentang dan harganya lebih dari 0. Draf barang awal sudah disiapkan; lengkapi harga & foto lalu aktifkan.'));
+    lh.append(make('h3', '', 'Katalog barang'), make('p', '', 'Barang tampil di situs bila “Tampilkan di situs” dicentang. Barang berharga 0 tetap tampil dengan tulisan “Harga segera diumumkan”. Isi harga agar bisa dipesan & dibayar via QRIS.'));
     const addButton = make('button', 'admin-button admin-button-gold', '+ Tambah barang');
     addButton.type = 'button';
     listHead.append(lh, addButton);
@@ -286,7 +286,7 @@
         const info = make('div', 'shop-admin-info');
         info.append(make('b', '', p.name));
         info.append(make('small', '', `${p.category} · ${rupiahAdmin(p.price)} · ${STOCK_LABELS[p.stock_status]}${p.sizes?.length ? ` · ${p.sizes.join('/')}` : ''}`));
-        const state = make('span', `shop-admin-state${p.is_active ? ' is-on' : ''}`, p.is_active ? (p.price > 0 ? 'Tampil' : 'Aktif, harga 0') : 'Draf');
+        const state = make('span', `shop-admin-state${p.is_active ? ' is-on' : ''}`, p.is_active ? (p.price > 0 ? 'Tampil' : 'Tampil · harga menyusul') : 'Disembunyikan');
         const edit = make('button', 'admin-button admin-button-outline', 'Ubah');
         edit.type = 'button';
         edit.addEventListener('click', () => openEditor(p));
@@ -376,8 +376,7 @@
           stock_status: stockIn.value, is_active: activeIn.checked, sort_order: Math.round(Number(orderIn.value) || 0),
           updated_at: new Date().toISOString()
         };
-        if (payload.is_active && payload.price <= 0 && !window.confirm('Harga masih 0, barang akan tampil tetapi belum bisa dipesan. Lanjutkan?')) return;
-        save.disabled = true;
+                save.disabled = true;
         const query = isNew ? client.from('shop_products').insert(payload).select().single() : client.from('shop_products').update(payload).eq('id', p.id).select().single();
         const { data, error } = await query;
         save.disabled = false;

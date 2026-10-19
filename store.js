@@ -22,6 +22,31 @@
   const IMG_RE = /^products\/[A-Za-z0-9][A-Za-z0-9._-]{0,119}$/;
 
   let products = [];
+
+  // Daftar barang bawaan: tampil walau database belum diisi. Begitu pengurus
+  // mengaktifkan barang di Admin → Toko, daftar dari database yang dipakai.
+  const DEFAULT_PRODUCTS = [
+    { id: 'default-seragam', name: 'Seragam GMPI', category: 'Seragam', description: 'Seragam resmi organisasi lengkap dengan atribut GMPI.', price: 0, sizes: ['S','M','L','XL','XXL','XXXL'], image_path: null, stock_status: 'tersedia' },
+    { id: 'default-kaos', name: 'Kaos GMPI', category: 'Kaos', description: 'Kaos organisasi dengan lambang GMPI.', price: 0, sizes: ['S','M','L','XL','XXL','XXXL'], image_path: null, stock_status: 'tersedia' },
+    { id: 'default-topi', name: 'Topi GMPI', category: 'Atribut', description: 'Topi dengan bordir lambang GMPI.', price: 0, sizes: [], image_path: null, stock_status: 'tersedia' },
+    { id: 'default-logo', name: 'Logo GMPI', category: 'Atribut', description: 'Logo / lambang GMPI untuk seragam, kendaraan, dan sekretariat.', price: 0, sizes: [], image_path: null, stock_status: 'tersedia' },
+    { id: 'default-emblem', name: 'Emblem GMPI', category: 'Atribut', description: 'Emblem bordir lambang GMPI untuk lengan seragam.', price: 0, sizes: [], image_path: null, stock_status: 'tersedia' }
+  ];
+
+  const ICONS = {
+    seragam: '<svg viewBox="0 0 120 120" aria-hidden="true"><path d="M44 20 60 30 76 20l22 10 10 26-16 6v42H28V62l-16-6 10-26Z"/><path d="M44 20 60 46 76 20M60 46v54M52 58h0M52 72h0M52 86h0"/><path d="M70 56h14v8H70z"/></svg>',
+    kaos: '<svg viewBox="0 0 120 120" aria-hidden="true"><path d="M46 20c3 8 25 8 28 0l26 12-8 20-12-5v55H40V47l-12 5-8-20Z"/><circle cx="60" cy="62" r="9"/></svg>',
+    topi: '<svg viewBox="0 0 120 120" aria-hidden="true"><path d="M22 74c0-24 16-40 38-40s38 16 38 40Z"/><path d="M22 74h76c6 0 12 4 12 9-20 4-60 4-88-9Z"/><path d="M60 34v40M60 34c-8 10-12 24-12 40M60 34c8 10 12 24 12 40"/><circle cx="60" cy="31" r="3"/></svg>',
+    emblem: '<svg viewBox="0 0 120 120" aria-hidden="true"><path d="M60 14 98 28v30c0 24-16 40-38 48-22-8-38-24-38-48V28Z"/><path d="M60 24 88 34v24c0 18-12 30-28 37-16-7-28-19-28-37V34Z" stroke-dasharray="3 4"/><path d="m60 42 5 11 12 1-9 8 3 12-11-6-11 6 3-12-9-8 12-1Z"/></svg>'
+  };
+  function iconFor(p) {
+    const t = `${p.name} ${p.category}`.toLowerCase();
+    if (/seragam|pdh|pdl|kemeja/.test(t)) return ICONS.seragam;
+    if (/kaos|jaket|polo/.test(t)) return ICONS.kaos;
+    if (/topi|cap/.test(t)) return ICONS.topi;
+    if (/emblem|badge|bordir|pin/.test(t)) return ICONS.emblem;
+    return '';
+  }
   let settings = { shop_whatsapp: '', shop_bank: '', legal_npwp: '' };
   let activeCategory = 'Semua';
   let cart = loadCart();
@@ -73,7 +98,7 @@
       grid.replaceChildren(el('div', 'shop-empty', 'Katalog sedang disiapkan pengurus. Silakan cek kembali dalam waktu dekat.'));
       return;
     }
-    grid.replaceChildren(...list.map(p => {
+    const cards = list.map(p => {
       const card = el('article', 'product-card');
       const media = el('div', 'product-media');
       const url = imageUrl(p.image_path);
@@ -83,9 +108,17 @@
         media.append(img);
       } else {
         const ph = el('div', 'product-placeholder');
-        const logo = el('img');
-        logo.src = 'assets/logo-gmpi-sidoarjo-crop.webp'; logo.alt = '';
-        ph.append(logo, el('span', '', 'FOTO SEGERA'));
+        const icon = iconFor(p);
+        if (icon) {
+          const wrap = el('div', 'product-icon');
+          wrap.innerHTML = icon; // SVG statis milik situs, bukan data pengguna
+          ph.append(wrap);
+        } else {
+          const logo = el('img');
+          logo.src = 'assets/logo-gmpi-sidoarjo-crop.webp'; logo.alt = '';
+          ph.append(logo);
+        }
+        ph.append(el('span', '', 'FOTO MENYUSUL'));
         media.append(ph);
       }
       if (p.stock_status !== 'tersedia') media.append(el('span', `product-badge is-${p.stock_status}`, p.stock_status === 'habis' ? 'Stok habis' : 'Pre-order'));
@@ -94,7 +127,15 @@
       const body = el('div', 'product-body');
       body.append(el('h3', '', p.name));
       if (p.description) body.append(el('p', 'product-desc', p.description));
-      const price = el('div', 'product-price', p.price > 0 ? rupiah(p.price) : 'Harga segera diumumkan');
+      const orderable = p.price > 0 && p.stock_status !== 'habis';
+      if (!(p.price > 0)) {
+        if (Array.isArray(p.sizes) && p.sizes.length) body.append(el('div', 'product-sizes', `Ukuran: ${p.sizes.length > 2 ? `${p.sizes[0]}–${p.sizes[p.sizes.length - 1]}` : p.sizes.join(', ')}`));
+        body.append(el('div', 'product-price is-soon', 'Harga segera diumumkan'));
+        card.classList.add('is-soon');
+        card.append(media, body);
+        return card;
+      }
+      const price = el('div', 'product-price', rupiah(p.price));
       body.append(price);
 
       const controls = el('div', 'product-controls');
@@ -132,9 +173,21 @@
         setTimeout(() => { add.textContent = 'Tambah ke keranjang'; add.classList.remove('is-added'); }, 1400);
       });
       body.append(controls, add);
+      if (!orderable) controls.hidden = true;
       card.append(media, body);
       return card;
-    }));
+    });
+    if (activeCategory === 'Semua') {
+      const more = el('article', 'product-card product-more');
+      more.append(el('span', 'product-more-plus', '+'), el('h3', '', 'Barang lain menyusul'), el('p', '', 'Jaket, pin, bendera, stiker, dan perlengkapan lainnya akan ditambahkan pengurus.'));
+      cards.push(more);
+    }
+    grid.replaceChildren(...cards);
+    const how = document.querySelector('.shop-how');
+    const anyOrderable = products.some(p => p.price > 0 && p.stock_status !== 'habis');
+    if (how) how.hidden = !anyOrderable;
+    const soon = document.getElementById('shop-soon-note');
+    if (soon) soon.hidden = anyOrderable;
   }
 
   // ---------- Keranjang & checkout ----------
@@ -310,11 +363,8 @@
 
   // ---------- Muat data ----------
   async function load() {
-    if (!root || !config.publishableKey) {
-      grid.replaceChildren(el('div', 'shop-empty', 'Katalog belum terhubung ke basis data.'));
-      return;
-    }
     try {
+      if (!root || !config.publishableKey) throw new Error('not configured');
       const [pRes, sRes] = await Promise.all([
         fetch(`${root}/rest/v1/shop_products?select=id,name,category,description,price,sizes,image_path,stock_status,sort_order&is_active=eq.true&order=sort_order.asc,created_at.asc`, { headers }),
         fetch(`${root}/rest/v1/site_content?select=key,value&key=in.(shop_whatsapp,shop_bank,legal_npwp)`, { headers })
@@ -325,6 +375,7 @@
     } catch (e) {
       products = [];
     }
+    if (!Array.isArray(products) || !products.length) products = DEFAULT_PRODUCTS.slice();
     // Legalitas & kanal pembayaran resmi
     const npwpCard = document.getElementById('legal-npwp-card');
     if (npwpCard && settings.legal_npwp) { document.getElementById('legal-npwp').textContent = settings.legal_npwp; npwpCard.hidden = false; }

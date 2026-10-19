@@ -75,18 +75,14 @@ on storage.objects for delete to authenticated
 using (bucket_id = 'site-assets' and (storage.foldername(name))[1] = 'products'
        and public.has_admin_role(array['owner','content_editor']::text[]));
 
--- 4) Draf barang (NONAKTIF, harga 0). Lengkapi harga & foto di Admin lalu aktifkan.
-insert into public.shop_products (name, category, description, price, sizes, sort_order)
+-- 4) Daftar barang awal (tampil di situs, harga 0 = "Harga segera diumumkan").
+--    Isi harga & foto di Admin → Toko. Barang lain bisa ditambahkan kapan saja.
+insert into public.shop_products (name, category, description, price, sizes, is_active, sort_order)
 select * from (values
-  ('Seragam PDH GMPI', 'Seragam', 'Pakaian Dinas Harian lengkap dengan atribut organisasi.', 0, array['S','M','L','XL','XXL','XXXL'], 10),
-  ('Seragam PDL GMPI', 'Seragam', 'Pakaian Dinas Lapangan untuk kegiatan dan aksi.', 0, array['S','M','L','XL','XXL','XXXL'], 20),
-  ('Kaos GMPI', 'Kaos & Jaket', 'Kaos organisasi dengan lambang GMPI.', 0, array['S','M','L','XL','XXL','XXXL'], 30),
-  ('Jaket GMPI', 'Kaos & Jaket', 'Jaket organisasi.', 0, array['S','M','L','XL','XXL','XXXL'], 40),
-  ('Topi GMPI', 'Atribut', 'Topi dengan bordir lambang GMPI.', 0, array[]::text[], 50),
-  ('Emblem / Badge Bordir', 'Atribut', 'Emblem lambang GMPI untuk seragam.', 0, array[]::text[], 60),
-  ('Pin Lambang GMPI', 'Atribut', 'Pin logam lambang organisasi.', 0, array[]::text[], 70),
-  ('Bendera GMPI', 'Perlengkapan', 'Bendera organisasi untuk sekretariat dan kegiatan.', 0, array[]::text[], 80),
-  ('Stiker GMPI', 'Perlengkapan', 'Stiker lambang GMPI.', 0, array[]::text[], 90),
-  ('Cetak Kartu Tanda Anggota', 'Keanggotaan', 'Cetak KTA PVC dengan QR verifikasi (khusus anggota terdaftar).', 0, array[]::text[], 100)
-) as seed(name, category, description, price, sizes, sort_order)
+  ('Seragam GMPI', 'Seragam', 'Seragam resmi organisasi lengkap dengan atribut GMPI.', 0, array['S','M','L','XL','XXL','XXXL'], true, 10),
+  ('Kaos GMPI', 'Kaos', 'Kaos organisasi dengan lambang GMPI.', 0, array['S','M','L','XL','XXL','XXXL'], true, 20),
+  ('Topi GMPI', 'Atribut', 'Topi dengan bordir lambang GMPI.', 0, array[]::text[], true, 30),
+  ('Logo GMPI', 'Atribut', 'Logo / lambang GMPI untuk seragam, kendaraan, dan sekretariat.', 0, array[]::text[], true, 40),
+  ('Emblem GMPI', 'Atribut', 'Emblem bordir lambang GMPI untuk lengan seragam.', 0, array[]::text[], true, 50)
+) as seed(name, category, description, price, sizes, is_active, sort_order)
 where not exists (select 1 from public.shop_products);
