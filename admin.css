@@ -58,3 +58,25 @@
 .card-back-tools summary{cursor:pointer;font-size:11px;font-weight:800;color:#37352f}
 .card-back-tools[open] summary{margin-bottom:8px}
 @media(prefers-reduced-motion:reduce){.card-preview canvas.is-flipping{animation:none}}
+/* Toko */
+.shop-settings{margin-bottom:34px}
+.shop-admin-list{display:grid;gap:8px}
+.shop-admin-row{display:grid;grid-template-columns:56px 1fr auto auto;align-items:center;gap:12px;padding:10px;border:1px solid #ded9ce;background:#fff}
+.shop-admin-row.is-draft{background:#f7f4ed}
+.shop-admin-thumb{width:56px;height:56px;display:grid;place-items:center;background:#ece6d9;color:#8a8478;font-size:8px;font-weight:900;letter-spacing:1px;overflow:hidden;text-align:center}
+.shop-admin-thumb img{width:100%;height:100%;object-fit:cover}
+.shop-admin-thumb-lg{width:120px;height:120px;font-size:10px}
+.shop-admin-info b{display:block;font-size:13px}
+.shop-admin-info small{color:#6d6961;font-size:11px}
+.shop-admin-state{font-size:9px;font-weight:900;letter-spacing:.8px;text-transform:uppercase;padding:5px 8px;background:#e4dfd4;color:#6d6961}
+.shop-admin-state.is-on{background:#dfeedd;color:#2f5e29}
+.shop-admin-row .admin-button{min-height:34px}
+.shop-editor{border-color:#c69b3b;margin:0 0 16px}
+.shop-editor-title{font:22px/1 Impact,'Arial Narrow',sans-serif;text-transform:uppercase;margin:0 0 6px}
+.shop-admin-imgtools{display:flex;gap:14px;align-items:center}
+.shop-admin-imgtools .file-button{display:inline-block}
+.admin-card .shop-admin-check{display:flex;align-items:center;gap:8px;font-size:13px}
+.admin-card .shop-admin-check input{width:18px;height:18px;margin:0;accent-color:#9a2928}
+.shop-editor-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
+.shop-editor-actions .admin-button-red{margin-top:0;margin-left:auto}
+@media(max-width:640px){.shop-admin-row{grid-template-columns:48px 1fr auto}.shop-admin-row .shop-admin-state{display:none}.shop-admin-thumb{width:48px;height:48px}}

@@ -125,6 +125,7 @@
   function buildTabs() {
     const tabs = [];
     if (canEditContent()) tabs.push(['content', 'Isi situs']);
+    if (canEditContent()) tabs.push(['shop', 'Toko']);
     if (canSeeReports()) tabs.push(['reports', 'Aduan LBH']);
     if (canSeeMembers()) tabs.push(['members', 'Pendaftaran anggota']);
     if (canManageCards()) tabs.push(['cards', 'Kartu anggota']);
@@ -146,6 +147,7 @@
   async function openTab(key) {
     workspace.replaceChildren(make('div', 'table-empty', 'Memuat…'));
     if (key === 'content' && canEditContent()) return renderContentEditor();
+    if (key === 'shop' && canEditContent()) return renderShop();
     if (key === 'reports' && canSeeReports()) return renderReports();
     if (key === 'members' && canSeeMembers()) return renderMembers();
     if (key === 'cards' && canManageCards()) return renderCards();
@@ -193,6 +195,206 @@
     });
     const logoSection = await buildLogoManager();
     workspace.replaceChildren(logoSection, heading, form);
+  }
+
+  // ---- Toko perlengkapan: pengaturan pembayaran/legalitas + katalog barang ----
+  const SHOP_SETTINGS = [
+    { key: 'shop_whatsapp', label: 'Nomor WhatsApp penerima pesanan', help: 'Format 62…, contoh 6281234567890 (tanpa +, spasi, atau 0 di depan). Pesanan & bukti bayar dikirim ke nomor ini.', placeholder: '6281234567890' },
+    { key: 'shop_bank', label: 'Rekening untuk transfer', help: 'Tampil sebagai alternatif QRIS dan di bagian Legalitas. Hanya rekening atas nama organisasi.', placeholder: 'Bank bjb · 0163336219100 · a.n. GMPI DPD SIDOARJO' },
+    { key: 'legal_npwp', label: 'NPWP organisasi', help: 'Kosongkan bila belum ada; kartu NPWP di bagian Legalitas otomatis disembunyikan.', placeholder: '00.000.000.0-000.000' }
+  ];
+  const PRODUCT_CATEGORIES = ['Seragam', 'Kaos & Jaket', 'Atribut', 'Perlengkapan', 'Keanggotaan'];
+  const STOCK_LABELS = { tersedia: 'Tersedia', 'pre-order': 'Pre-order', habis: 'Habis' };
+  const rupiahAdmin = n => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n || 0);
+
+  function productImageUrl(path) {
+    return path ? client.storage.from('site-assets').getPublicUrl(path).data.publicUrl : '';
+  }
+
+  async function compressProductImage(file) {
+    const url = URL.createObjectURL(file);
+    try {
+      const img = await new Promise((resolve, reject) => { const i = new Image(); i.onload = () => resolve(i); i.onerror = reject; i.src = url; });
+      const max = 1000;
+      const scale = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.naturalWidth * scale);
+      canvas.height = Math.round(img.naturalHeight * scale);
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+      return blob;
+    } finally { URL.revokeObjectURL(url); }
+  }
+
+  async function renderShop() {
+    const [{ data: settingRows, error: settingError }, { data: productRows, error: productError }] = await Promise.all([
+      client.from('site_content').select('key,value').in('key', SHOP_SETTINGS.map(s => s.key)),
+      client.from('shop_products').select('*').order('sort_order', { ascending: true }).order('created_at', { ascending: true })
+    ]);
+    if (settingError || productError) return showWorkspaceError('Toko belum aktif. Jalankan migrasi 202610200005_shop_legal.sql di Supabase (SQL Editor) terlebih dahulu.');
+    const values = new Map((settingRows || []).map(r => [r.key, r.value?.text || '']));
+    let products = productRows || [];
+
+    // Pengaturan
+    const settingsHead = make('div', 'workspace-heading');
+    const sh = make('div');
+    sh.append(make('h3', '', 'Pembayaran & legalitas'), make('p', '', 'QRIS resmi GMPI DPD SIDOARJO (NMID ID1026605146624) sudah terpasang di situs. Isi nomor WhatsApp pengurus agar pembeli bisa mengirim pesanan.'));
+    settingsHead.append(sh);
+    const settingsForm = make('form', 'content-form shop-settings');
+    SHOP_SETTINGS.forEach(s => {
+      const inp = input(`shop-${s.key}`, 'text', { placeholder: s.placeholder, maxLength: 120 });
+      inp.name = s.key;
+      inp.value = values.get(s.key) || '';
+      settingsForm.append(field(s.label, inp, s.help));
+    });
+    const saveSettings = make('button', 'admin-button admin-button-gold', 'Simpan pengaturan');
+    saveSettings.type = 'submit';
+    settingsForm.append(saveSettings);
+    settingsForm.addEventListener('submit', async event => {
+      event.preventDefault();
+      let wa = settingsForm.elements.shop_whatsapp.value.replace(/\D/g, '');
+      if (wa.startsWith('0')) wa = '62' + wa.slice(1);
+      if (wa && !/^62\d{8,13}$/.test(wa)) { setMessage('Nomor WhatsApp tidak valid. Contoh: 6281234567890.', 'error'); return; }
+      settingsForm.elements.shop_whatsapp.value = wa;
+      saveSettings.disabled = true;
+      const now = new Date().toISOString();
+      const updates = SHOP_SETTINGS.map(s => ({ key: s.key, value: { text: settingsForm.elements[s.key].value.trim() }, updated_at: now }));
+      const { error } = await client.from('site_content').upsert(updates, { onConflict: 'key' });
+      saveSettings.disabled = false;
+      setMessage(error ? 'Pengaturan toko tidak tersimpan. Pastikan migrasi 0005 sudah dijalankan.' : 'Pengaturan toko tersimpan.', error ? 'error' : 'ok');
+    });
+
+    // Katalog
+    const listHead = make('div', 'workspace-heading');
+    const lh = make('div');
+    lh.append(make('h3', '', 'Katalog barang'), make('p', '', 'Barang hanya tampil di situs bila “Tampilkan di situs” dicentang dan harganya lebih dari 0. Draf barang awal sudah disiapkan; lengkapi harga & foto lalu aktifkan.'));
+    const addButton = make('button', 'admin-button admin-button-gold', '+ Tambah barang');
+    addButton.type = 'button';
+    listHead.append(lh, addButton);
+    const list = make('div', 'shop-admin-list');
+    const editorSlot = make('div');
+
+    function renderList() {
+      if (!products.length) { list.replaceChildren(make('div', 'table-empty', 'Belum ada barang. Klik “Tambah barang”.')); return; }
+      list.replaceChildren(...products.map(p => {
+        const row = make('div', `shop-admin-row${p.is_active ? '' : ' is-draft'}`);
+        const thumb = make('div', 'shop-admin-thumb');
+        if (p.image_path) { const im = make('img'); im.src = productImageUrl(p.image_path); im.alt = ''; thumb.append(im); }
+        else thumb.textContent = 'FOTO';
+        const info = make('div', 'shop-admin-info');
+        info.append(make('b', '', p.name));
+        info.append(make('small', '', `${p.category} · ${rupiahAdmin(p.price)} · ${STOCK_LABELS[p.stock_status]}${p.sizes?.length ? ` · ${p.sizes.join('/')}` : ''}`));
+        const state = make('span', `shop-admin-state${p.is_active ? ' is-on' : ''}`, p.is_active ? (p.price > 0 ? 'Tampil' : 'Aktif, harga 0') : 'Draf');
+        const edit = make('button', 'admin-button admin-button-outline', 'Ubah');
+        edit.type = 'button';
+        edit.addEventListener('click', () => openEditor(p));
+        row.append(thumb, info, state, edit);
+        return row;
+      }));
+    }
+
+    function openEditor(product) {
+      const isNew = !product;
+      const p = product || { name: '', category: 'Atribut', description: '', price: 0, sizes: [], image_path: null, stock_status: 'tersedia', is_active: false, sort_order: (products.length + 1) * 10 };
+      const box = make('form', 'admin-card shop-editor content-form');
+      box.append(make('h4', 'shop-editor-title', isNew ? 'Barang baru' : `Ubah: ${p.name}`));
+      const nameIn = input('sp-name', 'text', { required: true, maxLength: 80, value: p.name });
+      const catIn = make('select'); catIn.id = 'sp-cat';
+      [...new Set([...PRODUCT_CATEGORIES, p.category])].forEach(c => catIn.append(new Option(c, c, false, c === p.category)));
+      const priceIn = input('sp-price', 'number', { min: 0, max: 100000000, step: 500, value: p.price, required: true });
+      const stockIn = make('select'); stockIn.id = 'sp-stock';
+      Object.entries(STOCK_LABELS).forEach(([v, l]) => stockIn.append(new Option(l, v, false, v === p.stock_status)));
+      const sizesIn = input('sp-sizes', 'text', { maxLength: 80, value: (p.sizes || []).join(', '), placeholder: 'S, M, L, XL, XXL' });
+      const descIn = make('textarea'); descIn.id = 'sp-desc'; descIn.maxLength = 600; descIn.value = p.description || '';
+      const orderIn = input('sp-order', 'number', { min: 0, max: 9999, value: p.sort_order });
+      const activeWrap = make('label', 'shop-admin-check');
+      const activeIn = make('input'); activeIn.type = 'checkbox'; activeIn.checked = p.is_active;
+      activeWrap.append(activeIn, document.createTextNode(' Tampilkan di situs'));
+
+      let imagePath = p.image_path;
+      const imgPreview = make('div', 'shop-admin-thumb shop-admin-thumb-lg');
+      const renderImg = () => {
+        imgPreview.replaceChildren();
+        if (imagePath) { const im = make('img'); im.src = productImageUrl(imagePath); im.alt = ''; imgPreview.append(im); }
+        else imgPreview.textContent = 'Belum ada foto';
+      };
+      renderImg();
+      const fileLabel = make('label', 'file-button', 'Pilih foto barang');
+      const fileIn = make('input'); fileIn.type = 'file'; fileIn.accept = 'image/png,image/jpeg,image/webp'; fileIn.hidden = true;
+      fileLabel.append(fileIn);
+      const imgNote = make('small', 'privacy-mini', 'Foto persegi terlihat paling rapi. Otomatis diperkecil ke maks. 1000 px.');
+      fileIn.addEventListener('change', async () => {
+        const file = fileIn.files && fileIn.files[0];
+        if (!file) return;
+        if (file.size > 15 * 1024 * 1024) { imgNote.textContent = 'File terlalu besar (maks. 15 MB).'; return; }
+        imgNote.textContent = 'Mengunggah foto…';
+        try {
+          const blob = await compressProductImage(file);
+          const path = `products/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+          const { error } = await client.storage.from('site-assets').upload(path, blob, { contentType: 'image/jpeg', cacheControl: '31536000', upsert: false });
+          if (error) throw error;
+          imagePath = path; renderImg();
+          imgNote.textContent = 'Foto terunggah. Klik “Simpan barang” untuk memakainya.';
+        } catch (e) {
+          imgNote.textContent = 'Foto gagal diunggah. Pastikan migrasi 0005 sudah dijalankan.';
+        }
+      });
+      const imgTools = make('div', 'shop-admin-imgtools');
+      const imgSide = make('div'); imgSide.append(fileLabel, imgNote);
+      imgTools.append(imgPreview, imgSide);
+
+      const rowA = make('div', 'card-form-row'); rowA.append(field('Kategori', catIn), field('Harga (Rp)', priceIn, 'Isi angka saja, contoh 150000.'));
+      const rowB = make('div', 'card-form-row'); rowB.append(field('Status stok', stockIn), field('Urutan tampil', orderIn, 'Angka kecil tampil lebih dulu.'));
+      box.append(field('Nama barang', nameIn), rowA, rowB, field('Ukuran (pisahkan dengan koma)', sizesIn, 'Kosongkan bila barang tidak berukuran.'), field('Deskripsi singkat', descIn), field('Foto', imgTools), activeWrap);
+
+      const actions = make('div', 'shop-editor-actions');
+      const save = make('button', 'admin-button admin-button-gold', 'Simpan barang'); save.type = 'submit';
+      const cancel = make('button', 'admin-button admin-button-outline', 'Batal'); cancel.type = 'button';
+      actions.append(save, cancel);
+      if (!isNew) {
+        const del = make('button', 'admin-button admin-button-red', 'Hapus barang'); del.type = 'button';
+        del.addEventListener('click', async () => {
+          if (!window.confirm(`Hapus “${p.name}” dari katalog?`)) return;
+          const { error } = await client.from('shop_products').delete().eq('id', p.id);
+          if (error) { setMessage('Barang gagal dihapus.', 'error'); return; }
+          products = products.filter(x => x.id !== p.id);
+          editorSlot.replaceChildren(); renderList(); setMessage('Barang dihapus.');
+        });
+        actions.append(del);
+      }
+      box.append(actions);
+      cancel.addEventListener('click', () => editorSlot.replaceChildren());
+      box.addEventListener('submit', async event => {
+        event.preventDefault();
+        if (!box.reportValidity()) return;
+        const sizes = sizesIn.value.split(',').map(s => s.trim().toUpperCase()).filter(Boolean).slice(0, 12);
+        const payload = {
+          name: nameIn.value.trim(), category: catIn.value, description: descIn.value.trim(),
+          price: Math.max(0, Math.round(Number(priceIn.value) || 0)), sizes, image_path: imagePath || null,
+          stock_status: stockIn.value, is_active: activeIn.checked, sort_order: Math.round(Number(orderIn.value) || 0),
+          updated_at: new Date().toISOString()
+        };
+        if (payload.is_active && payload.price <= 0 && !window.confirm('Harga masih 0, barang akan tampil tetapi belum bisa dipesan. Lanjutkan?')) return;
+        save.disabled = true;
+        const query = isNew ? client.from('shop_products').insert(payload).select().single() : client.from('shop_products').update(payload).eq('id', p.id).select().single();
+        const { data, error } = await query;
+        save.disabled = false;
+        if (error) { setMessage('Barang tidak tersimpan. Periksa isian dan peran Editor Situs.', 'error'); return; }
+        if (isNew) products.push(data); else products = products.map(x => x.id === data.id ? data : x);
+        products.sort((a, b) => a.sort_order - b.sort_order);
+        editorSlot.replaceChildren(); renderList();
+        setMessage(`“${data.name}” tersimpan.${data.is_active ? ' Muat ulang beranda untuk melihatnya.' : ' (masih draf)'}`);
+      });
+      editorSlot.replaceChildren(box);
+      box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      nameIn.focus({ preventScroll: true });
+    }
+
+    addButton.addEventListener('click', () => openEditor(null));
+    renderList();
+    workspace.replaceChildren(settingsHead, settingsForm, listHead, editorSlot, list);
   }
 
   // ---- Logo situs: unggah, pilih dari riwayat, kembalikan bawaan ----

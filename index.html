@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="gamma-effects.css">
   <link rel="stylesheet" href="kta.css">
   <link rel="stylesheet" href="starfield.css">
+  <link rel="stylesheet" href="store.css">
 </head>
 <body>
   <canvas id="starfield" aria-hidden="true"></canvas>
@@ -26,6 +27,7 @@
       <a href="#pilar" class="nav-link">Pilar Pergerakan</a>
       <a href="#posko" class="nav-link">Posko Digital</a>
       <a href="#lensa" class="nav-link">Lensa Kegiatan</a>
+      <a href="#perlengkapan" class="nav-link">Perlengkapan</a>
       <a href="#gabung" class="nav-join">Gabung Barisan <span>↗</span></a>
     </nav>
   </header>
@@ -164,19 +166,130 @@
       </figure>
     </section>
 
+    <section class="section shop-section" id="perlengkapan" aria-labelledby="shop-title">
+      <div class="section-head">
+        <div><div class="eyebrow"><span class="eyebrow-line"></span> PERLENGKAPAN ORGANISASI</div><h2 id="shop-title">Lengkapi <em>atributmu.</em></h2></div>
+        <p class="section-intro">Seragam, kaos, dan atribut resmi GMPI Sidoarjo untuk anggota baru maupun lama. Pilih barang, bayar dengan QRIS resmi organisasi, lalu kirim bukti bayar ke WhatsApp pengurus. Sesuai AD/ART, hasil penjualan atribut masuk ke kas organisasi.</p>
+      </div>
+      <ol class="shop-how" aria-label="Cara memesan">
+        <li><b>1</b><span><strong>Pilih barang</strong>ukuran &amp; jumlah</span></li>
+        <li><b>2</b><span><strong>Isi data</strong>nama, WA, kecamatan</span></li>
+        <li><b>3</b><span><strong>Bayar QRIS</strong>semua e-wallet &amp; m-banking</span></li>
+        <li><b>4</b><span><strong>Kirim bukti</strong>ke WhatsApp pengurus</span></li>
+      </ol>
+      <div class="shop-filters" id="shop-filters" role="group" aria-label="Kategori barang" hidden></div>
+      <div class="shop-grid" id="shop-grid" aria-live="polite"><div class="shop-empty">Memuat katalog…</div></div>
+      <p class="shop-trust"><span>✓ Pembayaran hanya ke QRIS &amp; rekening atas nama <b>GMPI DPD SIDOARJO</b>. Jangan transfer ke rekening pribadi.</span><span>✓ Data pesanan dikirim langsung ke WhatsApp pengurus, tidak disimpan di website.</span></p>
+    </section>
+
     <section class="final-cta"><div class="final-star">✳</div><div><span>GMPI DPC SIDOARJO</span><h2>Setia bersaudara sampai urat nadi.</h2></div><a href="#posko" class="button button-red">Suarakan aspirasi <span>↗</span></a></section>
+
+
+    <section class="legal-section" id="legalitas" aria-labelledby="legal-title">
+      <div class="legal-head">
+        <div class="eyebrow eyebrow-light"><span class="eyebrow-line"></span> LEGALITAS ORGANISASI</div>
+        <h2 id="legal-title">Resmi &amp; <em>berbadan hukum.</em></h2>
+        <p>Gerakan Militansi Pejuang Indonesia (GMPI) adalah perkumpulan yang pendiriannya disahkan oleh Kementerian Hukum dan HAM Republik Indonesia.</p>
+      </div>
+      <div class="legal-grid">
+        <article class="legal-card">
+          <span class="legal-label">Badan hukum · SK Menkumham</span>
+          <strong class="legal-value">AHU-0010942.AH.01.07.TAHUN 2021</strong>
+          <p>Pengesahan Pendirian Perkumpulan Gerakan Militansi Pejuang Indonesia, ditetapkan di Jakarta, 17 September 2021.</p>
+          <a class="legal-link" href="https://ahu.go.id" target="_blank" rel="noopener">Cek di ahu.go.id <span>↗</span></a>
+        </article>
+        <article class="legal-card">
+          <span class="legal-label">Anggaran Dasar &amp; Anggaran Rumah Tangga</span>
+          <strong class="legal-value">AD/ART GMPI 2021</strong>
+          <p>Pedoman organisasi: asas, struktur kepengurusan, keanggotaan, hak &amp; kewajiban anggota, serta keuangan.</p>
+          <a class="legal-link" href="assets/docs/AD-ART-GMPI-2021.pdf" download>Unduh PDF <span>↓</span></a>
+        </article>
+        <article class="legal-card" id="legal-npwp-card" hidden>
+          <span class="legal-label">Nomor Pokok Wajib Pajak</span>
+          <strong class="legal-value" id="legal-npwp"></strong>
+          <p>NPWP atas nama organisasi.</p>
+        </article>
+        <article class="legal-card legal-pay">
+          <span class="legal-label">Kanal pembayaran resmi</span>
+          <strong class="legal-value">QRIS · GMPI DPD SIDOARJO</strong>
+          <p>NMID ID1026605146624<br><span id="legal-bank" hidden></span></p>
+          <a class="legal-link" href="#perlengkapan">Ke perlengkapan <span>→</span></a>
+        </article>
+      </div>
+    </section>
   </main>
 
   <footer class="site-footer">
     <a class="brand footer-brand" href="#top"><img data-site-logo src="assets/logo-gmpi-sidoarjo-crop.webp" alt=""><span class="brand-text"><strong>GMPI</strong><small>DPC SIDOARJO</small></span></a>
     <p>Gerakan Militansi Pejuang Indonesia<br><span data-cms-key="footer_slogan">Setia Bersaudara Sampai Urat Nadi</span></p>
-    <div class="footer-links"><a href="#pilar">Pilar Pergerakan</a><a href="#posko">Posko Digital</a><a href="#lensa">Lensa Kegiatan</a><a href="verifikasi.html">Verifikasi Kartu</a><a class="footer-admin" href="admin.html" aria-label="Masuk ke panel Admin GMPI">Admin ↗</a></div>
-    <small class="copyright">© <span id="year"></span> GMPI DPC Sidoarjo</small>
+    <div class="footer-links"><a href="#pilar">Pilar Pergerakan</a><a href="#posko">Posko Digital</a><a href="#lensa">Lensa Kegiatan</a><a href="#perlengkapan">Perlengkapan</a><a href="#legalitas">Legalitas</a><a href="verifikasi.html">Verifikasi Kartu</a><a class="footer-admin" href="admin.html" aria-label="Masuk ke panel Admin GMPI">Admin ↗</a></div>
+    <small class="copyright">© <span id="year"></span> GMPI DPC Sidoarjo<br>Berbadan hukum · AHU-0010942.AH.01.07.TAHUN 2021</small>
   </footer>
+
+  <button type="button" class="cart-fab" id="cart-fab" aria-haspopup="dialog" aria-controls="cart-drawer" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h2.2l2.1 10.2a1.6 1.6 0 0 0 1.6 1.3h8.4a1.6 1.6 0 0 0 1.6-1.2L21 8H6.3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.5" cy="19.5" r="1.5" fill="currentColor"/><circle cx="17" cy="19.5" r="1.5" fill="currentColor"/></svg><span>Keranjang</span><b id="cart-count">0</b></button>
+  <div class="cart-backdrop" id="cart-backdrop" hidden></div>
+  <aside class="cart-drawer" id="cart-drawer" role="dialog" aria-modal="true" aria-labelledby="cart-title" hidden>
+    <header class="cart-header">
+      <div><span>PESANAN PERLENGKAPAN</span><h2 id="cart-title">Keranjang</h2></div>
+      <button type="button" class="cart-close" aria-label="Tutup keranjang">×</button>
+    </header>
+    <ol class="cart-steps" data-current="cart" aria-hidden="true"><li data-for="cart">Keranjang</li><li data-for="form">Data</li><li data-for="pay">Bayar</li></ol>
+    <div class="cart-scroll">
+      <div class="cart-step" data-step="cart">
+        <div class="cart-items"></div>
+        <div class="cart-total"><span>Total barang</span><b class="cart-total-value">Rp 0</b></div>
+        <button type="button" class="button button-gold cart-next to-form">Lanjut isi data <span>→</span></button>
+      </div>
+
+      <form class="cart-step order-form" data-step="form" hidden novalidate>
+        <label>Nama lengkap<input name="name" required maxlength="80" autocomplete="name"></label>
+        <label>Nomor WhatsApp<input name="phone" required inputmode="tel" maxlength="18" placeholder="08xxxxxxxxxx" autocomplete="tel"></label>
+        <label>Kecamatan / PAC<select name="district" id="order-district" required><option value="">Pilih kecamatan</option></select></label>
+        <fieldset class="order-delivery"><legend>Pengambilan barang</legend>
+          <label class="radio"><input type="radio" name="delivery" value="ambil" checked> Ambil di sekretariat</label>
+          <label class="radio"><input type="radio" name="delivery" value="kirim"> Dikirim (ongkir dikonfirmasi admin)</label>
+        </fieldset>
+        <label class="order-address" hidden>Alamat pengiriman<textarea name="address" rows="2" maxlength="240"></textarea></label>
+        <label>Catatan <small>(opsional)</small><textarea name="note" rows="2" maxlength="240" placeholder="Misal: nama untuk bordir, warna, dll."></textarea></label>
+        <p class="order-privacy">Data ini hanya dimasukkan ke pesan WhatsApp untuk pengurus. Website tidak menyimpannya.</p>
+        <div class="cart-row-buttons"><button type="button" class="cart-back to-cart">← Keranjang</button><button type="submit" class="button button-gold cart-next">Lanjut ke pembayaran <span>→</span></button></div>
+      </form>
+
+      <div class="cart-step" data-step="pay" hidden>
+        <div class="pay-summary"><span>Kode pesanan <b class="pay-code"></b></span><span>Total bayar<strong class="pay-total"></strong></span></div>
+        <p class="pay-delivery-note" hidden>Pesanan dikirim: <b>jangan bayar dulu.</b> Kirim pesanan ke WhatsApp, tunggu admin mengonfirmasi total + ongkir, baru bayar lewat QRIS di bawah.</p>
+        <div class="pay-methods" role="radiogroup" aria-label="Metode pembayaran">
+          <label><input type="radio" name="paymethod" value="qris" checked><span>QRIS</span></label>
+          <label><input type="radio" name="paymethod" value="bank"><span>Transfer bank</span></label>
+        </div>
+        <div class="pay-qris">
+          <button type="button" class="pay-qris-zoom" aria-label="Perbesar QRIS"><img src="assets/payment/qris-gmpi-dpd-sidoarjo.jpg" alt="QRIS resmi GMPI DPD SIDOARJO, NMID ID1026605146624" loading="lazy"></button>
+          <ol class="pay-steps">
+            <li>Buka m-banking atau e-wallet (DANA, OVO, GoPay, ShopeePay, dll.), pilih <b>Scan / Bayar QRIS</b>.</li>
+            <li>Pindai kode, pastikan nama penerima <b>GMPI DPD SIDOARJO</b>.</li>
+            <li>Ketik nominal <b>persis sama</b> dengan total bayar, lalu bayar.</li>
+            <li>Simpan tangkapan layar bukti bayar.</li>
+          </ol>
+          <a class="pay-download" href="assets/payment/qris-gmpi-dpd-sidoarjo.jpg" download="QRIS-GMPI-DPD-Sidoarjo.jpg">Simpan gambar QRIS ↓</a>
+          <p class="pay-tip">Membuka dari HP? Simpan gambar QRIS, lalu pilih “unggah dari galeri” di aplikasi pembayaranmu.</p>
+        </div>
+        <div class="pay-bank-box" hidden>
+          <p class="pay-bank"><span>Transfer ke rekening resmi:</span><b class="pay-bank-text"></b></p>
+          <p class="pay-tip">Transfer sebesar total bayar, lalu simpan bukti transfer.</p>
+        </div>
+        <a class="pay-wa" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8s-.4-.1-.6.1-.7.8-.8 1-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.1 5.1 0 0 0 1.1 2.7 11.6 11.6 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.2 2.2 2.2 0 0 0 .1-1.3c0-.1-.2-.2-.5-.3Z"/></svg>Kirim pesanan ke WhatsApp</a>
+        <p class="pay-wa-missing" hidden>Nomor WhatsApp pengurus belum diatur. Silakan hubungi sekretariat GMPI Sidoarjo.</p>
+        <p class="pay-tip">Setelah WhatsApp terbuka, tekan kirim lalu lampirkan bukti bayar di chat yang sama. Pengurus akan mengonfirmasi pesananmu.</p>
+        <div class="cart-row-buttons"><button type="button" class="cart-back to-form-again">← Ubah data</button><button type="button" class="cart-back pay-done">Selesai, kosongkan keranjang</button></div>
+      </div>
+    </div>
+  </aside>
+  <div class="qris-lightbox" id="qris-lightbox" role="dialog" aria-modal="true" aria-label="QRIS diperbesar" hidden><img src="assets/payment/qris-gmpi-dpd-sidoarjo.jpg" alt="QRIS resmi GMPI DPD SIDOARJO"><button type="button">Tutup ×</button></div>
   <script src="supabase-config.js"></script>
   <script src="vendor/qrcode-generator.js"></script>
   <script src="member-card.js"></script>
   <script src="script.js"></script>
   <script src="starfield.js"></script>
+  <script src="store.js"></script>
 </body>
 </html>
