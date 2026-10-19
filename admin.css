@@ -47,3 +47,14 @@
 .card-actions{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
 .card-actions .admin-link-button{color:#7a5a12;font-weight:800;padding:0}
 @media(max-width:760px){.card-designer{grid-template-columns:1fr}.card-preview{position:static;order:-1}.card-preview canvas{max-width:240px}.card-photo-tools{grid-template-columns:1fr}.card-list-heading{flex-direction:column;align-items:stretch}.admin-card input.card-search{max-width:none}}
+
+.card-side-switch{display:inline-flex;border:1px solid #cbc5b8;background:#fff}
+.card-side-switch button{border:0;background:none;padding:7px 16px;font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;color:#57534d;cursor:pointer}
+.card-side-switch button.is-active{background:#171715;color:#fff}
+.card-preview canvas{cursor:pointer}
+.card-preview canvas.is-flipping{animation:card-flip .32s ease-in-out}
+@keyframes card-flip{0%{transform:perspective(900px) rotateY(0)}50%{transform:perspective(900px) rotateY(90deg)}100%{transform:perspective(900px) rotateY(0)}}
+.card-back-tools{border:1px solid #d9d4c9;background:#faf8f2;padding:10px 12px}
+.card-back-tools summary{cursor:pointer;font-size:11px;font-weight:800;color:#37352f}
+.card-back-tools[open] summary{margin-bottom:8px}
+@media(prefers-reduced-motion:reduce){.card-preview canvas.is-flipping{animation:none}}

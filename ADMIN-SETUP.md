@@ -53,3 +53,9 @@ Hanya peran Pemilik dan Editor Situs yang boleh mengganti logo. Bucket `site-ass
 7. Jika nanti memakai domain sendiri, ubah `VERIFY_BASE` dan `VERIFY_LABEL` di `member-card.js`; alamat vercel.app lama tetap berfungsi untuk kartu yang sudah dicetak.
 
 Contoh kartu di beranda memakai kode `CONTOH` dan ditandai sebagai kartu contoh di halaman verifikasi.
+
+### Sisi belakang kartu
+- Di tab **Kartu anggota**, klik pratinjau (atau tombol **Depan/Belakang**) untuk membalik kartu.
+- Buka **Pengaturan sisi belakang** untuk mengisi nama & jabatan penanda tangan (diingat di browser) dan, bila perlu, tanda tangan PNG transparan (tidak diunggah).
+- Unduh **depan** dan **belakang** sebagai dua file PNG, lalu cetak bolak-balik. Area **CAP DPC** disediakan untuk stempel basah.
+- Di beranda, pengunjung bisa mengklik contoh kartu untuk melihatnya berputar ke sisi belakang.

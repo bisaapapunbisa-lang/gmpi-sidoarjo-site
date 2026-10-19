@@ -153,8 +153,13 @@
         <div class="kta-actions"><a href="#gabung" class="button button-gold">Gabung Barisan <span>↗</span></a><a href="verifikasi.html" class="kta-link">Cek keaslian kartu <span>→</span></a></div>
       </div>
       <figure class="kta-figure">
-        <div class="kta-card-wrap"><canvas id="kta-sample" width="638" height="1012" role="img" aria-label="Contoh kartu tanda anggota GMPI DPC Sidoarjo berbentuk vertikal: logo, foto, nama, jabatan, nomor anggota, kecamatan, masa berlaku, dan QR verifikasi"></canvas></div>
-        <figcaption>Contoh tampilan · data fiktif</figcaption>
+        <div class="kta-card-wrap">
+          <button type="button" class="kta-flipper" id="kta-flipper" aria-pressed="false" aria-label="Balik kartu untuk melihat sisi belakang">
+            <span class="kta-face kta-front"><canvas id="kta-sample" width="638" height="1012" role="img" aria-label="Sisi depan contoh kartu tanda anggota GMPI DPC Sidoarjo: logo, foto, nama, jabatan, nomor anggota, kecamatan, masa berlaku, dan QR verifikasi"></canvas></span>
+            <span class="kta-face kta-back"><canvas id="kta-sample-back" width="638" height="1012" role="img" aria-label="Sisi belakang contoh kartu: ikrar anggota, ketentuan kartu, tempat tanda tangan Ketua DPC dan cap"></canvas></span>
+          </button>
+        </div>
+        <figcaption><button type="button" class="kta-hint" id="kta-hint"><span aria-hidden="true">↻</span> Klik kartu untuk membalik</button><span>Contoh tampilan · data fiktif</span></figcaption>
       </figure>
     </section>
 
@@ -171,5 +176,5 @@
   <script src="vendor/qrcode-generator.js"></script>
   <script src="member-card.js"></script>
   <script src="script.js"></script>
-<script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a4d2c52e4f1fa28e',t:'MTc5MjQ0NDIzMw=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</body>
 </html>

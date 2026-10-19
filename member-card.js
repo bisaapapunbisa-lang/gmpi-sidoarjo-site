@@ -49,9 +49,12 @@
     return new Promise(resolve => {
       if (!src) return resolve(null);
       const img = new Image();
+      let done = false;
+      const finish = value => { if (!done) { done = true; resolve(value); } };
       if (crossOrigin) img.crossOrigin = 'anonymous';
-      img.onload = () => resolve(img);
-      img.onerror = () => resolve(null);
+      img.onload = () => finish(img);
+      img.onerror = () => finish(null);
+      setTimeout(() => finish(null), 8000);
       img.src = src;
     });
   }
@@ -426,5 +429,218 @@
     return canvas;
   }
 
-  window.GMPICard = { W, H, SCALE, VERIFY_BASE, ready, loadImage, verifyUrl, formatDate, draw };
+  const MONTHS_LONG = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+  function formatLongDate(value) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value || ''));
+    return m ? `${Number(m[3])} ${MONTHS_LONG[Number(m[2]) - 1]} ${m[1]}` : '';
+  }
+  function wrap(ctx, text, maxWidth) {
+    const words = String(text).split(/\s+/).filter(Boolean);
+    const lines = [];
+    let line = '';
+    words.forEach(word => {
+      const test = line ? `${line} ${word}` : word;
+      if (ctx.measureText(test).width > maxWidth && line) { lines.push(line); line = word; }
+      else line = test;
+    });
+    if (line) lines.push(line);
+    return lines;
+  }
+
+  const PLEDGE = 'Dengan kesadaran penuh, saya menyatakan setia kepada NKRI, Pancasila, UUD 1945, serta siap mematuhi AD/ART dan komando perjuangan GMPI Sidoarjo.';
+  const RULES = [
+    'Kartu ini milik GMPI DPC Sidoarjo dan hanya berlaku bagi nama yang tercantum di sisi depan.',
+    'Keaslian dan status kartu dicek dengan memindai QR di sisi depan melalui situs resmi.',
+    'Kartu tidak berlaku bila dicabut, nonaktif, atau melewati masa berlaku.',
+    'Jika menemukan kartu ini, mohon serahkan kepada pengurus GMPI DPC Sidoarjo.'
+  ];
+
+  function drawBack(canvas, data = {}) {
+    canvas.width = W * SCALE;
+    canvas.height = H * SCALE;
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(SCALE, 0, 0, SCALE, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    ctx.textBaseline = 'alphabetic';
+    const number = String(data.number || 'GMPI-SDA-0000-0000').trim().toUpperCase();
+
+    ctx.save();
+    rr(ctx, 0, 0, W, H, 34);
+    ctx.clip();
+    const bg = ctx.createLinearGradient(W, 0, W * 0.6, H);
+    bg.addColorStop(0, '#1a1a17');
+    bg.addColorStop(0.55, '#0f0f0e');
+    bg.addColorStop(1, '#090908');
+    ctx.fillStyle = bg;
+    ctx.fillRect(0, 0, W, H);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,.028)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < W + H; i += 13) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i - H, H); ctx.stroke(); }
+    ctx.restore();
+    const glow = ctx.createRadialGradient(W / 2, 560, 20, W / 2, 560, 420);
+    glow.addColorStop(0, 'rgba(215,172,76,.10)');
+    glow.addColorStop(1, 'rgba(215,172,76,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(0, 0, W, H);
+    if (data.logo) {
+      ctx.save();
+      ctx.globalAlpha = 0.045;
+      ctx.beginPath(); ctx.arc(W / 2, 540, 280, 0, Math.PI * 2); ctx.clip();
+      drawCover(ctx, data.logo, W / 2 - 280, 260, 560, 560);
+      ctx.restore();
+    }
+
+    // aksen sudut kiri atas (cermin sisi depan)
+    const redG = ctx.createLinearGradient(0, 0, 200, 200);
+    redG.addColorStop(0, C.red); redG.addColorStop(1, C.red2);
+    ctx.fillStyle = redG;
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(120, 0); ctx.lineTo(0, 120); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = C.gold; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(158, 0); ctx.lineTo(0, 158); ctx.stroke();
+
+    // ---------- Header ----------
+    const lx = W - 70, ly = 70, lr = 28;
+    if (data.logo) {
+      ctx.save(); ctx.beginPath(); ctx.arc(lx, ly, lr, 0, Math.PI * 2); ctx.fillStyle = '#10100f'; ctx.fill(); ctx.clip();
+      drawCover(ctx, data.logo, lx - lr, ly - lr, lr * 2, lr * 2); ctx.restore();
+    }
+    ctx.lineWidth = 2; ctx.lineCap = 'round';
+    [[C.cyan, -0.35, 0.3], [C.red, 1.7, 2.3], [C.goldHi, 3.7, 4.3], ['rgba(100,244,255,.25)', 0, Math.PI * 2]].forEach(([color, a, b]) => {
+      ctx.strokeStyle = color; ctx.beginPath(); ctx.arc(lx, ly, lr + 5, a, b); ctx.stroke();
+    });
+    ctx.textAlign = 'right';
+    ctx.fillStyle = C.white;
+    ctx.font = `34px ${F.display}`;
+    spaced(ctx, 'GMPI', W - 118, 72, 2, 'right');
+    ctx.fillStyle = C.gold;
+    ctx.font = `800 9.5px ${F.body}`;
+    spaced(ctx, 'DPC SIDOARJO', W - 118, 90, 3, 'right');
+    ctx.textAlign = 'left';
+    ctx.fillStyle = C.muted;
+    ctx.font = `800 8.6px ${F.body}`;
+    spaced(ctx, 'NO. ANGGOTA', 168, 62, 2);
+    ctx.fillStyle = C.white;
+    ctx.font = `700 15px ${F.mono}`;
+    ctx.fillText(number, 168, 86);
+
+    ctx.strokeStyle = C.line; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(40, 132); ctx.lineTo(W - 40, 132); ctx.stroke();
+    ctx.fillStyle = C.red; ctx.fillRect(40, 131, 56, 3);
+
+    // ---------- Ikrar ----------
+    ctx.font = `800 11.5px ${F.body}`;
+    const label = 'IKRAR ANGGOTA';
+    const labelW = spacedWidth(ctx, label, 3) + 32;
+    ctx.fillStyle = C.red;
+    rr(ctx, 40, 158, labelW, 30, 4); ctx.fill();
+    ctx.fillStyle = '#fff';
+    spaced(ctx, label, 56, 178, 3);
+
+    ctx.font = `600 16.5px ${F.body}`;
+    const pledgeLines = wrap(ctx, PLEDGE, 530);
+    let y = 228;
+    ctx.fillStyle = 'rgba(251,248,241,.92)';
+    pledgeLines.forEach(line => { ctx.fillText(line, 64, y); y += 27; });
+    ctx.fillStyle = C.goldHi;
+    ctx.font = `800 15px ${F.body}`;
+    ctx.fillText('“Setia Bersaudara Sampai Urat Nadi.”', 64, y + 6);
+    const barG = ctx.createLinearGradient(0, 206, 0, y + 10);
+    barG.addColorStop(0, C.red); barG.addColorStop(1, C.gold);
+    ctx.fillStyle = barG;
+    ctx.fillRect(40, 208, 4, y + 10 - 208);
+    y += 58;
+
+    // ---------- Ketentuan ----------
+    ctx.fillStyle = C.muted;
+    ctx.font = `800 9.5px ${F.body}`;
+    const rulesW = spaced(ctx, 'KETENTUAN KARTU', 40, y, 2.6);
+    ctx.strokeStyle = C.line;
+    ctx.beginPath(); ctx.moveTo(40 + rulesW + 14, y - 4); ctx.lineTo(W - 40, y - 4); ctx.stroke();
+    y += 30;
+    RULES.forEach((rule, i) => {
+      ctx.fillStyle = C.red;
+      ctx.font = `20px ${F.display}`;
+      ctx.fillText(String(i + 1).padStart(2, '0'), 40, y + 2);
+      ctx.fillStyle = '#cfcbc1';
+      ctx.font = `600 13px ${F.body}`;
+      const lines = wrap(ctx, rule, 516);
+      lines.forEach((line, j) => ctx.fillText(line, 82, y + j * 19.5));
+      y += lines.length * 19.5 + 13;
+    });
+
+    // ---------- Tanda tangan & cap ----------
+    const sy = Math.max(y + 40, 660);
+    ctx.save();
+    ctx.setLineDash([5, 6]);
+    ctx.strokeStyle = 'rgba(215,172,76,.45)';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(150, sy + 92, 72, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = 'rgba(215,172,76,.55)';
+    ctx.font = `800 9px ${F.body}`;
+    spaced(ctx, 'CAP DPC', 150, sy + 96, 2.5, 'center');
+
+    const cx = 440;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = C.muted;
+    ctx.font = `600 12px ${F.body}`;
+    const issuedLong = formatLongDate(data.issued);
+    ctx.fillText(issuedLong ? `Sidoarjo, ${issuedLong}` : 'Sidoarjo, ....................', cx, sy + 18);
+    ctx.fillStyle = C.white;
+    ctx.font = `800 10.5px ${F.body}`;
+    spaced(ctx, String(data.signerTitle || 'KETUA DPC GMPI SIDOARJO').toUpperCase(), cx, sy + 38, 1.4, 'center');
+    if (data.signature) {
+      ctx.save();
+      const sw = 200, sh = 80;
+      const iw = data.signature.naturalWidth || data.signature.width;
+      const ih = data.signature.naturalHeight || data.signature.height;
+      const k = Math.min(sw / iw, sh / ih);
+      ctx.drawImage(data.signature, cx - iw * k / 2, sy + 52 + (sh - ih * k) / 2, iw * k, ih * k);
+      ctx.restore();
+    }
+    ctx.strokeStyle = 'rgba(251,248,241,.55)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(cx - 120, sy + 146); ctx.lineTo(cx + 120, sy + 146); ctx.stroke();
+    const signer = String(data.signerName || '').trim();
+    ctx.fillStyle = signer ? C.white : C.muted;
+    ctx.font = signer ? `800 14px ${F.body}` : `600 12px ${F.body}`;
+    let fs = 14;
+    if (signer) { while (fs > 10 && ctx.measureText(signer.toUpperCase()).width > 250) { fs -= 0.5; ctx.font = `800 ${fs}px ${F.body}`; } }
+    ctx.fillText(signer ? signer.toUpperCase() : '( nama Ketua DPC )', cx, sy + 168);
+
+    // ---------- Verifikasi ----------
+    ctx.fillStyle = C.gold;
+    ctx.font = `700 11px ${F.mono}`;
+    ctx.fillText(`CEK KEASLIAN · ${VERIFY_LABEL.toUpperCase()}`, W / 2, H - 70);
+
+    const fy = H - 46;
+    ctx.fillStyle = C.gold; ctx.fillRect(0, fy - 3, W, 3);
+    const band = ctx.createLinearGradient(0, fy, W, H);
+    band.addColorStop(0, C.red2); band.addColorStop(0.5, C.red); band.addColorStop(1, C.red2);
+    ctx.fillStyle = band; ctx.fillRect(0, fy, W, 46);
+    ctx.fillStyle = '#fff';
+    ctx.font = `800 11.5px ${F.body}`;
+    spaced(ctx, 'GERAKAN MILITANSI PEJUANG INDONESIA', W / 2, fy + 28, 3, 'center');
+
+    if (data.sample) {
+      ctx.save();
+      ctx.translate(W / 2, H / 2 + 20);
+      ctx.rotate(-0.5);
+      ctx.textAlign = 'center';
+      ctx.font = `150px ${F.display}`;
+      ctx.fillStyle = 'rgba(255,255,255,.07)';
+      ctx.fillText('CONTOH', 0, 50);
+      ctx.strokeStyle = 'rgba(255,255,255,.24)';
+      ctx.lineWidth = 2;
+      ctx.strokeText('CONTOH', 0, 50);
+      ctx.restore();
+    }
+    ctx.strokeStyle = 'rgba(255,255,255,.10)';
+    ctx.lineWidth = 2;
+    rr(ctx, 1, 1, W - 2, H - 2, 33); ctx.stroke();
+    ctx.restore();
+    return canvas;
+  }
+
+  window.GMPICard = { W, H, SCALE, VERIFY_BASE, ready, loadImage, verifyUrl, formatDate, draw, drawBack };
 })();

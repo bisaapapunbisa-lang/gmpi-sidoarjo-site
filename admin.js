@@ -670,56 +670,101 @@
     const zoomIn = input('card-zoom', 'range', { min: 100, max: 250, value: 100 });
     const xIn = input('card-x', 'range', { min: -100, max: 100, value: 0 });
     const yIn = input('card-y', 'range', { min: -100, max: 100, value: 0 });
+    const SIGNER_KEY = 'gmpi-card-signer';
+    const savedSigner = (() => { try { return JSON.parse(localStorage.getItem(SIGNER_KEY) || '{}'); } catch (e) { return {}; } })();
+    const signerNameIn = input('card-signer-name', 'text', { maxLength: 80, placeholder: 'Nama Ketua DPC', value: savedSigner.name || '' });
+    const signerTitleIn = input('card-signer-title', 'text', { maxLength: 60, value: savedSigner.title || 'Ketua DPC GMPI Sidoarjo' });
+    const signatureIn = input('card-signature', 'file', { accept: 'image/png,image/webp' });
 
     const rowA = make('div', 'card-form-row'); rowA.append(field('Nomor anggota', numberIn, 'Huruf besar, angka, titik, garis miring, atau strip.'), field('Kecamatan', districtIn));
     const rowB = make('div', 'card-form-row'); rowB.append(field('Tanggal terbit', issuedIn), field('Berlaku sampai', validIn));
     const photoTools = make('div', 'card-photo-tools');
     photoTools.append(field('Perbesar foto', zoomIn), field('Geser kiri–kanan', xIn), field('Geser atas–bawah', yIn));
     photoTools.hidden = true;
+    const backTools = make('details', 'card-back-tools');
+    backTools.append(make('summary', '', 'Pengaturan sisi belakang (penanda tangan)'));
+    const rowC = make('div', 'card-form-row'); rowC.append(field('Nama penanda tangan', signerNameIn), field('Jabatan penanda tangan', signerTitleIn));
+    backTools.append(rowC, field('Tanda tangan (PNG latar transparan, opsional)', signatureIn, 'Disimpan hanya di perangkat ini selama halaman terbuka; tidak diunggah. Nama & jabatan penanda tangan diingat di browser ini.'));
 
     const statusLine = make('div', 'card-mode');
     const saveBtn = make('button', 'admin-button admin-button-red', 'Simpan & terbitkan kartu');
     saveBtn.type = 'submit';
-    const downloadBtn = make('button', 'admin-button admin-button-gold', 'Unduh kartu (PNG)');
+    const downloadBtn = make('button', 'admin-button admin-button-gold', 'Unduh depan (PNG)');
     downloadBtn.type = 'button';
     downloadBtn.disabled = true;
+    const downloadBackBtn = make('button', 'admin-button admin-button-gold', 'Unduh belakang (PNG)');
+    downloadBackBtn.type = 'button';
+    downloadBackBtn.disabled = true;
     const newBtn = make('button', 'admin-button admin-button-outline', 'Kartu baru');
     newBtn.type = 'button';
-    const btnRow = make('div', 'card-buttons'); btnRow.append(saveBtn, downloadBtn, newBtn);
+    const btnRow = make('div', 'card-buttons'); btnRow.append(saveBtn, downloadBtn, downloadBackBtn, newBtn);
 
     formEl.append(statusLine, field('Nama lengkap', nameIn), rowA, field('Jabatan / keterangan', jabatanIn, 'Contoh: Anggota, Pengurus PAC, Satgas Brigade.'), list, rowB,
       field('Foto anggota (pas foto, latar polos)', photoIn, 'Foto hanya dipakai di perangkat ini untuk membuat gambar kartu — tidak diunggah atau disimpan di server. Simpan file kartu (PNG) hasil unduhan.'),
-      photoTools, btnRow);
+      photoTools, backTools, btnRow);
 
     const preview = make('div', 'card-preview');
+    const sideSwitch = make('div', 'card-side-switch');
+    const frontTab = make('button', 'is-active', 'Depan');
+    const backTab = make('button', '', 'Belakang');
+    frontTab.type = 'button'; backTab.type = 'button';
+    sideSwitch.append(frontTab, backTab);
     const canvas = make('canvas');
+    canvas.title = 'Klik untuk membalik kartu';
     canvas.setAttribute('role', 'img');
     canvas.setAttribute('aria-label', 'Pratinjau kartu anggota');
     const verifyLink = make('a', 'admin-link-button card-verify-link', '');
     verifyLink.target = '_blank';
     verifyLink.rel = 'noopener';
     verifyLink.hidden = true;
-    preview.append(canvas, verifyLink, make('small', 'privacy-mini', 'Ukuran cetak: 54 × 85,6 mm (ukuran KTP/ATM), resolusi ± 600 dpi. Cetak di kertas PVC/art carton, tanpa diperkecil.'));
+    preview.append(sideSwitch, canvas, verifyLink, make('small', 'privacy-mini', 'Ukuran cetak: 54 × 85,6 mm (ukuran KTP/ATM), resolusi ± 600 dpi. Cetak di kertas PVC/art carton, tanpa diperkecil.'));
     designer.append(formEl, preview);
 
     let editing = null; // kartu yang sedang dibuka (sudah terbit)
     let photo = null;
+    let signature = null;
+    let side = 'front';
 
     function data() {
       return {
         name: nameIn.value, number: numberIn.value, district: districtIn.value, jabatan: jabatanIn.value,
         issued: issuedIn.value, validUntil: validIn.value, token: editing?.card_token || '',
-        photo, photoZoom: Number(zoomIn.value) / 100, photoX: Number(xIn.value) / 100, photoY: Number(yIn.value) / 100, logo
+        photo, photoZoom: Number(zoomIn.value) / 100, photoX: Number(xIn.value) / 100, photoY: Number(yIn.value) / 100, logo,
+        signerName: signerNameIn.value, signerTitle: signerTitleIn.value, signature
       };
     }
     let raf = 0;
-    function redraw() { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => window.GMPICard.draw(canvas, data())); }
+    function render(target, which) { return which === 'back' ? window.GMPICard.drawBack(target, data()) : window.GMPICard.draw(target, data()); }
+    function redraw() { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => render(canvas, side)); }
+    function setSide(next) {
+      side = next;
+      frontTab.classList.toggle('is-active', side === 'front');
+      backTab.classList.toggle('is-active', side === 'back');
+      canvas.classList.remove('is-flipping');
+      void canvas.offsetWidth;
+      canvas.classList.add('is-flipping');
+      setTimeout(redraw, 160);
+    }
+    frontTab.addEventListener('click', () => setSide('front'));
+    backTab.addEventListener('click', () => setSide('back'));
+    canvas.addEventListener('click', () => setSide(side === 'front' ? 'back' : 'front'));
+    function saveSigner() { try { localStorage.setItem(SIGNER_KEY, JSON.stringify({ name: signerNameIn.value.trim(), title: signerTitleIn.value.trim() })); } catch (e) { /* abaikan */ } }
+    [signerNameIn, signerTitleIn].forEach(el => el.addEventListener('input', () => { saveSigner(); if (side !== 'back') setSide('back'); else redraw(); }));
+    signatureIn.addEventListener('change', async () => {
+      const file = signatureIn.files && signatureIn.files[0];
+      if (!file) return;
+      const img = await window.GMPICard.loadImage(URL.createObjectURL(file));
+      if (!img) { setMessage('File tanda tangan tidak bisa dibaca.', 'error'); return; }
+      signature = img;
+      setSide('back');
+    });
 
     function setMode() {
       if (editing) {
         statusLine.replaceChildren(make('b', '', 'Kartu terbit'), make('span', '', ` · ${editing.member_number} · status ${CARD_STATUS_LABELS[editing.status] || editing.status}`));
         saveBtn.textContent = 'Simpan perubahan';
         downloadBtn.disabled = false;
+        downloadBackBtn.disabled = false;
         verifyLink.hidden = false;
         verifyLink.href = `verifikasi.html?k=${encodeURIComponent(editing.card_token)}`;
         verifyLink.textContent = `Cek halaman verifikasi kartu ini ↗`;
@@ -727,6 +772,7 @@
         statusLine.replaceChildren(make('b', '', 'Kartu baru'), make('span', '', ' · QR dibuat otomatis setelah disimpan'));
         saveBtn.textContent = 'Simpan & terbitkan kartu';
         downloadBtn.disabled = true;
+        downloadBackBtn.disabled = true;
         verifyLink.hidden = true;
       }
       numberIn.readOnly = Boolean(editing);
@@ -736,6 +782,9 @@
     function resetForm() {
       editing = null;
       formEl.reset();
+      signerNameIn.value = savedSigner.name || signerNameIn.defaultValue || '';
+      signerTitleIn.value = savedSigner.title || 'Ketua DPC GMPI Sidoarjo';
+      try { const s2 = JSON.parse(localStorage.getItem(SIGNER_KEY) || '{}'); if (s2.name) signerNameIn.value = s2.name; if (s2.title) signerTitleIn.value = s2.title; } catch (e) { /* abaikan */ }
       numberIn.value = suggestNumber();
       jabatanIn.value = 'Anggota';
       issuedIn.value = today;
@@ -754,7 +803,7 @@
       issuedIn.value = card.issued_at;
       validIn.value = card.valid_until;
       setMode();
-      setMessage(photo ? 'Kartu dibuka. Periksa foto lalu klik “Unduh kartu (PNG)”.' : 'Kartu dibuka. Pilih foto anggota, lalu klik “Unduh kartu (PNG)”.');
+      setMessage(photo ? 'Kartu dibuka. Periksa foto lalu unduh sisi depan dan belakang.' : 'Kartu dibuka. Pilih foto anggota, lalu unduh sisi depan dan belakang.');
       designer.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
@@ -808,22 +857,25 @@
       cards = [editing, ...cards.filter(c => c.id !== editing.id)];
       renderList();
       setMode();
-      setMessage(wasNew ? 'Kartu terbit dan QR sudah aktif. Klik “Unduh kartu (PNG)” untuk menyimpan/mencetak.' : 'Perubahan kartu tersimpan. QR tetap sama, jadi kartu lama yang sudah dicetak tetap bisa diverifikasi.');
+      setMessage(wasNew ? 'Kartu terbit dan QR sudah aktif. Unduh sisi depan dan belakang (PNG) untuk dicetak.' : 'Perubahan kartu tersimpan. QR tetap sama, jadi kartu lama yang sudah dicetak tetap bisa diverifikasi.');
     });
 
-    downloadBtn.addEventListener('click', () => {
+    function downloadSide(which) {
       if (!editing) return;
-      if (!photo && !window.confirm('Belum ada foto. Unduh kartu tanpa foto?')) return;
-      window.GMPICard.draw(canvas, data());
-      canvas.toBlob(blob => {
+      if (which === 'front' && !photo && !window.confirm('Belum ada foto. Unduh sisi depan tanpa foto?')) return;
+      const out = document.createElement('canvas');
+      render(out, which);
+      out.toBlob(blob => {
         if (!blob) { setMessage('Gagal membuat file kartu.', 'error'); return; }
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = `KTA-${editing.member_number.replace(/[^A-Z0-9-]/gi, '_')}.png`;
+        a.download = `KTA-${editing.member_number.replace(/[^A-Z0-9-]/gi, '_')}-${which === 'back' ? 'belakang' : 'depan'}.png`;
         document.body.append(a); a.click(); a.remove();
         setTimeout(() => URL.revokeObjectURL(a.href), 4000);
       }, 'image/png');
-    });
+    }
+    downloadBtn.addEventListener('click', () => downloadSide('front'));
+    downloadBackBtn.addEventListener('click', () => downloadSide('back'));
     newBtn.addEventListener('click', resetForm);
 
     // --- Daftar kartu ---

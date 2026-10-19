@@ -122,28 +122,78 @@
   });
 
   // Public CMS fields are read-only for visitors; Supabase RLS controls all writes.
+  const DEFAULT_LOGO = 'assets/logo-gmpi-sidoarjo-crop.webp';
+  let resolveLogo;
+  const logoReady = new Promise(resolve => { resolveLogo = resolve; });
   const supabaseConfig = window.GMPI_SUPABASE_CONFIG || {};
   if (supabaseConfig.url && supabaseConfig.publishableKey) {
     const apiRoot = supabaseConfig.url.endsWith('/') ? supabaseConfig.url.slice(0, -1) : supabaseConfig.url;
     const apiBase = `${apiRoot}/rest/v1/site_content?select=key,value`;
     fetch(apiBase, { headers: { apikey: supabaseConfig.publishableKey, Authorization: `Bearer ${supabaseConfig.publishableKey}` } })
       .then(response => response.ok ? response.json() : [])
-      .then(rows => rows.forEach(row => {
-        const text = row.value && typeof row.value.text === 'string' ? row.value.text : null;
-        if (row.key === 'site_logo') {
-          // Only accept files from the public logo folder; empty value keeps the built-in logo.
-          if (text && /^logos\/[A-Za-z0-9][A-Za-z0-9._-]{0,119}$/.test(text)) {
-            const logoUrl = `${apiRoot}/storage/v1/object/public/site-assets/${text}`;
-            const probe = new Image();
-            probe.onload = () => document.querySelectorAll('[data-site-logo]').forEach(img => { img.src = logoUrl; });
-            probe.src = logoUrl;
+      .then(rows => {
+        let logoHandled = false;
+        rows.forEach(row => {
+          const text = row.value && typeof row.value.text === 'string' ? row.value.text : null;
+          if (row.key === 'site_logo') {
+            // Only accept files from the public logo folder; empty value keeps the built-in logo.
+            if (text && /^logos\/[A-Za-z0-9][A-Za-z0-9._-]{0,119}$/.test(text)) {
+              logoHandled = true;
+              const logoUrl = `${apiRoot}/storage/v1/object/public/site-assets/${text}`;
+              const probe = new Image();
+              probe.onload = () => {
+                document.querySelectorAll('[data-site-logo]').forEach(img => { img.src = logoUrl; });
+                resolveLogo(logoUrl);
+              };
+              probe.onerror = () => resolveLogo(DEFAULT_LOGO);
+              probe.src = logoUrl;
+            }
+            return;
           }
-          return;
-        }
-        const target = document.querySelector(`[data-cms-key="${row.key}"]`);
-        if (target && text !== null) target.textContent = text;
-      }))
+          const target = document.querySelector(`[data-cms-key="${row.key}"]`);
+          if (target && text !== null) target.textContent = text;
+        });
+        if (!logoHandled) resolveLogo(DEFAULT_LOGO);
+      })
+      .catch(() => resolveLogo(DEFAULT_LOGO));
+  } else {
+    resolveLogo(DEFAULT_LOGO);
+  }
+
+  // Contoh Kartu Tanda Anggota (data fiktif, ditandai CONTOH). QR mengarah ke kode CONTOH.
+  const sampleCanvas = document.querySelector('#kta-sample');
+  const sampleBack = document.querySelector('#kta-sample-back');
+  if (sampleCanvas && window.GMPICard) {
+    const sampleData = {
+      name: 'Nama Anggota', number: 'GMPI-SDA-2026-0000', district: 'Sidoarjo', jabatan: 'Anggota',
+      issued: '2026-10-20', validUntil: '2028-10-20', token: 'CONTOH', sample: true
+    };
+    const drawSample = logo => {
+      window.GMPICard.draw(sampleCanvas, { ...sampleData, logo });
+      if (sampleBack) window.GMPICard.drawBack(sampleBack, { ...sampleData, logo });
+    };
+    Promise.all([window.GMPICard.ready(), window.GMPICard.loadImage(DEFAULT_LOGO)])
+      .then(([, logo]) => {
+        drawSample(logo);
+        sampleCanvas.closest('.kta-card-wrap')?.classList.add('is-ready');
+        return logoReady.then(url => (url !== DEFAULT_LOGO ? window.GMPICard.loadImage(url, true) : null));
+      })
+      .then(customLogo => { if (customLogo) drawSample(customLogo); })
       .catch(() => {});
+
+    // Klik / ketuk kartu (atau tombol petunjuk) untuk membalik.
+    const flipper = document.querySelector('#kta-flipper');
+    const hint = document.querySelector('#kta-hint');
+    const flip = () => {
+      const flipped = !flipper.classList.contains('is-flipped');
+      flipper.classList.toggle('is-flipped', flipped);
+      hint?.classList.toggle('is-flipped', flipped);
+      flipper.setAttribute('aria-pressed', String(flipped));
+      flipper.setAttribute('aria-label', flipped ? 'Balik kartu untuk melihat sisi depan' : 'Balik kartu untuk melihat sisi belakang');
+      if (hint) hint.lastChild.textContent = flipped ? ' Klik untuk lihat sisi depan' : ' Klik kartu untuk membalik';
+    };
+    flipper?.addEventListener('click', flip);
+    hint?.addEventListener('click', flip);
   }
 
   document.querySelector('#year').textContent = new Date().getFullYear();

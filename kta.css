@@ -15,12 +15,21 @@
 .kta-link{font-size:11px;font-weight:800;color:#e7cd8f;border-bottom:1px solid rgba(231,205,143,.4);padding-bottom:3px}
 .kta-link:hover{color:#fff;border-color:#fff}
 .kta-figure{margin:0;position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:16px;perspective:1100px}
-.kta-card-wrap{position:relative;width:min(100%,340px);aspect-ratio:638/1012;border-radius:19px;transform:rotateY(-11deg) rotateX(4deg) rotateZ(2deg);transform-style:preserve-3d;box-shadow:-22px 30px 60px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.06);transition:transform .6s cubic-bezier(.2,.7,.2,1);animation:kta-float 6s ease-in-out infinite;background:#151513;opacity:0}
+.kta-card-wrap{position:relative;width:min(100%,340px);aspect-ratio:638/1012;border-radius:19px;transform:rotateY(-11deg) rotateX(4deg) rotateZ(2deg);transform-style:preserve-3d;box-shadow:-22px 30px 60px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.06);transition:transform .6s cubic-bezier(.2,.7,.2,1);animation:kta-float 6s ease-in-out infinite;opacity:0}
 .kta-card-wrap.is-ready{opacity:1;transition:transform .6s cubic-bezier(.2,.7,.2,1),opacity .5s}
-.kta-card-wrap canvas{display:block;width:100%;height:100%;border-radius:19px}
-.kta-card-wrap:after{content:'';position:absolute;inset:0;border-radius:19px;pointer-events:none;background:linear-gradient(115deg,transparent 30%,rgba(100,244,255,.16) 42%,rgba(243,214,133,.2) 50%,rgba(255,86,93,.14) 58%,transparent 70%);background-size:250% 100%;mix-blend-mode:screen;animation:kta-sheen 5.5s ease-in-out infinite}
+.kta-flipper{all:unset;box-sizing:border-box;display:block;position:relative;width:100%;height:100%;border-radius:19px;cursor:pointer;transform-style:preserve-3d;transition:transform .85s cubic-bezier(.3,.75,.2,1);-webkit-tap-highlight-color:transparent}
+.kta-flipper.is-flipped{transform:rotateY(180deg)}
+.kta-flipper:focus-visible{outline:2px solid var(--gold-hi);outline-offset:6px}
+.kta-face{position:absolute;inset:0;display:block;border-radius:19px;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden;transform:translateZ(.1px);background:#151513}
+.kta-back{transform:rotateY(180deg) translateZ(.1px)}
+.kta-face canvas{display:block;width:100%;height:100%}
+.kta-face:after{content:'';position:absolute;inset:0;border-radius:19px;pointer-events:none;background:linear-gradient(115deg,transparent 30%,rgba(100,244,255,.16) 42%,rgba(243,214,133,.2) 50%,rgba(255,86,93,.14) 58%,transparent 70%);background-size:250% 100%;mix-blend-mode:screen;animation:kta-sheen 5.5s ease-in-out infinite}
 .kta-figure:hover .kta-card-wrap{transform:rotateY(0) rotateX(0) rotateZ(0);animation-play-state:paused}
-.kta-figure figcaption{font-size:8px;font-weight:800;letter-spacing:1.6px;color:#8b877e;text-transform:uppercase;text-align:center}
+.kta-figure figcaption{display:flex;flex-direction:column;align-items:center;gap:8px;font-size:8px;font-weight:800;letter-spacing:1.6px;color:#8b877e;text-transform:uppercase;text-align:center}
+.kta-hint{border:1px solid rgba(231,205,143,.45);background:rgba(231,205,143,.08);color:#e7cd8f;border-radius:999px;padding:8px 14px;font:800 10px/1 var(--body);letter-spacing:1px;text-transform:uppercase;cursor:pointer}
+.kta-hint span{display:inline-block;font-size:13px;margin-right:4px;transition:transform .6s}
+.kta-hint:hover{background:rgba(231,205,143,.18);color:#fff}
+.kta-hint.is-flipped span{transform:rotate(180deg)}
 @keyframes kta-float{0%,100%{translate:0 0}50%{translate:0 -10px}}
 @keyframes kta-sheen{0%{background-position:120% 0}60%,100%{background-position:-120% 0}}
 @media(max-width:760px){
@@ -30,4 +39,4 @@
   .kta-card-wrap{width:min(78vw,300px);transform:rotateZ(-2deg)}
   .kta-copy>p{font-size:11px}
 }
-@media(prefers-reduced-motion:reduce){.kta-card-wrap,.kta-card-wrap:after{animation:none}.kta-card-wrap{transition:none}}
+@media(prefers-reduced-motion:reduce){.kta-card-wrap,.kta-face:after{animation:none}.kta-card-wrap{transition:none}.kta-flipper{transition-duration:.01s}}
