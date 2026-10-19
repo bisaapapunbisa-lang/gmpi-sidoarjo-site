@@ -285,6 +285,12 @@
       </div>
     </div>
   </aside>
+  <div class="photo-viewer" id="photo-viewer" role="dialog" aria-modal="true" aria-label="Foto barang" hidden>
+    <div class="pv-frame">
+      <div class="pv-head"><div><b class="pv-title"></b><span class="pv-label"></span></div><button type="button" class="pv-close" aria-label="Tutup foto">×</button></div>
+      <div class="pv-stage"><button type="button" class="pv-nav pv-prev" aria-label="Foto sebelumnya">‹</button><img class="pv-img" alt=""><button type="button" class="pv-nav pv-next" aria-label="Foto berikutnya">›</button></div>
+    </div>
+  </div>
   <div class="qris-lightbox" id="qris-lightbox" role="dialog" aria-modal="true" aria-label="QRIS diperbesar" hidden><img src="assets/payment/qris-gmpi-dpd-sidoarjo.jpg" alt="QRIS resmi GMPI DPD SIDOARJO"><button type="button">Tutup ×</button></div>
   <script src="supabase-config.js"></script>
   <script src="vendor/qrcode-generator.js"></script>

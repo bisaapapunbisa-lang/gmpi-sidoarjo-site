@@ -80,3 +80,13 @@
 .shop-editor-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:8px}
 .shop-editor-actions .admin-button-red{margin-top:0;margin-left:auto}
 @media(max-width:640px){.shop-admin-row{grid-template-columns:48px 1fr auto}.shop-admin-row .shop-admin-state{display:none}.shop-admin-thumb{width:48px;height:48px}}
+.shop-photo-slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.shop-photo-slot{display:grid;justify-items:center;gap:7px;padding:10px;border:1px dashed #cbc5b8;background:#faf8f2;text-align:center}
+.shop-photo-slot .shop-admin-thumb-lg{width:100%;height:auto;aspect-ratio:1;max-width:150px}
+.shop-photo-slot b{font-size:11px;letter-spacing:.4px;text-transform:uppercase;color:#37352f}
+.shop-photo-slot .file-button{margin:0}
+.shop-photo-clear{border:0;background:transparent;color:#9a2928;font-size:10px;font-weight:800;text-decoration:underline;cursor:pointer}
+.shop-photo-clear[hidden]{display:none}
+.shop-admin-thumb.is-loading{opacity:.5;animation:pulse-load 1s infinite alternate}
+@keyframes pulse-load{to{opacity:.25}}
+@media(max-width:560px){.shop-photo-slots{gap:6px}.shop-photo-slot{padding:6px}.shop-photo-slot .file-button{padding:8px 6px;font-size:9px}}

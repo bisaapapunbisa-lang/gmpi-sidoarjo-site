@@ -204,6 +204,7 @@
     { key: 'legal_npwp', label: 'NPWP organisasi', help: 'Kosongkan bila belum ada; kartu NPWP di bagian Legalitas otomatis disembunyikan.', placeholder: '00.000.000.0-000.000' }
   ];
   const PRODUCT_CATEGORIES = ['Seragam', 'Kaos', 'Jaket', 'Atribut', 'Perlengkapan', 'Keanggotaan'];
+  const ANGLE_LABELS = ['Depan', 'Samping kiri', 'Samping kanan'];
   const STOCK_LABELS = { tersedia: 'Tersedia', 'pre-order': 'Pre-order', habis: 'Habis' };
   const rupiahAdmin = n => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(n || 0);
 
@@ -281,11 +282,13 @@
       list.replaceChildren(...products.map(p => {
         const row = make('div', `shop-admin-row${p.is_active ? '' : ' is-draft'}`);
         const thumb = make('div', 'shop-admin-thumb');
-        if (p.image_path) { const im = make('img'); im.src = productImageUrl(p.image_path); im.alt = ''; thumb.append(im); }
+        const mainPhoto = (Array.isArray(p.images) && p.images.find(Boolean)) || p.image_path;
+        if (mainPhoto) { const im = make('img'); im.src = productImageUrl(mainPhoto); im.alt = ''; thumb.append(im); }
         else thumb.textContent = 'FOTO';
         const info = make('div', 'shop-admin-info');
         info.append(make('b', '', p.name));
-        info.append(make('small', '', `${p.category} · ${rupiahAdmin(p.price)} · ${STOCK_LABELS[p.stock_status]}${p.sizes?.length ? ` · ${p.sizes.join('/')}` : ''}`));
+        const photoCount = Array.isArray(p.images) && p.images.some(Boolean) ? p.images.filter(Boolean).length : (p.image_path ? 1 : 0);
+        info.append(make('small', '', `${p.category} · ${rupiahAdmin(p.price)} · ${STOCK_LABELS[p.stock_status]}${p.sizes?.length ? ` · ${p.sizes.join('/')}` : ''} · ${photoCount}/3 foto`));
         const state = make('span', `shop-admin-state${p.is_active ? ' is-on' : ''}`, p.is_active ? (p.price > 0 ? 'Tampil' : 'Tampil · harga menyusul') : 'Disembunyikan');
         const edit = make('button', 'admin-button admin-button-outline', 'Ubah');
         edit.type = 'button';
@@ -297,7 +300,7 @@
 
     function openEditor(product) {
       const isNew = !product;
-      const p = product || { name: '', category: 'Atribut', description: '', price: 0, sizes: [], image_path: null, stock_status: 'tersedia', is_active: false, sort_order: (products.length + 1) * 10 };
+      const p = product || { name: '', category: 'Atribut', description: '', price: 0, sizes: [], image_path: null, images: [], stock_status: 'tersedia', is_active: false, sort_order: (products.length + 1) * 10 };
       const box = make('form', 'admin-card shop-editor content-form');
       box.append(make('h4', 'shop-editor-title', isNew ? 'Barang baru' : `Ubah: ${p.name}`));
       const nameIn = input('sp-name', 'text', { required: true, maxLength: 80, value: p.name });
@@ -313,41 +316,55 @@
       const activeIn = make('input'); activeIn.type = 'checkbox'; activeIn.checked = p.is_active;
       activeWrap.append(activeIn, document.createTextNode(' Tampilkan di situs'));
 
-      let imagePath = p.image_path;
-      const imgPreview = make('div', 'shop-admin-thumb shop-admin-thumb-lg');
-      const renderImg = () => {
-        imgPreview.replaceChildren();
-        if (imagePath) { const im = make('img'); im.src = productImageUrl(imagePath); im.alt = ''; imgPreview.append(im); }
-        else imgPreview.textContent = 'Belum ada foto';
-      };
-      renderImg();
-      const fileLabel = make('label', 'file-button', 'Pilih foto barang');
-      const fileIn = make('input'); fileIn.type = 'file'; fileIn.accept = 'image/png,image/jpeg,image/webp'; fileIn.hidden = true;
-      fileLabel.append(fileIn);
-      const imgNote = make('small', 'privacy-mini', 'Foto persegi terlihat paling rapi. Otomatis diperkecil ke maks. 1000 px.');
-      fileIn.addEventListener('change', async () => {
-        const file = fileIn.files && fileIn.files[0];
-        if (!file) return;
-        if (file.size > 15 * 1024 * 1024) { imgNote.textContent = 'File terlalu besar (maks. 15 MB).'; return; }
-        imgNote.textContent = 'Mengunggah foto…';
-        try {
-          const blob = await compressProductImage(file);
-          const path = `products/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
-          const { error } = await client.storage.from('site-assets').upload(path, blob, { contentType: 'image/jpeg', cacheControl: '31536000', upsert: false });
-          if (error) throw error;
-          imagePath = path; renderImg();
-          imgNote.textContent = 'Foto terunggah. Klik “Simpan barang” untuk memakainya.';
-        } catch (e) {
-          imgNote.textContent = 'Foto gagal diunggah. Pastikan migrasi 0005 sudah dijalankan.';
-        }
+      // Tiga sudut foto: [depan, samping kiri, samping kanan]
+      const slots = ['', '', ''];
+      if (Array.isArray(p.images) && p.images.length) p.images.slice(0, 3).forEach((v, i) => { slots[i] = v || ''; });
+      else if (p.image_path) slots[0] = p.image_path;
+      const imgTools = make('div', 'shop-photo-slots');
+      const imgNote = make('small', 'privacy-mini', 'Unggah hingga 3 foto: depan, samping kiri, samping kanan. Foto persegi berlatar polos paling rapi; otomatis diperkecil ke maks. 1000 px.');
+      ANGLE_LABELS.forEach((labelText, i) => {
+        const slot = make('div', 'shop-photo-slot');
+        const prev = make('div', 'shop-admin-thumb shop-admin-thumb-lg');
+        const cap = make('b', '', labelText);
+        const pick = make('label', 'file-button', 'Pilih foto');
+        const fileIn = make('input'); fileIn.type = 'file'; fileIn.accept = 'image/png,image/jpeg,image/webp'; fileIn.hidden = true;
+        fileIn.setAttribute('aria-label', `Foto ${labelText}`);
+        pick.append(fileIn);
+        const clear = make('button', 'shop-photo-clear', 'Hapus'); clear.type = 'button';
+        const render = () => {
+          prev.replaceChildren();
+          if (slots[i]) { const im = make('img'); im.src = productImageUrl(slots[i]); im.alt = labelText; prev.append(im); }
+          else prev.textContent = 'Belum ada foto';
+          pick.firstChild.nodeValue = slots[i] ? 'Ganti foto' : 'Pilih foto';
+          clear.hidden = !slots[i];
+        };
+        fileIn.addEventListener('change', async () => {
+          const file = fileIn.files && fileIn.files[0];
+          fileIn.value = '';
+          if (!file) return;
+          if (file.size > 15 * 1024 * 1024) { imgNote.textContent = 'File terlalu besar (maks. 15 MB).'; return; }
+          imgNote.textContent = `Mengunggah foto ${labelText.toLowerCase()}…`;
+          prev.classList.add('is-loading');
+          try {
+            const blob = await compressProductImage(file);
+            const path = `products/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+            const { error } = await client.storage.from('site-assets').upload(path, blob, { contentType: 'image/jpeg', cacheControl: '31536000', upsert: false });
+            if (error) throw error;
+            slots[i] = path; render();
+            imgNote.textContent = `Foto ${labelText.toLowerCase()} terunggah. Klik “Simpan barang” untuk memakainya.`;
+          } catch (e) {
+            imgNote.textContent = 'Foto gagal diunggah. Pastikan migrasi 0005 sudah dijalankan.';
+          } finally { prev.classList.remove('is-loading'); }
+        });
+        clear.addEventListener('click', () => { slots[i] = ''; render(); imgNote.textContent = 'Foto dilepas. Klik “Simpan barang” untuk menyimpan perubahan.'; });
+        render();
+        slot.append(prev, cap, pick, clear);
+        imgTools.append(slot);
       });
-      const imgTools = make('div', 'shop-admin-imgtools');
-      const imgSide = make('div'); imgSide.append(fileLabel, imgNote);
-      imgTools.append(imgPreview, imgSide);
 
       const rowA = make('div', 'card-form-row'); rowA.append(field('Kategori', catIn), field('Harga (Rp)', priceIn, 'Isi angka saja, contoh 150000.'));
       const rowB = make('div', 'card-form-row'); rowB.append(field('Status stok', stockIn), field('Urutan tampil', orderIn, 'Angka kecil tampil lebih dulu.'));
-      box.append(field('Nama barang', nameIn), rowA, rowB, field('Ukuran (pisahkan dengan koma)', sizesIn, 'Kosongkan bila barang tidak berukuran.'), field('Deskripsi singkat', descIn), field('Foto', imgTools), activeWrap);
+      box.append(field('Nama barang', nameIn), rowA, rowB, field('Ukuran (pisahkan dengan koma)', sizesIn, 'Kosongkan bila barang tidak berukuran.'), field('Deskripsi singkat', descIn), field('Foto barang (3 sudut)', imgTools, null), imgNote, activeWrap);
 
       const actions = make('div', 'shop-editor-actions');
       const save = make('button', 'admin-button admin-button-gold', 'Simpan barang'); save.type = 'submit';
@@ -372,7 +389,7 @@
         const sizes = sizesIn.value.split(',').map(s => s.trim().toUpperCase()).filter(Boolean).slice(0, 12);
         const payload = {
           name: nameIn.value.trim(), category: catIn.value, description: descIn.value.trim(),
-          price: Math.max(0, Math.round(Number(priceIn.value) || 0)), sizes, image_path: imagePath || null,
+          price: Math.max(0, Math.round(Number(priceIn.value) || 0)), sizes, images: slots.some(Boolean) ? slots.slice() : [], image_path: slots.find(Boolean) || null,
           stock_status: stockIn.value, is_active: activeIn.checked, sort_order: Math.round(Number(orderIn.value) || 0),
           updated_at: new Date().toISOString()
         };

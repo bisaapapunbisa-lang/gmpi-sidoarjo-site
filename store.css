@@ -174,3 +174,29 @@ body.cart-open{overflow:hidden}
 .product-icon{width:118px;height:118px;max-width:none}
 .product-placeholder img{width:120px;max-width:none}
 @media(max-width:760px){.product-icon{width:76px;height:76px}.product-placeholder img{width:92px}}
+/* Galeri 3 sudut foto barang */
+.product-gallery{position:absolute;inset:0}
+.product-zoom{display:block;width:100%;height:100%;padding:0;border:0;background:#fff;cursor:zoom-in}
+.product-zoom img{width:100%;height:100%;object-fit:cover;display:block;transition:opacity .2s}
+.product-angles{position:absolute;left:8px;right:8px;bottom:8px;display:flex;justify-content:center;gap:6px}
+.product-angle{position:relative;width:46px;height:46px;padding:0;border:2px solid rgba(255,255,255,.85);background:#fff;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.25);opacity:.8;transition:opacity .15s,border-color .15s,transform .15s}
+.product-angle img{width:100%;height:100%;object-fit:cover;display:block}
+.product-angle span{position:absolute;left:0;right:0;bottom:0;background:rgba(17,17,16,.78);color:#fff;font:800 7px/1.6 var(--body);letter-spacing:.4px;text-transform:uppercase}
+.product-angle:hover{opacity:1;transform:translateY(-2px)}
+.product-angle.is-active{opacity:1;border-color:var(--gold)}
+.product-media .product-badge{z-index:2}
+.product-media .product-cat{z-index:2}
+.photo-viewer{position:fixed;inset:0;z-index:95;display:grid;place-items:center;background:rgba(0,0,0,.9);padding:16px}
+.photo-viewer[hidden]{display:none}
+.pv-frame{width:min(760px,100%);display:flex;flex-direction:column;gap:10px}
+.pv-head{display:flex;justify-content:space-between;align-items:center;color:#fff}
+.pv-head b{display:block;font:22px/1 var(--display);text-transform:uppercase}
+.pv-head span{font:800 10px var(--body);letter-spacing:1.2px;text-transform:uppercase;color:var(--gold-hi)}
+.pv-close{border:0;background:transparent;color:#fff;font:300 38px/1 var(--body);cursor:pointer}
+.pv-stage{position:relative;background:#fff}
+.pv-img{display:block;width:100%;max-height:78vh;object-fit:contain}
+.pv-nav{position:absolute;top:50%;transform:translateY(-50%);width:46px;height:64px;border:0;background:rgba(17,17,16,.7);color:#fff;font:300 40px/1 var(--body);cursor:pointer}
+.pv-nav:hover{background:var(--red)}
+.pv-nav[hidden]{display:none}
+.pv-prev{left:0}.pv-next{right:0}
+@media(max-width:760px){.product-angle{width:36px;height:36px}.product-angle span{font-size:6px}.product-angles{gap:4px;bottom:6px}.product-media .product-badge{bottom:auto;top:34px}}

@@ -74,6 +74,97 @@
   function cartCount() { return cartLines().reduce((sum, l) => sum + l.item.qty, 0); }
   function imageUrl(path) { return path && IMG_RE.test(path) ? `${root}/storage/v1/object/public/site-assets/${path}` : ''; }
 
+  const ANGLES = ['Depan', 'Samping kiri', 'Samping kanan'];
+  // Foto barang: images = [depan, kiri, kanan] (slot kosong = ''); image_path = foto lama/utama.
+  function productPhotos(p) {
+    const list = [];
+    if (Array.isArray(p.images) && p.images.length) {
+      p.images.slice(0, 3).forEach((path, i) => { const url = imageUrl(path); if (url) list.push({ url, label: ANGLES[i] }); });
+    }
+    if (!list.length) { const url = imageUrl(p.image_path); if (url) list.push({ url, label: 'Depan' }); }
+    return list;
+  }
+
+  function buildGallery(p, photos) {
+    const wrap = el('div', 'product-gallery');
+    const img = el('img');
+    img.alt = `${p.name} — ${photos[0].label}`; img.loading = 'lazy'; img.decoding = 'async'; img.src = photos[0].url;
+    const zoom = el('button', 'product-zoom'); zoom.type = 'button';
+    zoom.setAttribute('aria-label', `Perbesar foto ${p.name}`);
+    zoom.append(img);
+    wrap.append(zoom);
+    let index = 0;
+    let tabs = [];
+    const show = i => {
+      index = (i + photos.length) % photos.length;
+      img.src = photos[index].url; img.alt = `${p.name} — ${photos[index].label}`;
+      tabs.forEach((t, k) => { t.classList.toggle('is-active', k === index); t.setAttribute('aria-pressed', String(k === index)); });
+    };
+    if (photos.length > 1) {
+      const strip = el('div', 'product-angles');
+      strip.setAttribute('role', 'group'); strip.setAttribute('aria-label', 'Pilih sudut foto');
+      tabs = photos.map((ph, k) => {
+        const t = el('button', `product-angle${k === 0 ? ' is-active' : ''}`);
+        t.type = 'button'; t.setAttribute('aria-pressed', String(k === 0)); t.title = ph.label;
+        const th = el('img'); th.src = ph.url; th.alt = ''; th.loading = 'lazy';
+        t.append(th, el('span', '', ph.label.replace('Samping ', '')));
+        t.addEventListener('click', e => { e.stopPropagation(); show(k); });
+        return t;
+      });
+      strip.append(...tabs);
+      wrap.append(strip);
+      // Geser (swipe) di HP
+      let startX = null;
+      zoom.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, { passive: true });
+      zoom.addEventListener('touchend', e => {
+        if (startX === null) return;
+        const dx = e.changedTouches[0].clientX - startX; startX = null;
+        if (Math.abs(dx) > 40) { show(index + (dx < 0 ? 1 : -1)); zoom.dataset.swiped = '1'; setTimeout(() => { delete zoom.dataset.swiped; }, 350); }
+      });
+    }
+    zoom.addEventListener('click', () => { if (!zoom.dataset.swiped) openPhotoViewer(p, photos, index); });
+    return wrap;
+  }
+
+  // Penampil foto besar
+  const viewer = document.getElementById('photo-viewer');
+  let viewerState = null;
+  function renderViewer() {
+    const { p, photos, index } = viewerState;
+    viewer.querySelector('.pv-img').src = photos[index].url;
+    viewer.querySelector('.pv-img').alt = `${p.name} — ${photos[index].label}`;
+    viewer.querySelector('.pv-title').textContent = p.name;
+    viewer.querySelector('.pv-label').textContent = `${photos[index].label} · ${index + 1}/${photos.length}`;
+    viewer.querySelectorAll('.pv-nav').forEach(b => { b.hidden = photos.length < 2; });
+  }
+  function openPhotoViewer(p, photos, index) {
+    if (!viewer) return;
+    viewerState = { p, photos, index };
+    renderViewer();
+    viewer.hidden = false;
+    viewer.querySelector('.pv-close').focus();
+  }
+  function stepViewer(d) {
+    if (!viewerState) return;
+    viewerState.index = (viewerState.index + d + viewerState.photos.length) % viewerState.photos.length;
+    renderViewer();
+  }
+  if (viewer) {
+    viewer.querySelector('.pv-prev').addEventListener('click', () => stepViewer(-1));
+    viewer.querySelector('.pv-next').addEventListener('click', () => stepViewer(1));
+    viewer.querySelector('.pv-close').addEventListener('click', () => { viewer.hidden = true; });
+    viewer.addEventListener('click', e => { if (e.target === viewer) viewer.hidden = true; });
+    let sx = null;
+    viewer.addEventListener('touchstart', e => { sx = e.touches[0].clientX; }, { passive: true });
+    viewer.addEventListener('touchend', e => { if (sx === null) return; const dx = e.changedTouches[0].clientX - sx; sx = null; if (Math.abs(dx) > 40) stepViewer(dx < 0 ? 1 : -1); });
+    document.addEventListener('keydown', e => {
+      if (viewer.hidden) return;
+      if (e.key === 'Escape') { viewer.hidden = true; e.stopImmediatePropagation(); }
+      if (e.key === 'ArrowLeft') stepViewer(-1);
+      if (e.key === 'ArrowRight') stepViewer(1);
+    }, true);
+  }
+
   function updateFab() {
     const count = cartCount();
     fabCount.textContent = count;
@@ -101,11 +192,9 @@
     const cards = list.map(p => {
       const card = el('article', 'product-card');
       const media = el('div', 'product-media');
-      const url = imageUrl(p.image_path);
-      if (url) {
-        const img = el('img');
-        img.src = url; img.alt = p.name; img.loading = 'lazy'; img.decoding = 'async';
-        media.append(img);
+      const photos = productPhotos(p);
+      if (photos.length) {
+        media.append(buildGallery(p, photos));
       } else {
         const ph = el('div', 'product-placeholder');
         const icon = iconFor(p);
@@ -365,10 +454,14 @@
   async function load() {
     try {
       if (!root || !config.publishableKey) throw new Error('not configured');
-      const [pRes, sRes] = await Promise.all([
-        fetch(`${root}/rest/v1/shop_products?select=id,name,category,description,price,sizes,image_path,stock_status,sort_order&is_active=eq.true&order=sort_order.asc,created_at.asc`, { headers }),
+      const productUrl = cols => `${root}/rest/v1/shop_products?select=${cols}&is_active=eq.true&order=sort_order.asc,created_at.asc`;
+      const baseCols = 'id,name,category,description,price,sizes,image_path,stock_status,sort_order';
+      let [pRes, sRes] = await Promise.all([
+        fetch(productUrl(`${baseCols},images`), { headers }),
         fetch(`${root}/rest/v1/site_content?select=key,value&key=in.(shop_whatsapp,shop_bank,legal_npwp)`, { headers })
       ]);
+      // Database lama tanpa kolom "images": ulangi tanpa kolom itu.
+      if (!pRes.ok && pRes.status === 400) pRes = await fetch(productUrl(baseCols), { headers });
       products = pRes.ok ? await pRes.json() : [];
       const rows = sRes.ok ? await sRes.json() : [];
       rows.forEach(r => { if (r.value && typeof r.value.text === 'string') settings[r.key] = r.value.text.trim(); });

@@ -1,4 +1,5 @@
 -- GMPI Sidoarjo: Toko perlengkapan organisasi + pengaturan legalitas/pembayaran.
+-- File ini aman dijalankan ulang (misalnya bila versi sebelumnya sudah pernah di-Run).
 -- * Katalog barang dikelola Pemilik / Editor Situs dari panel Admin.
 -- * Pengunjung hanya bisa melihat barang yang diaktifkan.
 -- * Pesanan dikirim ke WhatsApp admin; website TIDAK menyimpan data pembeli.
@@ -36,6 +37,16 @@ create table if not exists public.shop_products (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- Foto barang: maksimal 3 sudut, urutan tetap [depan, samping kiri, samping kanan].
+-- Slot kosong disimpan sebagai teks kosong ''. Aman dijalankan ulang.
+alter table public.shop_products add column if not exists images text[] not null default '{}';
+alter table public.shop_products drop constraint if exists shop_products_images_check;
+alter table public.shop_products add constraint shop_products_images_check
+  check (
+    cardinality(images) <= 3
+    and coalesce(array_to_string(images, '|'), '') ~ '^(products/[A-Za-z0-9][A-Za-z0-9._-]{0,119})?(\|(products/[A-Za-z0-9][A-Za-z0-9._-]{0,119})?){0,2}$'
+  );
 
 create index if not exists shop_products_sort_idx on public.shop_products (sort_order, created_at);
 
