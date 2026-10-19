@@ -121,5 +121,20 @@
     joinStatus.textContent = 'Pendaftaran belum dikirim. Ini hanya prototipe: data pribadi dan file tidak diunggah maupun disimpan. DPC perlu mengaktifkan sistem registrasi aman dan menerbitkan pemberitahuan privasi terlebih dahulu.';
   });
 
+  // Public CMS fields are read-only for visitors; Supabase RLS controls all writes.
+  const supabaseConfig = window.GMPI_SUPABASE_CONFIG || {};
+  if (supabaseConfig.url && supabaseConfig.publishableKey) {
+    const apiRoot = supabaseConfig.url.endsWith('/') ? supabaseConfig.url.slice(0, -1) : supabaseConfig.url;
+    const apiBase = `${apiRoot}/rest/v1/site_content?select=key,value`;
+    fetch(apiBase, { headers: { apikey: supabaseConfig.publishableKey, Authorization: `Bearer ${supabaseConfig.publishableKey}` } })
+      .then(response => response.ok ? response.json() : [])
+      .then(rows => rows.forEach(row => {
+        const text = row.value && typeof row.value.text === 'string' ? row.value.text : null;
+        const target = document.querySelector(`[data-cms-key="${row.key}"]`);
+        if (target && text !== null) target.textContent = text;
+      }))
+      .catch(() => {});
+  }
+
   document.querySelector('#year').textContent = new Date().getFullYear();
 })();

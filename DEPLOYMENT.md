@@ -1,47 +1,23 @@
 # Publikasi GMPI DPC Sidoarjo — GitHub, Vercel, Supabase
 
-## Status integrasi
+## Status saat ini
 
-Frontend statis dan konfigurasi dasar sudah disiapkan. Repository tujuan: `https://github.com/bisaapapunbisa-lang/gmpi-sidoarjo-site.git`. Branch `main`, remote `origin`, dan commit awal sudah disiapkan secara lokal. **Push ke GitHub belum berhasil** karena sesi ini tidak memiliki autentikasi GitHub; jangan kirim token/password ke chat. Konektor GitHub tidak tersedia di sesi ini. Proyek Vercel dan Supabase juga belum terhubung. Formulir belum mengirim atau menyimpan data.
+- Repository `https://github.com/bisaapapunbisa-lang/gmpi-sidoarjo-site` sudah menerima situs pada branch `main`.
+- Pengguna telah menyambungkan repository ke Vercel.
+- Project Supabase `gmpi` sehat di region Singapore. Migrasi `202610200001_private_intake.sql` berhasil dijalankan; tabel `citizen_reports` dan `member_registrations` terlihat di Table Editor.
+- Panel Admin baru telah disiapkan di source lokal. Perubahan terbaru belum diunggah ke GitHub. Migrasi role `202610200002_admin_panel_roles.sql` belum dijalankan, `supabase-config.js` belum diisi dengan publishable key, dan belum ada akun yang diberi role.
+- Formulir publik masih prototipe dan tidak mengirim/menyimpan data. Email LBH resmi belum tersedia dan draf privasi belum disetujui DPC.
 
-## 1. Push ke GitHub
+## Perbarui source di GitHub
 
-Di salinan proyek yang punya akses ke repository, autentikasi ke GitHub (misalnya melalui GitHub CLI dengan `gh auth login` atau credential manager), lalu jalankan:
+Setelah mengunduh arsip source terbaru, ekstrak lalu unggah isi folder ke repository GitHub melalui **Add file → Upload files**. Pertahankan struktur folder. Commit perubahan ke branch `main`; Vercel akan membuat deployment baru.
 
-```bash
-git push -u origin main
-```
+## Penyiapan panel Admin
 
-Jika mulai dari arsip sumber tanpa riwayat Git, jalankan dari folder proyek:
+Ikuti `ADMIN-SETUP.md` secara berurutan. Migrasi Admin menambahkan role `owner`, `content_editor`, `lbh_officer`, dan `registrar`; aturan RLS membatasi aduan dan data NIK/KTP berdasarkan role. Tombol Admin publik hanya membuka halaman login—tidak memberi akses tanpa akun undangan dan role aktif.
 
-```bash
-git init -b main
-git add .
-git commit -m "Initial GMPI Sidoarjo website"
-git remote add origin https://github.com/bisaapapunbisa-lang/gmpi-sidoarjo-site.git
-git push -u origin main
-```
+**Jangan pernah menaruh `service_role` key di HTML/JavaScript browser, GitHub, atau chat.** Admin menggunakan publishable/anon key bersama RLS; data sensitif hanya dapat dibaca melalui role `registrar`.
 
-Jangan commit file `.env`, secret, NIK, KTP, atau data calon anggota. Folder `/uploads/` sengaja diabaikan karena berisi unggahan sumber yang tidak dipakai langsung oleh situs.
+## Formulir publik
 
-## 2. Deploy frontend ke Vercel
-
-Di Vercel pilih **Add New → Project**, hubungkan akun GitHub, lalu import `bisaapapunbisa-lang/gmpi-sidoarjo-site`. Deploy sebagai static site dari root repository. `vercel.json` mengatur header dasar. Setelah GitHub tersambung, push baru ke `main` akan memicu deployment.
-
-## 3. Siapkan Supabase
-
-1. Buat project Supabase dan simpan Project URL serta `service_role` key secara privat.
-2. Jalankan `supabase/migrations/202610200001_private_intake.sql` di SQL Editor project.
-3. Migrasi membuat tabel aduan/registrasi dengan RLS aktif, tanpa akses publik, dan bucket dokumen privat.
-4. Jangan meletakkan `service_role` key di HTML, JavaScript browser, GitHub, atau chat. Kelak key hanya boleh ada di Vercel **Environment Variables** untuk fungsi server.
-
-## 4. Sebelum mengaktifkan pengiriman formulir
-
-Belum ada endpoint server yang menyimpan data. Jangan mengubah formulir menjadi `insert` langsung dari browser. Sebelum menerima NIK/KTP/aduan nyata, siapkan dan tinjau:
-
-- endpoint server-side di Vercel untuk validasi, CAPTCHA/rate limit, dan operasi database;
-- unggahan dokumen melalui signed URL terbatas ke bucket privat, bukan URL publik;
-- pemberitahuan privasi yang menjelaskan tujuan, akses pengurus, masa retensi, penghapusan, dan kontak pengelola data;
-- daftar petugas DPC yang berwenang mengakses data serta proses penghapusan berkala.
-
-Migration membuat fondasi privasi, bukan dengan sendirinya mengaktifkan atau mengamankan alur penerimaan formulir. Lakukan uji RLS/storage dengan data dummy sebelum publikasi.
+Belum ada endpoint server-side untuk menerima data. Jangan mengubah formulir menjadi insert langsung dari browser. Sebelum pendaftaran dan aduan nyata diaktifkan, DPC harus menyetujui pemberitahuan privasi, menetapkan email resmi LBH, mengonfirmasi masa simpan dan petugas yang berwenang, serta menyiapkan endpoint HTTPS anti-spam dan unggahan dokumen privat. Draf kerja ada pada `PRIVACY-NOTICE-DRAFT.md` dan belum untuk dipublikasikan.
