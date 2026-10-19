@@ -1,0 +1,22 @@
+/* Latar bintang 3D: kanvas tetap di belakang seluruh halaman */
+html{background:radial-gradient(ellipse 70% 55% at 85% 10%,rgba(229,28,36,.16),transparent 60%),radial-gradient(ellipse 60% 50% at 10% 85%,rgba(100,244,255,.08),transparent 60%),radial-gradient(ellipse at 50% 40%,#12131a 0%,#08080a 70%) fixed,#08080a}
+body{background:transparent}
+#starfield{position:fixed;inset:0;width:100vw;height:100vh;z-index:-1;pointer-events:none;display:block}
+
+/* Bagian gelap dibuat tembus pandang agar bintang terlihat */
+.site-header{background:rgba(12,12,12,.72);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.hero{background:transparent}
+.hero-media{background:transparent}
+.media-camo{opacity:.08}
+.video-tint{background:linear-gradient(90deg,rgba(8,8,10,.78) 0%,rgba(8,8,10,.45) 45%,rgba(8,8,10,.15) 100%),linear-gradient(0deg,rgba(8,8,10,.7),transparent 45%)}
+.voice-section{background:rgba(16,16,15,.80)}
+.join-section{background:rgba(20,20,19,.84)}
+.kta-section{background:radial-gradient(ellipse at 78% 45%,rgba(229,28,36,.18),transparent 50%),rgba(12,12,12,.62)}
+.site-footer{background:rgba(12,12,12,.80)}
+
+/* Bagian terang tetap solid (bentang penuh walau layar sangat lebar) */
+.pillars-section,.gallery-section{background:var(--paper);box-shadow:0 0 0 100vmax var(--paper);clip-path:inset(0 -100vmax)}
+
+@media(max-width:760px){
+  .video-tint{background:linear-gradient(0deg,rgba(8,8,10,.85),rgba(8,8,10,.45))}
+}
