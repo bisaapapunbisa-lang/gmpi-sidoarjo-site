@@ -5,5 +5,5 @@
 */
 window.GMPI_SUPABASE_CONFIG = Object.freeze({
   url: 'https://iapwzhlcwprzojeruymm.supabase.co',
-  publishableKey: '' // Add the project publishable (anon) key here; never use service_role.
+  publishableKey: 'sb_publishable_R8Ua9s93ZK88kcFpTY7Tng_pQyapURb' // Add the project publishable (anon) key here; never use service_role.
 });
