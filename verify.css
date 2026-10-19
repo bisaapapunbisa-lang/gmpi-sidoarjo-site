@@ -1,0 +1,64 @@
+@font-face{font-family:'GMPI Anton';src:url('/assets/fonts/anton-latin-400-normal.woff2') format('woff2');font-display:swap}
+@font-face{font-family:'GMPI Inter';font-weight:600;src:url('/assets/fonts/inter-latin-600-normal.woff2') format('woff2');font-display:swap}
+@font-face{font-family:'GMPI Inter';font-weight:800;src:url('/assets/fonts/inter-latin-800-normal.woff2') format('woff2');font-display:swap}
+@font-face{font-family:'GMPI Mono';font-weight:700;src:url('/assets/fonts/jetbrains-mono-latin-700-normal.woff2') format('woff2');font-display:swap}
+*{box-sizing:border-box}
+html{background:#0c0c0b}
+body{margin:0;min-height:100vh;display:flex;flex-direction:column;font-family:'GMPI Inter',Arial,sans-serif;font-weight:600;color:#f4f1ea;background:radial-gradient(ellipse at 50% -10%,rgba(229,28,36,.28),transparent 55%),repeating-linear-gradient(135deg,rgba(255,255,255,.022) 0 1px,transparent 1px 13px),#0c0c0b}
+a{color:inherit}
+.vf-header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px clamp(18px,6vw,70px);border-bottom:1px solid rgba(255,255,255,.08)}
+.vf-brand{display:flex;align-items:center;gap:11px;text-decoration:none}
+.vf-brand img{width:44px;height:44px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 2px #0c0c0b,0 0 0 3.5px rgba(100,244,255,.45)}
+.vf-brand span{display:flex;flex-direction:column;line-height:1}
+.vf-brand strong{font:26px 'GMPI Anton',Impact,sans-serif;letter-spacing:2px}
+.vf-brand small{font-size:8px;font-weight:800;letter-spacing:2.4px;color:#d7ac4c;margin-top:4px}
+.vf-tag{font-size:9px;font-weight:800;letter-spacing:2px;color:#0c0c0b;background:#d7ac4c;padding:7px 10px;border-radius:999px}
+.vf-main{width:min(620px,calc(100% - 32px));margin:0 auto;padding:44px 0 56px;flex:1}
+.vf-kicker{font-size:10px;font-weight:800;letter-spacing:2.6px;color:#e51c24}
+h1{font:clamp(46px,11vw,72px)/.95 'GMPI Anton',Impact,sans-serif;text-transform:uppercase;margin:12px 0 14px;font-weight:400}
+h1 em{font-style:normal;color:#f3d685}
+.vf-lead{color:#aaa69c;font-size:14px;line-height:1.7;margin:0 0 26px}
+.vf-result{border-radius:22px;padding:22px;background:#161614;border:1px solid rgba(255,255,255,.1);position:relative;overflow:hidden}
+.vf-result:before{content:'';position:absolute;inset:0 0 auto;height:4px;background:#5c5850}
+.vf-status{display:flex;gap:16px;align-items:flex-start}
+.vf-icon{flex:none;width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font:26px 'GMPI Anton',Impact,sans-serif;background:#2a2926;color:#bdb8ad}
+.vf-status b{display:block;font:28px/1.05 'GMPI Anton',Impact,sans-serif;font-weight:400;letter-spacing:.5px;text-transform:uppercase}
+.vf-status p{margin:7px 0 0;color:#b5b1a7;font-size:13px;line-height:1.6}
+.vf-result.is-valid{border-color:rgba(76,201,120,.55);background:linear-gradient(160deg,rgba(40,120,70,.22),#141513 60%)}
+.vf-result.is-valid:before{background:linear-gradient(90deg,#3fbf6f,#f3d685)}
+.vf-result.is-valid .vf-icon{background:#2fa45d;color:#fff}
+.vf-result.is-warning{border-color:rgba(215,172,76,.6);background:linear-gradient(160deg,rgba(215,172,76,.18),#161512 60%)}
+.vf-result.is-warning:before{background:#d7ac4c}
+.vf-result.is-warning .vf-icon{background:#d7ac4c;color:#16130b}
+.vf-result.is-invalid{border-color:rgba(229,28,36,.6);background:linear-gradient(160deg,rgba(229,28,36,.2),#161313 60%)}
+.vf-result.is-invalid:before{background:#e51c24}
+.vf-result.is-invalid .vf-icon{background:#e51c24;color:#fff}
+.vf-result.is-sample{border-color:rgba(100,244,255,.45);background:linear-gradient(160deg,rgba(100,244,255,.12),#141616 60%)}
+.vf-result.is-sample:before{background:linear-gradient(90deg,#64f4ff,#f3d685,#ff565d)}
+.vf-result.is-sample .vf-icon{background:#64f4ff;color:#0c0c0b}
+.vf-result.is-loading .vf-icon{animation:vf-spin 1s linear infinite}
+@keyframes vf-spin{to{transform:rotate(360deg)}}
+.vf-details{display:grid;grid-template-columns:1fr 1fr;gap:14px 18px;margin:22px 0 0;padding-top:18px;border-top:1px solid rgba(255,255,255,.1)}
+.vf-details div{min-width:0}
+.vf-details .vf-name{grid-column:1/-1}
+.vf-details dt{font-size:9px;font-weight:800;letter-spacing:2px;color:#8f8b82;text-transform:uppercase}
+.vf-details dd{margin:5px 0 0;font-size:16px;font-weight:800;overflow-wrap:anywhere}
+.vf-details .vf-name dd{font:30px/1.05 'GMPI Anton',Impact,sans-serif;font-weight:400;text-transform:uppercase}
+.mono{font-family:'GMPI Mono',Consolas,monospace!important;letter-spacing:.5px}
+.vf-checked{display:block;margin-top:16px;font-size:11px;color:#8f8b82}
+.vf-form{margin-top:22px;display:grid;gap:8px}
+.vf-form label{font-size:11px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:#cfcbc2}
+.vf-row{display:flex;gap:8px}
+.vf-row input{flex:1;min-width:0;padding:14px;border-radius:12px;border:1px solid #3a3934;background:#121211;color:#fff;font:700 15px 'GMPI Mono',Consolas,monospace;text-transform:uppercase;letter-spacing:1px}
+.vf-row input:focus{outline:2px solid #d7ac4c;outline-offset:1px}
+.vf-row button{border:0;border-radius:12px;padding:0 20px;background:#e51c24;color:#fff;font-weight:800;font-size:13px;cursor:pointer}
+.vf-row button:hover{background:#bd1219}
+.vf-form small{color:#8f8b82;font-size:11px;line-height:1.6}
+.vf-tips{margin-top:28px;padding:16px 18px;border-left:3px solid #d7ac4c;background:rgba(255,255,255,.04);border-radius:0 14px 14px 0}
+.vf-tips b{font-size:10px;letter-spacing:2px;color:#f3d685}
+.vf-tips ul{margin:10px 0 0;padding-left:18px;color:#b5b1a7;font-size:12.5px;line-height:1.7}
+.vf-footer{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:16px clamp(18px,6vw,70px);background:linear-gradient(90deg,#8f0d12,#e51c24,#8f0d12);font-size:10px;font-weight:800;letter-spacing:2px}
+.vf-footer a{text-decoration:none;letter-spacing:0;font-weight:600}
+@media(max-width:480px){.vf-details{grid-template-columns:1fr}.vf-status b{font-size:24px}.vf-tag{display:none}}
+@media(prefers-reduced-motion:reduce){.vf-result.is-loading .vf-icon{animation:none}}
+[hidden]{display:none!important}

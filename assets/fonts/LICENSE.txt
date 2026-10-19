@@ -1,0 +1,5 @@
+Font yang dipakai kartu anggota & halaman verifikasi:
+- Anton (Vernon Adams) — SIL Open Font License 1.1
+- Inter (Rasmus Andersson) — SIL Open Font License 1.1
+- JetBrains Mono (JetBrains) — SIL Open Font License 1.1
+Sumber: paket @fontsource. Lisensi lengkap: https://openfontlicense.org

@@ -42,6 +42,7 @@
   function canEditContent() { return roles.includes('owner') || roles.includes('content_editor'); }
   function canSeeMembers() { return roles.includes('registrar'); }
   function isOwner() { return roles.includes('owner'); }
+  function canManageCards() { return roles.includes('owner') || roles.includes('registrar'); }
 
   if (!config.url || !config.publishableKey) {
     setupMessage.textContent = 'Admin belum dikonfigurasi. Pemilik situs perlu mengisi URL dan publishable key Supabase di supabase-config.js, menjalankan migrasi hak akses, lalu mengundang dan memberi peran akun. Jangan pernah menaruh service_role key di file browser.';
@@ -126,6 +127,7 @@
     if (canEditContent()) tabs.push(['content', 'Isi situs']);
     if (canSeeReports()) tabs.push(['reports', 'Aduan LBH']);
     if (canSeeMembers()) tabs.push(['members', 'Pendaftaran anggota']);
+    if (canManageCards()) tabs.push(['cards', 'Kartu anggota']);
     if (isOwner()) tabs.push(['access', 'Hak akses']);
     tabsContainer.replaceChildren();
     tabs.forEach(([key, label], index) => {
@@ -146,6 +148,7 @@
     if (key === 'content' && canEditContent()) return renderContentEditor();
     if (key === 'reports' && canSeeReports()) return renderReports();
     if (key === 'members' && canSeeMembers()) return renderMembers();
+    if (key === 'cards' && canManageCards()) return renderCards();
     if (key === 'access' && isOwner()) return renderAccessManager();
     workspace.replaceChildren(make('div', 'table-empty', 'Akses tidak diizinkan.'));
   }
@@ -577,6 +580,311 @@
     cell.colSpan = colspan;
     row.append(cell);
     return row;
+  }
+
+  // ---- Kartu Tanda Anggota (KTA) dengan QR verifikasi ----
+  const DISTRICTS = ['Sidoarjo','Buduran','Gedangan','Waru','Sukodono','Taman','Krian','Balongbendo','Tarik','Prambon','Krembung','Porong','Jabon','Tanggulangin','Candi','Tulangan','Wonoayu','Sedati'];
+  const JABATAN_SUGGESTIONS = ['Anggota', 'Pengurus DPC', 'Pengurus PAC', 'Satgas Brigade', 'LBH GMPI', 'MPI Sidoarjo', 'SB GMPI', 'Ketua PAC', 'Ketua DPC'];
+  const CARD_STATUS_LABELS = { aktif: 'Aktif', nonaktif: 'Nonaktif', dicabut: 'Dicabut' };
+
+  function isoDate(date) {
+    const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return d.toISOString().slice(0, 10);
+  }
+  function addYears(iso, years) {
+    const [y, m, d] = iso.split('-').map(Number);
+    return `${y + years}-${String(m).padStart(2, '0')}-${String(Math.min(d, 28)).padStart(2, '0')}`;
+  }
+  function field(labelText, control, hint) {
+    const wrap = make('div', 'content-field');
+    const label = make('label', '', labelText);
+    if (control.id) label.htmlFor = control.id;
+    wrap.append(label, control);
+    if (hint) wrap.append(make('small', 'privacy-mini', hint));
+    return wrap;
+  }
+  function input(id, type = 'text', attrs = {}) {
+    const el = make('input');
+    el.id = id; el.name = id; el.type = type;
+    Object.entries(attrs).forEach(([k, v]) => { el[k] = v; });
+    return el;
+  }
+
+  async function cardLogo() {
+    const fallback = 'assets/logo-gmpi-sidoarjo-crop.webp';
+    try {
+      const { data } = await client.from('site_content').select('value').eq('key', 'site_logo').maybeSingle();
+      const path = data?.value?.text || '';
+      if (path) {
+        const url = client.storage.from('site-assets').getPublicUrl(path).data.publicUrl;
+        const img = await window.GMPICard.loadImage(url, true);
+        if (img) return img;
+      }
+    } catch (e) { /* pakai logo bawaan */ }
+    return window.GMPICard.loadImage(fallback);
+  }
+
+  async function renderCards() {
+    if (!window.GMPICard) return showWorkspaceError('Komponen kartu (member-card.js) tidak termuat. Pastikan file sudah diunggah ke GitHub.');
+    const heading = make('div', 'workspace-heading');
+    const titleBlock = make('div');
+    titleBlock.append(make('h3', '', 'Kartu Tanda Anggota'));
+    titleBlock.append(make('p', '', 'Terbitkan kartu vertikal ber-QR. Setiap kartu mendapat kode acak unik; saat dipindai, halaman verifikasi resmi menampilkan nama, nomor, kecamatan, jabatan, status, dan masa berlaku. NIK tidak pernah dicantumkan.'));
+    heading.append(titleBlock);
+
+    const { data: cardRows, error } = await client.from('member_cards')
+      .select('id,card_token,member_number,full_name,district,jabatan,status,issued_at,valid_until')
+      .eq('is_sample', false).order('created_at', { ascending: false }).limit(500);
+    if (error) return showWorkspaceError('Data kartu belum bisa dibuka. Jalankan migrasi 202610200004_member_cards.sql di Supabase, lalu muat ulang halaman.');
+    let cards = cardRows || [];
+
+    await window.GMPICard.ready();
+    const logo = await cardLogo();
+
+    const today = isoDate(new Date());
+    const year = today.slice(0, 4);
+    function suggestNumber() {
+      const prefix = `GMPI-SDA-${year}-`;
+      const max = cards.reduce((acc, c) => {
+        const m = c.member_number.startsWith(prefix) ? Number(c.member_number.slice(prefix.length)) : 0;
+        return Number.isFinite(m) && m > acc ? m : acc;
+      }, 0);
+      return prefix + String(max + 1).padStart(4, '0');
+    }
+
+    // --- Formulir & pratinjau ---
+    const designer = make('div', 'card-designer');
+    const formEl = make('form', 'content-form card-form');
+    const nameIn = input('card-name', 'text', { required: true, maxLength: 120, placeholder: 'Nama sesuai KTP', autocomplete: 'off' });
+    const numberIn = input('card-number', 'text', { required: true, maxLength: 40, placeholder: 'GMPI-SDA-2026-0001', autocomplete: 'off' });
+    const districtIn = make('select'); districtIn.id = 'card-district'; districtIn.required = true;
+    districtIn.append(new Option('Pilih kecamatan', ''));
+    DISTRICTS.forEach(d => districtIn.append(new Option(d, d)));
+    const jabatanIn = input('card-jabatan', 'text', { required: true, maxLength: 60, value: 'Anggota' });
+    const list = make('datalist'); list.id = 'card-jabatan-list';
+    JABATAN_SUGGESTIONS.forEach(j => list.append(new Option(j, j)));
+    jabatanIn.setAttribute('list', list.id);
+    const issuedIn = input('card-issued', 'date', { required: true, value: today });
+    const validIn = input('card-valid', 'date', { required: true, value: addYears(today, 2) });
+    const photoIn = input('card-photo', 'file', { accept: 'image/png,image/jpeg,image/webp' });
+    const zoomIn = input('card-zoom', 'range', { min: 100, max: 250, value: 100 });
+    const xIn = input('card-x', 'range', { min: -100, max: 100, value: 0 });
+    const yIn = input('card-y', 'range', { min: -100, max: 100, value: 0 });
+
+    const rowA = make('div', 'card-form-row'); rowA.append(field('Nomor anggota', numberIn, 'Huruf besar, angka, titik, garis miring, atau strip.'), field('Kecamatan', districtIn));
+    const rowB = make('div', 'card-form-row'); rowB.append(field('Tanggal terbit', issuedIn), field('Berlaku sampai', validIn));
+    const photoTools = make('div', 'card-photo-tools');
+    photoTools.append(field('Perbesar foto', zoomIn), field('Geser kiri–kanan', xIn), field('Geser atas–bawah', yIn));
+    photoTools.hidden = true;
+
+    const statusLine = make('div', 'card-mode');
+    const saveBtn = make('button', 'admin-button admin-button-red', 'Simpan & terbitkan kartu');
+    saveBtn.type = 'submit';
+    const downloadBtn = make('button', 'admin-button admin-button-gold', 'Unduh kartu (PNG)');
+    downloadBtn.type = 'button';
+    downloadBtn.disabled = true;
+    const newBtn = make('button', 'admin-button admin-button-outline', 'Kartu baru');
+    newBtn.type = 'button';
+    const btnRow = make('div', 'card-buttons'); btnRow.append(saveBtn, downloadBtn, newBtn);
+
+    formEl.append(statusLine, field('Nama lengkap', nameIn), rowA, field('Jabatan / keterangan', jabatanIn, 'Contoh: Anggota, Pengurus PAC, Satgas Brigade.'), list, rowB,
+      field('Foto anggota (pas foto, latar polos)', photoIn, 'Foto hanya dipakai di perangkat ini untuk membuat gambar kartu — tidak diunggah atau disimpan di server. Simpan file kartu (PNG) hasil unduhan.'),
+      photoTools, btnRow);
+
+    const preview = make('div', 'card-preview');
+    const canvas = make('canvas');
+    canvas.setAttribute('role', 'img');
+    canvas.setAttribute('aria-label', 'Pratinjau kartu anggota');
+    const verifyLink = make('a', 'admin-link-button card-verify-link', '');
+    verifyLink.target = '_blank';
+    verifyLink.rel = 'noopener';
+    verifyLink.hidden = true;
+    preview.append(canvas, verifyLink, make('small', 'privacy-mini', 'Ukuran cetak: 54 × 85,6 mm (ukuran KTP/ATM), resolusi ± 600 dpi. Cetak di kertas PVC/art carton, tanpa diperkecil.'));
+    designer.append(formEl, preview);
+
+    let editing = null; // kartu yang sedang dibuka (sudah terbit)
+    let photo = null;
+
+    function data() {
+      return {
+        name: nameIn.value, number: numberIn.value, district: districtIn.value, jabatan: jabatanIn.value,
+        issued: issuedIn.value, validUntil: validIn.value, token: editing?.card_token || '',
+        photo, photoZoom: Number(zoomIn.value) / 100, photoX: Number(xIn.value) / 100, photoY: Number(yIn.value) / 100, logo
+      };
+    }
+    let raf = 0;
+    function redraw() { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => window.GMPICard.draw(canvas, data())); }
+
+    function setMode() {
+      if (editing) {
+        statusLine.replaceChildren(make('b', '', 'Kartu terbit'), make('span', '', ` · ${editing.member_number} · status ${CARD_STATUS_LABELS[editing.status] || editing.status}`));
+        saveBtn.textContent = 'Simpan perubahan';
+        downloadBtn.disabled = false;
+        verifyLink.hidden = false;
+        verifyLink.href = `verifikasi.html?k=${encodeURIComponent(editing.card_token)}`;
+        verifyLink.textContent = `Cek halaman verifikasi kartu ini ↗`;
+      } else {
+        statusLine.replaceChildren(make('b', '', 'Kartu baru'), make('span', '', ' · QR dibuat otomatis setelah disimpan'));
+        saveBtn.textContent = 'Simpan & terbitkan kartu';
+        downloadBtn.disabled = true;
+        verifyLink.hidden = true;
+      }
+      numberIn.readOnly = Boolean(editing);
+      redraw();
+    }
+
+    function resetForm() {
+      editing = null;
+      formEl.reset();
+      numberIn.value = suggestNumber();
+      jabatanIn.value = 'Anggota';
+      issuedIn.value = today;
+      validIn.value = addYears(today, 2);
+      photo = null; photoTools.hidden = true;
+      zoomIn.value = 100; xIn.value = 0; yIn.value = 0;
+      setMode();
+    }
+
+    function openCard(card) {
+      editing = card;
+      nameIn.value = card.full_name;
+      numberIn.value = card.member_number;
+      districtIn.value = card.district;
+      jabatanIn.value = card.jabatan;
+      issuedIn.value = card.issued_at;
+      validIn.value = card.valid_until;
+      setMode();
+      setMessage(photo ? 'Kartu dibuka. Periksa foto lalu klik “Unduh kartu (PNG)”.' : 'Kartu dibuka. Pilih foto anggota, lalu klik “Unduh kartu (PNG)”.');
+      designer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    [nameIn, numberIn, districtIn, jabatanIn, issuedIn, validIn, zoomIn, xIn, yIn].forEach(el => el.addEventListener('input', redraw));
+    numberIn.addEventListener('input', () => { const pos = numberIn.selectionStart; numberIn.value = numberIn.value.toUpperCase().replace(/\s+/g, ''); numberIn.setSelectionRange(pos, pos); });
+
+    photoIn.addEventListener('change', async () => {
+      const file = photoIn.files && photoIn.files[0];
+      if (!file) return;
+      if (!/^image\/(png|jpeg|webp)$/.test(file.type)) { setMessage('Format foto harus JPG, PNG, atau WebP.', 'error'); return; }
+      const url = URL.createObjectURL(file);
+      const img = await window.GMPICard.loadImage(url);
+      if (!img) { setMessage('Foto tidak bisa dibaca.', 'error'); return; }
+      photo = img;
+      zoomIn.value = 100; xIn.value = 0; yIn.value = 0;
+      photoTools.hidden = false;
+      redraw();
+    });
+
+    formEl.addEventListener('submit', async event => {
+      event.preventDefault();
+      const payload = {
+        full_name: nameIn.value.trim().replace(/\s+/g, ' '),
+        district: districtIn.value,
+        jabatan: jabatanIn.value.trim() || 'Anggota',
+        issued_at: issuedIn.value,
+        valid_until: validIn.value
+      };
+      if (payload.full_name.length < 2) { setMessage('Isi nama lengkap anggota.', 'error'); return; }
+      if (!payload.district) { setMessage('Pilih kecamatan.', 'error'); return; }
+      if (payload.valid_until < payload.issued_at) { setMessage('Tanggal berlaku harus setelah tanggal terbit.', 'error'); return; }
+      saveBtn.disabled = true;
+      let result;
+      if (editing) {
+        result = await client.from('member_cards').update(payload).eq('id', editing.id)
+          .select('id,card_token,member_number,full_name,district,jabatan,status,issued_at,valid_until').single();
+      } else {
+        const number = numberIn.value.trim().toUpperCase();
+        if (!/^[A-Z0-9][A-Z0-9./-]{2,39}$/.test(number)) { saveBtn.disabled = false; setMessage('Nomor anggota hanya boleh huruf besar, angka, titik, garis miring, atau strip (3–40 karakter).', 'error'); return; }
+        result = await client.from('member_cards').insert({ ...payload, member_number: number })
+          .select('id,card_token,member_number,full_name,district,jabatan,status,issued_at,valid_until').single();
+      }
+      saveBtn.disabled = false;
+      if (result.error) {
+        const duplicate = String(result.error.code) === '23505';
+        setMessage(duplicate ? 'Nomor anggota sudah dipakai kartu lain. Gunakan nomor berbeda.' : 'Kartu gagal disimpan. Pastikan migrasi kartu sudah dijalankan dan peran Anda Pemilik/Petugas Registrasi.', 'error');
+        return;
+      }
+      const wasNew = !editing;
+      editing = result.data;
+      cards = [editing, ...cards.filter(c => c.id !== editing.id)];
+      renderList();
+      setMode();
+      setMessage(wasNew ? 'Kartu terbit dan QR sudah aktif. Klik “Unduh kartu (PNG)” untuk menyimpan/mencetak.' : 'Perubahan kartu tersimpan. QR tetap sama, jadi kartu lama yang sudah dicetak tetap bisa diverifikasi.');
+    });
+
+    downloadBtn.addEventListener('click', () => {
+      if (!editing) return;
+      if (!photo && !window.confirm('Belum ada foto. Unduh kartu tanpa foto?')) return;
+      window.GMPICard.draw(canvas, data());
+      canvas.toBlob(blob => {
+        if (!blob) { setMessage('Gagal membuat file kartu.', 'error'); return; }
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `KTA-${editing.member_number.replace(/[^A-Z0-9-]/gi, '_')}.png`;
+        document.body.append(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      }, 'image/png');
+    });
+    newBtn.addEventListener('click', resetForm);
+
+    // --- Daftar kartu ---
+    const listHeading = make('div', 'workspace-heading card-list-heading');
+    const listTitle = make('div');
+    listTitle.append(make('h3', '', 'Kartu yang sudah terbit'));
+    listTitle.append(make('p', '', 'Ubah status menjadi Nonaktif atau Dicabut bila kartu hilang, disalahgunakan, atau anggota keluar — hasil pindai QR langsung berubah.'));
+    listHeading.append(listTitle);
+    const search = input('card-search', 'search', { placeholder: 'Cari nama / nomor…' });
+    search.className = 'card-search';
+    listHeading.append(search);
+    const listWrap = make('div');
+
+    function renderList() {
+      const q = search.value.trim().toLowerCase();
+      const shown = cards.filter(c => !q || c.full_name.toLowerCase().includes(q) || c.member_number.toLowerCase().includes(q));
+      const { wrap, body } = makeTable(['No. anggota', 'Nama', 'Kecamatan / jabatan', 'Berlaku s/d', 'Status', 'Aksi']);
+      if (!shown.length) {
+        listWrap.replaceChildren(make('div', 'table-empty', cards.length ? 'Tidak ada kartu yang cocok.' : 'Belum ada kartu yang diterbitkan.'));
+        return;
+      }
+      shown.forEach(card => {
+        const row = make('tr');
+        row.append(make('td', 'mono-cell', card.member_number));
+        row.append(make('td', '', card.full_name));
+        row.append(make('td', '', `${card.district} · ${card.jabatan}`));
+        const expired = card.valid_until < today;
+        row.append(make('td', expired ? 'is-expired' : '', `${window.GMPICard.formatDate(card.valid_until)}${expired ? ' (habis)' : ''}`));
+        const statusCell = make('td');
+        const select = make('select');
+        Object.entries(CARD_STATUS_LABELS).forEach(([value, label]) => { const o = new Option(label, value); o.selected = card.status === value; select.append(o); });
+        select.addEventListener('change', async () => {
+          if (select.value === 'dicabut' && !window.confirm(`Cabut kartu ${card.member_number}? Hasil pindai QR akan menampilkan “Kartu dicabut”.`)) { select.value = card.status; return; }
+          select.disabled = true;
+          const { error: updateError } = await client.from('member_cards').update({ status: select.value }).eq('id', card.id);
+          select.disabled = false;
+          if (updateError) { select.value = card.status; setMessage('Status kartu gagal diubah.', 'error'); return; }
+          card.status = select.value;
+          if (editing?.id === card.id) { editing.status = card.status; setMode(); }
+          setMessage(`Status kartu ${card.member_number} menjadi ${CARD_STATUS_LABELS[card.status]}.`);
+        });
+        statusCell.append(select);
+        row.append(statusCell);
+        const actions = make('td', 'card-actions');
+        const openBtn = make('button', 'admin-link-button', 'Buka & unduh');
+        openBtn.type = 'button';
+        openBtn.addEventListener('click', () => openCard(card));
+        const checkLink = make('a', 'admin-link-button', 'Cek QR ↗');
+        checkLink.href = `verifikasi.html?k=${encodeURIComponent(card.card_token)}`;
+        checkLink.target = '_blank'; checkLink.rel = 'noopener';
+        actions.append(openBtn, checkLink);
+        row.append(actions);
+        body.append(row);
+      });
+      listWrap.replaceChildren(wrap);
+    }
+    search.addEventListener('input', renderList);
+
+    workspace.replaceChildren(heading, designer, listHeading, listWrap);
+    resetForm();
+    renderList();
   }
 
   function showWorkspaceError(text) {

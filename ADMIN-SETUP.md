@@ -41,3 +41,15 @@ Arsip perubahan harus mencakup `admin.html`, `admin.css`, `admin.js`, `supabase-
 5. **Kembalikan logo bawaan** memakai file `assets/logo-gmpi-sidoarjo-crop.webp` dari repo.
 
 Hanya peran Pemilik dan Editor Situs yang boleh mengganti logo. Bucket `site-assets` bersifat publik dan **tidak boleh** dipakai untuk data pribadi.
+
+## Kartu Tanda Anggota (KTA) ber-QR
+
+1. Jalankan sekali `supabase/migrations/202610200004_member_cards.sql` di Supabase SQL Editor.
+2. Masuk Admin → tab **Kartu anggota** (hanya Pemilik & Petugas Registrasi).
+3. Isi nama, nomor anggota (otomatis disarankan `GMPI-SDA-TAHUN-URUT`), kecamatan, jabatan, masa berlaku → **Simpan & terbitkan kartu**.
+4. Pilih pas foto (hanya diproses di perangkat, tidak diunggah) → atur zoom/geser → **Unduh kartu (PNG)**. Ukuran cetak 54 × 85,6 mm.
+5. QR berisi `https://gmpi-sidoarjo-site.vercel.app/V/<kode acak 20 karakter>`. Pemindai melihat halaman `verifikasi.html` dengan status: Asli & aktif / Kedaluwarsa / Nonaktif / Dicabut / Tidak terdaftar.
+6. Kartu hilang atau disalahgunakan → ubah status menjadi **Dicabut**. Kode QR tidak bisa diubah setelah terbit (dikunci trigger database).
+7. Jika nanti memakai domain sendiri, ubah `VERIFY_BASE` dan `VERIFY_LABEL` di `member-card.js`; alamat vercel.app lama tetap berfungsi untuk kartu yang sudah dicetak.
+
+Contoh kartu di beranda memakai kode `CONTOH` dan ditandai sebagai kartu contoh di halaman verifikasi.

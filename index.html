@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="registration.css">
   <link rel="stylesheet" href="gamma-effects.css">
+  <link rel="stylesheet" href="kta.css">
 </head>
 <body>
   <div class="topline"><span class="topline-mark"></span> GERAKAN MILITANSI PEJUANG INDONESIA <span class="topline-sep">/</span> DPC SIDOARJO <span class="topline-right">SETIA BERSAUDARA SAMPAI URAT NADI</span></div>
@@ -132,12 +133,29 @@
             <div class="upload-card"><label for="join-ktp">Foto KTP asli <b>*</b></label><input id="join-ktp" name="ktp" type="file" accept="image/jpeg,image/png" required><small>JPG/PNG · maks. 5 MB</small><span class="file-status" id="ktp-status">Belum ada file dipilih</span></div>
             <div class="upload-card"><label for="join-profile">Foto profil rapi <b>*</b></label><input id="join-profile" name="profile" type="file" accept="image/jpeg,image/png" required><small>JPG/PNG · maks. 5 MB · latar polos</small><span class="file-status" id="profile-status">Belum ada file dipilih</span></div>
           </div>
-          <div class="registration-disclosure"><b>PERHATIAN DATA SENSITIF</b><p>Demo ini tidak mengunggah atau menyimpan data maupun file. Jangan kirim NIK/foto KTP sampai DPC menyediakan sistem HTTPS yang aman, pemberitahuan privasi, dan informasi masa retensi data.</p></div>
-          <label class="consent consent-light registration-consent"><input type="checkbox" required><span>Saya memahami pemberitahuan di atas dan bahwa formulir ini saat ini belum mengirim pendaftaran.</span></label>
+          <label class="consent consent-light registration-consent"><input type="checkbox" required><span>Saya memahami bahwa formulir ini saat ini belum mengirim pendaftaran.</span></label>
           <button class="button button-gold button-wide" type="submit">Kirim pendaftaran <span>↗</span></button>
           <p class="form-status join-status" id="join-status" role="status" aria-live="polite"></p>
         </form>
       </div>
+    </section>
+
+    <section class="kta-section" id="kartu" aria-labelledby="kta-title">
+      <div class="kta-copy">
+        <div class="eyebrow eyebrow-light"><span class="eyebrow-line"></span>KARTU TANDA ANGGOTA</div>
+        <h2 id="kta-title">Satu kartu,<br><em>satu barisan.</em></h2>
+        <p>Setiap anggota resmi GMPI DPC Sidoarjo menerima kartu anggota berbentuk vertikal dengan QR unik. Siapa pun bisa memindai QR itu untuk memastikan kartu asli, langsung dari basis data DPC.</p>
+        <ul class="kta-points">
+          <li><b>01</b><span><strong>QR anti-palsu.</strong> Kode acak berbeda di setiap kartu, tidak bisa ditebak atau disalin ke nama lain.</span></li>
+          <li><b>02</b><span><strong>Status langsung.</strong> Hasil pindai menunjukkan kartu aktif, nonaktif, kedaluwarsa, atau dicabut.</span></li>
+          <li><b>03</b><span><strong>Tanpa NIK.</strong> Kartu dan halaman verifikasi tidak menampilkan NIK, alamat, atau nomor HP.</span></li>
+        </ul>
+        <div class="kta-actions"><a href="#gabung" class="button button-gold">Gabung Barisan <span>↗</span></a><a href="verifikasi.html" class="kta-link">Cek keaslian kartu <span>→</span></a></div>
+      </div>
+      <figure class="kta-figure">
+        <div class="kta-card-wrap"><canvas id="kta-sample" width="638" height="1012" role="img" aria-label="Contoh kartu tanda anggota GMPI DPC Sidoarjo berbentuk vertikal: logo, foto, nama, jabatan, nomor anggota, kecamatan, masa berlaku, dan QR verifikasi"></canvas></div>
+        <figcaption>Contoh tampilan · data fiktif</figcaption>
+      </figure>
     </section>
 
     <section class="final-cta"><div class="final-star">✳</div><div><span>GMPI DPC SIDOARJO</span><h2>Setia bersaudara sampai urat nadi.</h2></div><a href="#posko" class="button button-red">Suarakan aspirasi <span>↗</span></a></section>
@@ -146,10 +164,12 @@
   <footer class="site-footer">
     <a class="brand footer-brand" href="#top"><img data-site-logo src="assets/logo-gmpi-sidoarjo-crop.webp" alt=""><span class="brand-text"><strong>GMPI</strong><small>DPC SIDOARJO</small></span></a>
     <p>Gerakan Militansi Pejuang Indonesia<br><span data-cms-key="footer_slogan">Setia Bersaudara Sampai Urat Nadi</span></p>
-    <div class="footer-links"><a href="#pilar">Pilar Pergerakan</a><a href="#posko">Posko Digital</a><a href="#lensa">Lensa Kegiatan</a><a class="footer-admin" href="admin.html" aria-label="Masuk ke panel Admin GMPI">Admin ↗</a></div>
+    <div class="footer-links"><a href="#pilar">Pilar Pergerakan</a><a href="#posko">Posko Digital</a><a href="#lensa">Lensa Kegiatan</a><a href="verifikasi.html">Verifikasi Kartu</a><a class="footer-admin" href="admin.html" aria-label="Masuk ke panel Admin GMPI">Admin ↗</a></div>
     <small class="copyright">© <span id="year"></span> GMPI DPC Sidoarjo</small>
   </footer>
   <script src="supabase-config.js"></script>
+  <script src="vendor/qrcode-generator.js"></script>
+  <script src="member-card.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
