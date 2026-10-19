@@ -31,3 +31,13 @@ where lower(email) = lower('EMAIL-OWNER-ANDA');
 Arsip perubahan harus mencakup `admin.html`, `admin.css`, `admin.js`, `supabase-config.js`, dan migrasi kedua. Setelah berkas-berkas baru masuk ke branch `main`, Vercel akan membuat deployment baru karena repo telah tersambung.
 
 **Catatan:** migrasi kedua mengatur hak akses panel, tetapi belum membuat API untuk menerima aduan/pendaftaran. Draf privasi `PRIVACY-NOTICE-DRAFT.md` masih harus diperiksa dan disetujui DPC; email resmi LBH juga belum tersedia. Jangan masukkan data nyata saat uji coba.
+
+## Logo situs (dapat diganti dari Admin)
+
+1. Jalankan sekali `supabase/migrations/202610200003_site_logo.sql` di Supabase SQL Editor.
+2. Masuk Admin → tab **Isi situs** → bagian **Logo situs**.
+3. **Pilih gambar logo baru** (PNG/JPG/WebP, maks. 2 MB, sebaiknya persegi ≥ 500×500 px) → **Unggah & pakai logo ini**.
+4. Logo lama tetap tersimpan di **Logo tersimpan**; klik **Pakai** untuk kembali ke logo itu, atau **Hapus** jika tidak diperlukan.
+5. **Kembalikan logo bawaan** memakai file `assets/logo-gmpi-sidoarjo-crop.webp` dari repo.
+
+Hanya peran Pemilik dan Editor Situs yang boleh mengganti logo. Bucket `site-assets` bersifat publik dan **tidak boleh** dipakai untuk data pribadi.

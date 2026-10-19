@@ -130,6 +130,16 @@
       .then(response => response.ok ? response.json() : [])
       .then(rows => rows.forEach(row => {
         const text = row.value && typeof row.value.text === 'string' ? row.value.text : null;
+        if (row.key === 'site_logo') {
+          // Only accept files from the public logo folder; empty value keeps the built-in logo.
+          if (text && /^logos\/[A-Za-z0-9][A-Za-z0-9._-]{0,119}$/.test(text)) {
+            const logoUrl = `${apiRoot}/storage/v1/object/public/site-assets/${text}`;
+            const probe = new Image();
+            probe.onload = () => document.querySelectorAll('[data-site-logo]').forEach(img => { img.src = logoUrl; });
+            probe.src = logoUrl;
+          }
+          return;
+        }
         const target = document.querySelector(`[data-cms-key="${row.key}"]`);
         if (target && text !== null) target.textContent = text;
       }))

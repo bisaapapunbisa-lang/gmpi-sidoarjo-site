@@ -188,7 +188,203 @@
       save.disabled = false;
       setMessage(saveError ? 'Perubahan tidak tersimpan. Pastikan migrasi dan peran Editor Situs sudah aktif.' : 'Perubahan tersimpan. Muat ulang beranda untuk melihat hasilnya.', saveError ? 'error' : 'ok');
     });
-    workspace.replaceChildren(heading, form);
+    const logoSection = await buildLogoManager();
+    workspace.replaceChildren(logoSection, heading, form);
+  }
+
+  // ---- Logo situs: unggah, pilih dari riwayat, kembalikan bawaan ----
+  const LOGO_BUCKET = 'site-assets';
+  const LOGO_FOLDER = 'logos';
+  const LOGO_TYPES = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
+  const LOGO_MAX_BYTES = 2 * 1024 * 1024;
+  const DEFAULT_LOGO = 'assets/logo-gmpi-sidoarjo-crop.webp';
+
+  function logoPublicUrl(path) {
+    return client.storage.from(LOGO_BUCKET).getPublicUrl(path).data.publicUrl;
+  }
+
+  function readImageSize(file) {
+    return new Promise(resolve => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => { resolve({ width: img.naturalWidth, height: img.naturalHeight, url }); };
+      img.onerror = () => { URL.revokeObjectURL(url); resolve(null); };
+      img.src = url;
+    });
+  }
+
+  async function setActiveLogo(path) {
+    const { error } = await client.from('site_content').upsert({
+      key: 'site_logo',
+      value: { text: path },
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'key' });
+    return error;
+  }
+
+  async function buildLogoManager() {
+    const section = make('section', 'logo-manager');
+    const heading = make('div', 'workspace-heading');
+    const titleBlock = make('div');
+    titleBlock.append(make('h3', '', 'Logo situs'));
+    titleBlock.append(make('p', '', 'Logo ini dipakai di header, lingkaran hero (dengan ring berputar), dan footer. Gunakan gambar persegi dengan lambang di tengah. Format PNG, JPG, atau WebP, maksimal 2 MB.'));
+    heading.append(titleBlock);
+    section.append(heading);
+
+    const { data: logoRow, error: logoError } = await client.from('site_content').select('value').eq('key', 'site_logo').maybeSingle();
+    if (logoError) {
+      section.append(make('div', 'admin-message is-error', 'Pengaturan logo belum aktif. Jalankan migrasi 202610200003_site_logo.sql di Supabase terlebih dahulu.'));
+      return section;
+    }
+    let activePath = logoRow?.value?.text || '';
+
+    const current = make('div', 'logo-current');
+    const currentFrame = make('div', 'logo-frame');
+    const currentImg = make('img');
+    currentImg.alt = 'Logo yang sedang dipakai';
+    currentFrame.append(currentImg);
+    const currentInfo = make('div', 'logo-current-info');
+    const currentLabel = make('b');
+    const resetButton = make('button', 'admin-button admin-button-outline', 'Kembalikan logo bawaan');
+    resetButton.type = 'button';
+    currentInfo.append(make('span', 'admin-kicker', 'SEDANG DIPAKAI'), currentLabel, resetButton);
+    current.append(currentFrame, currentInfo);
+
+    const upload = make('form', 'logo-upload');
+    const fileLabel = make('label', 'file-button', 'Pilih gambar logo baru');
+    const fileInput = make('input');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/png,image/jpeg,image/webp';
+    fileInput.className = 'sr-only';
+    fileLabel.append(fileInput);
+    const previewFrame = make('div', 'logo-frame logo-frame-preview');
+    previewFrame.hidden = true;
+    const previewImg = make('img');
+    previewImg.alt = 'Pratinjau logo baru';
+    previewFrame.append(previewImg);
+    const uploadNote = make('small', 'privacy-mini', 'Belum ada file dipilih.');
+    const uploadButton = make('button', 'admin-button admin-button-gold', 'Unggah & pakai logo ini');
+    uploadButton.type = 'submit';
+    uploadButton.disabled = true;
+    upload.append(fileLabel, previewFrame, uploadNote, uploadButton);
+
+    const libraryTitle = make('h4', 'logo-library-title', 'Logo tersimpan');
+    const library = make('div', 'logo-grid');
+
+    function renderCurrent() {
+      currentImg.src = activePath ? logoPublicUrl(activePath) : DEFAULT_LOGO;
+      currentLabel.textContent = activePath ? 'Logo unggahan Admin' : 'Logo bawaan situs';
+      resetButton.disabled = !activePath;
+    }
+
+    async function refreshLibrary() {
+      library.replaceChildren(make('div', 'table-empty', 'Memuat…'));
+      const { data, error } = await client.storage.from(LOGO_BUCKET).list(LOGO_FOLDER, { limit: 60, sortBy: { column: 'created_at', order: 'desc' } });
+      if (error) { library.replaceChildren(make('div', 'admin-message is-error', 'Daftar logo tidak dapat dimuat.')); return; }
+      const files = (data || []).filter(item => item.name && item.id && !item.name.startsWith('.'));
+      if (!files.length) { library.replaceChildren(make('div', 'table-empty', 'Belum ada logo yang diunggah. Logo bawaan masih dipakai.')); return; }
+      library.replaceChildren(...files.map(item => {
+        const path = `${LOGO_FOLDER}/${item.name}`;
+        const card = make('div', `logo-card${path === activePath ? ' is-active' : ''}`);
+        const frame = make('div', 'logo-frame');
+        const img = make('img');
+        img.alt = '';
+        img.loading = 'lazy';
+        img.src = logoPublicUrl(path);
+        frame.append(img);
+        const date = item.created_at ? new Date(item.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+        const actions = make('div', 'logo-card-actions');
+        const useButton = make('button', 'admin-link-button', path === activePath ? 'Dipakai' : 'Pakai');
+        useButton.type = 'button';
+        useButton.disabled = path === activePath;
+        useButton.addEventListener('click', async () => {
+          useButton.disabled = true;
+          const error = await setActiveLogo(path);
+          if (error) { useButton.disabled = false; setMessage('Logo gagal dipasang. Pastikan peran Pemilik/Editor Situs aktif.', 'error'); return; }
+          activePath = path; renderCurrent(); refreshLibrary();
+          setMessage('Logo diganti. Muat ulang beranda untuk melihat hasilnya.');
+        });
+        const deleteButton = make('button', 'admin-link-button is-danger', 'Hapus');
+        deleteButton.type = 'button';
+        deleteButton.disabled = path === activePath;
+        deleteButton.title = path === activePath ? 'Ganti ke logo lain dulu sebelum menghapus.' : '';
+        deleteButton.addEventListener('click', async () => {
+          if (!window.confirm('Hapus logo ini dari penyimpanan? Tindakan ini tidak bisa dibatalkan.')) return;
+          deleteButton.disabled = true;
+          const { error } = await client.storage.from(LOGO_BUCKET).remove([path]);
+          if (error) { deleteButton.disabled = false; setMessage('Logo gagal dihapus.', 'error'); return; }
+          setMessage('Logo dihapus dari penyimpanan.');
+          refreshLibrary();
+        });
+        actions.append(useButton, deleteButton);
+        card.append(frame, make('small', '', date), actions);
+        return card;
+      }));
+    }
+
+    let chosenFile = null;
+    fileInput.addEventListener('change', async () => {
+      chosenFile = null;
+      uploadButton.disabled = true;
+      previewFrame.hidden = true;
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) { uploadNote.textContent = 'Belum ada file dipilih.'; return; }
+      if (!LOGO_TYPES[file.type]) { uploadNote.textContent = 'Format tidak didukung. Gunakan PNG, JPG, atau WebP.'; return; }
+      if (file.size > LOGO_MAX_BYTES) { uploadNote.textContent = 'Ukuran file lebih dari 2 MB. Perkecil gambar terlebih dahulu.'; return; }
+      const size = await readImageSize(file);
+      if (!size) { uploadNote.textContent = 'File tidak dapat dibaca sebagai gambar.'; return; }
+      previewImg.src = size.url;
+      previewFrame.hidden = false;
+      const ratio = size.width / size.height;
+      const notes = [`${size.width}×${size.height} px, ${(file.size / 1024).toFixed(0)} KB.`];
+      if (Math.min(size.width, size.height) < 300) notes.push('Resolusi kecil; logo bisa tampak buram. Disarankan minimal 500×500 px.');
+      if (ratio < 0.9 || ratio > 1.1) notes.push('Gambar tidak persegi; bagian tepi bisa terpotong oleh bingkai lingkaran.');
+      uploadNote.textContent = notes.join(' ');
+      chosenFile = file;
+      uploadButton.disabled = false;
+    });
+
+    upload.addEventListener('submit', async event => {
+      event.preventDefault();
+      if (!chosenFile) return;
+      uploadButton.disabled = true;
+      setMessage('Mengunggah logo…');
+      const random = Math.random().toString(36).slice(2, 8);
+      const path = `${LOGO_FOLDER}/${Date.now()}-${random}.${LOGO_TYPES[chosenFile.type]}`;
+      const { error: uploadError } = await client.storage.from(LOGO_BUCKET).upload(path, chosenFile, {
+        contentType: chosenFile.type,
+        cacheControl: '31536000',
+        upsert: false
+      });
+      if (uploadError) {
+        uploadButton.disabled = false;
+        setMessage('Logo gagal diunggah. Pastikan migrasi logo sudah dijalankan dan peran Pemilik/Editor Situs aktif.', 'error');
+        return;
+      }
+      const saveError = await setActiveLogo(path);
+      if (saveError) { setMessage('Logo terunggah, tetapi belum dipasang. Klik “Pakai” pada daftar logo tersimpan.', 'warning'); }
+      else { activePath = path; setMessage('Logo baru terpasang. Muat ulang beranda untuk melihat hasilnya.'); }
+      upload.reset();
+      chosenFile = null;
+      previewFrame.hidden = true;
+      uploadNote.textContent = 'Belum ada file dipilih.';
+      renderCurrent();
+      refreshLibrary();
+    });
+
+    resetButton.addEventListener('click', async () => {
+      if (!window.confirm('Kembalikan ke logo bawaan situs? Logo unggahan tetap tersimpan dan bisa dipakai lagi.')) return;
+      resetButton.disabled = true;
+      const error = await setActiveLogo('');
+      if (error) { resetButton.disabled = false; setMessage('Gagal mengembalikan logo bawaan.', 'error'); return; }
+      activePath = ''; renderCurrent(); refreshLibrary();
+      setMessage('Logo bawaan dipakai kembali. Muat ulang beranda untuk melihat hasilnya.');
+    });
+
+    renderCurrent();
+    section.append(current, upload, libraryTitle, library);
+    refreshLibrary();
+    return section;
   }
 
   function makeTable(headers) {
