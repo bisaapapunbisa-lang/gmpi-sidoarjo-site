@@ -59,3 +59,18 @@ Contoh kartu di beranda memakai kode `CONTOH` dan ditandai sebagai kartu contoh 
 - Buka **Pengaturan sisi belakang** untuk mengisi nama & jabatan penanda tangan (diingat di browser) dan, bila perlu, tanda tangan PNG transparan (tidak diunggah).
 - Unduh **depan** dan **belakang** sebagai dua file PNG, lalu cetak bolak-balik. Area **CAP DPD** disediakan untuk stempel basah.
 - Di beranda, pengunjung bisa mengklik contoh kartu untuk melihatnya berputar ke sisi belakang.
+
+## Persetujuan Kartu Anggota (migration 0008)
+
+Alur: **Petugas Registrasi menginput → Penyetuju Kartu menyetujui → QR berlaku & kartu bisa diunduh.**
+
+1. Jalankan `supabase/migrations/202610200008_card_approval.sql` di Supabase SQL Editor.
+2. Undang akun penyetuju (mis. Ketua/Sekretaris DPD): Supabase → Authentication → Users → Invite user.
+3. Admin → tab **Hak akses** → isi email → pilih peran **Penyetuju kartu anggota** → simpan.
+
+Aturan (dijaga oleh database):
+- Kartu baru dan kartu yang datanya diubah berstatus **Menunggu persetujuan**; QR menampilkan "Kartu belum disetujui" tanpa nama/data.
+- Hanya **Penyetuju Kartu** atau **Pemilik** yang bisa menyetujui/menolak.
+- **Pembuat/pengubah kartu tidak bisa menyetujui kartunya sendiri.** Siapkan minimal 2 orang (mis. Petugas Registrasi + Ketua DPD).
+- Kartu ditolak bisa diperbaiki lalu **Ajukan ulang**. Kartu dicabut harus diajukan ulang dan disetujui lagi.
+- Kartu yang terbit sebelum fitur ini tetap Aktif (dianggap sudah disetujui).

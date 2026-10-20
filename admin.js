@@ -19,7 +19,8 @@
     content_editor: 'Editor situs',
     lbh_officer: 'Petugas LBH',
     registrar: 'Petugas registrasi (data sensitif)',
-    media_partner: 'Mitra media (berita)'
+    media_partner: 'Mitra media (berita)',
+    card_approver: 'Penyetuju kartu anggota'
   };
   const REPORT_STATUSES = ['diterima', 'ditinjau', 'ditindaklanjuti', 'ditutup'];
   const MEMBER_STATUSES = ['menunggu_verifikasi', 'ditinjau', 'diterima', 'ditolak'];
@@ -44,7 +45,10 @@
   function canSeeMembers() { return roles.includes('registrar'); }
   function isOwner() { return roles.includes('owner'); }
   function canManageNews() { return canEditContent() || roles.includes('media_partner'); }
-  function canManageCards() { return roles.includes('owner') || roles.includes('registrar'); }
+  function canManageCards() { return roles.includes('owner') || roles.includes('registrar') || roles.includes('card_approver'); }
+  function canIssueCards() { return roles.includes('owner') || roles.includes('registrar'); }
+  function canApproveCards() { return roles.includes('owner') || roles.includes('card_approver'); }
+  function myEmail() { return String(currentUser?.email || '').toLowerCase(); }
 
   if (!config.url || !config.publishableKey) {
     setupMessage.textContent = 'Admin belum dikonfigurasi. Pemilik situs perlu mengisi URL dan publishable key Supabase di supabase-config.js, menjalankan migrasi hak akses, lalu mengundang dan memberi peran akun. Jangan pernah menaruh service_role key di file browser.';
@@ -1170,7 +1174,9 @@
   // ---- Kartu Tanda Anggota (KTA) dengan QR verifikasi ----
   const DISTRICTS = ['Sidoarjo','Buduran','Gedangan','Waru','Sukodono','Taman','Krian','Balongbendo','Tarik','Prambon','Krembung','Porong','Jabon','Tanggulangin','Candi','Tulangan','Wonoayu','Sedati'];
   const JABATAN_SUGGESTIONS = ['Anggota', 'Warga GMPI', 'Ketua DPD', 'Wakil Ketua DPD', 'Sekretaris DPD', 'Bendahara DPD', 'Ketua Departemen DPD', 'Pengurus DPD', 'Ketua DPC', 'Pengurus DPC', 'Korja Ranting', 'LBH GMPI', 'MPI Sidoarjo', 'SB GMPI', 'Satgas Brigade'];
-  const CARD_STATUS_LABELS = { aktif: 'Aktif', nonaktif: 'Nonaktif', dicabut: 'Dicabut' };
+  const CARD_STATUS_LABELS = { menunggu: 'Menunggu persetujuan', ditolak: 'Ditolak', aktif: 'Aktif', nonaktif: 'Nonaktif', dicabut: 'Dicabut' };
+  const CARD_COLS_BASE = 'id,card_token,member_number,full_name,district,jabatan,status,issued_at,valid_until';
+  const CARD_COLS = CARD_COLS_BASE + ',submitted_by,approved_by,approved_at,review_note';
 
   function isoDate(date) {
     const d = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
@@ -1214,14 +1220,31 @@
     const heading = make('div', 'workspace-heading');
     const titleBlock = make('div');
     titleBlock.append(make('h3', '', 'Kartu Tanda Anggota'));
-    titleBlock.append(make('p', '', 'Terbitkan kartu vertikal ber-QR. Setiap kartu mendapat kode acak unik; saat dipindai, halaman verifikasi resmi menampilkan nama, nomor, kecamatan, jabatan, status, dan masa berlaku. NIK tidak pernah dicantumkan.'));
+    titleBlock.append(make('p', '', 'Petugas Registrasi menginput kartu → Penyetuju Kartu memeriksa dan menyetujui → baru QR berlaku dan kartu bisa diunduh untuk dicetak. Pembuat kartu tidak bisa menyetujui kartunya sendiri. NIK tidak pernah dicantumkan.'));
     heading.append(titleBlock);
 
-    const { data: cardRows, error } = await client.from('member_cards')
-      .select('id,card_token,member_number,full_name,district,jabatan,status,issued_at,valid_until')
-      .eq('is_sample', false).order('created_at', { ascending: false }).limit(500);
+    let cols = CARD_COLS;
+    let approvalReady = true;
+    let { data: cardRows, error } = await client.from('member_cards')
+      .select(cols).eq('is_sample', false).order('created_at', { ascending: false }).limit(500);
+    if (error) {
+      approvalReady = false; cols = CARD_COLS_BASE;
+      ({ data: cardRows, error } = await client.from('member_cards')
+        .select(cols).eq('is_sample', false).order('created_at', { ascending: false }).limit(500));
+    }
     if (error) return showWorkspaceError('Data kartu belum bisa dibuka. Jalankan migrasi 202610200004_member_cards.sql di Supabase, lalu muat ulang halaman.');
     let cards = cardRows || [];
+    const me = myEmail();
+    const issuer = canIssueCards();
+    const approver = canApproveCards() && approvalReady;
+    const setupNote = approvalReady ? null : make('div', 'admin-message is-error', 'Fitur persetujuan kartu belum aktif. Jalankan migrasi 202610200008_card_approval.sql di Supabase SQL Editor, lalu muat ulang halaman.');
+    function cardError(err, fallback) {
+      const msg = String(err?.message || '');
+      if (/sendiri|membuat atau mengubah/i.test(msg)) return 'Kartu ini Anda yang membuat/mengubah — harus disetujui oleh Penyetuju Kartu lain.';
+      if (/Hanya Penyetuju/i.test(msg)) return 'Hanya Penyetuju Kartu atau Pemilik yang dapat menyetujui/menolak kartu.';
+      if (/Ajukan ulang/i.test(msg)) return 'Kartu ini harus diajukan ulang dulu sebelum bisa diaktifkan.';
+      return fallback;
+    }
 
     await window.GMPICard.ready();
     const logo = await cardLogo();
@@ -1317,7 +1340,8 @@
         name: nameIn.value, number: numberIn.value, district: districtIn.value, jabatan: jabatanIn.value,
         issued: issuedIn.value, validUntil: validIn.value, token: editing?.card_token || '',
         photo, photoZoom: Number(zoomIn.value) / 100, photoX: Number(xIn.value) / 100, photoY: Number(yIn.value) / 100, logo,
-        signerName: signerNameIn.value, signerTitle: signerTitleIn.value, signature
+        signerName: signerNameIn.value, signerTitle: signerTitleIn.value, signature,
+        stamp: approvalReady && (!editing || editing.status !== 'aktif') && !(editing && ['nonaktif', 'dicabut'].includes(editing.status)) ? 'DRAF' : ''
       };
     }
     let raf = 0;
@@ -1348,16 +1372,24 @@
 
     function setMode() {
       if (editing) {
-        statusLine.replaceChildren(make('b', '', 'Kartu terbit'), make('span', '', ` · ${editing.member_number} · status ${CARD_STATUS_LABELS[editing.status] || editing.status}`));
-        saveBtn.textContent = 'Simpan perubahan';
-        downloadBtn.disabled = false;
-        downloadBackBtn.disabled = false;
+        const st = editing.status;
+        const ok = st === 'aktif';
+        statusLine.replaceChildren(make('b', '', ok ? 'Kartu disetujui' : (st === 'menunggu' ? 'Menunggu persetujuan' : 'Kartu tersimpan')), make('span', '', ` · ${editing.member_number} · status ${CARD_STATUS_LABELS[st] || st}${st === 'menunggu' ? ' — QR belum berlaku, kartu belum bisa diunduh' : ''}${st === 'ditolak' && editing.review_note ? ` — catatan: ${editing.review_note}` : ''}`));
+        statusLine.classList.toggle('is-pending', !ok);
+        saveBtn.textContent = st === 'menunggu' ? 'Simpan perubahan' : 'Simpan perubahan & ajukan ulang';
+        saveBtn.hidden = false;
+        downloadBtn.disabled = !ok && approvalReady;
+        downloadBackBtn.disabled = !ok && approvalReady;
+        downloadBtn.title = downloadBtn.disabled ? 'Kartu bisa diunduh setelah disetujui' : '';
+        downloadBackBtn.title = downloadBtn.title;
         verifyLink.hidden = false;
         verifyLink.href = `verifikasi.html?k=${encodeURIComponent(editing.card_token)}`;
         verifyLink.textContent = `Cek halaman verifikasi kartu ini ↗`;
       } else {
-        statusLine.replaceChildren(make('b', '', 'Kartu baru'), make('span', '', ' · QR dibuat otomatis setelah disimpan'));
-        saveBtn.textContent = 'Simpan & terbitkan kartu';
+        statusLine.replaceChildren(make('b', '', 'Kartu baru'), make('span', '', issuer ? ' · setelah disimpan, kartu menunggu persetujuan Penyetuju Kartu' : ' · hanya Petugas Registrasi/Pemilik yang dapat menginput kartu baru'));
+        statusLine.classList.remove('is-pending');
+        saveBtn.textContent = approvalReady ? 'Simpan & ajukan persetujuan' : 'Simpan & terbitkan kartu';
+        saveBtn.hidden = !issuer;
         downloadBtn.disabled = true;
         downloadBackBtn.disabled = true;
         verifyLink.hidden = true;
@@ -1422,21 +1454,27 @@
       if (payload.full_name.length < 2) { setMessage('Isi nama lengkap anggota.', 'error'); return; }
       if (!payload.district) { setMessage('Pilih kecamatan.', 'error'); return; }
       if (payload.valid_until < payload.issued_at) { setMessage('Tanggal berlaku harus setelah tanggal terbit.', 'error'); return; }
+      if (editing && approvalReady && editing.status !== 'menunggu') {
+        const changed = payload.full_name !== editing.full_name || payload.district !== editing.district || payload.jabatan !== editing.jabatan || payload.issued_at !== editing.issued_at || payload.valid_until !== editing.valid_until;
+        if (!changed && editing.status !== 'ditolak') { setMessage('Tidak ada perubahan data kartu.'); return; }
+        if (editing.status === 'aktif' && !window.confirm('Kartu ini sudah disetujui. Jika datanya diubah, kartu kembali MENUNGGU PERSETUJUAN dan hasil pindai QR berstatus “belum disetujui” sampai disetujui ulang. Lanjutkan?')) return;
+      }
       saveBtn.disabled = true;
       let result;
       if (editing) {
-        result = await client.from('member_cards').update(payload).eq('id', editing.id)
-          .select('id,card_token,member_number,full_name,district,jabatan,status,issued_at,valid_until').single();
+        const unchangedRejected = editing.status === 'ditolak' && payload.full_name === editing.full_name && payload.district === editing.district && payload.jabatan === editing.jabatan && payload.issued_at === editing.issued_at && payload.valid_until === editing.valid_until;
+        result = await client.from('member_cards').update(unchangedRejected ? { status: 'menunggu' } : payload).eq('id', editing.id)
+          .select(cols).single();
       } else {
         const number = numberIn.value.trim().toUpperCase();
         if (!/^[A-Z0-9][A-Z0-9./-]{2,39}$/.test(number)) { saveBtn.disabled = false; setMessage('Nomor anggota hanya boleh huruf besar, angka, titik, garis miring, atau strip (3–40 karakter).', 'error'); return; }
         result = await client.from('member_cards').insert({ ...payload, member_number: number })
-          .select('id,card_token,member_number,full_name,district,jabatan,status,issued_at,valid_until').single();
+          .select(cols).single();
       }
       saveBtn.disabled = false;
       if (result.error) {
         const duplicate = String(result.error.code) === '23505';
-        setMessage(duplicate ? 'Nomor anggota sudah dipakai kartu lain. Gunakan nomor berbeda.' : 'Kartu gagal disimpan. Pastikan migrasi kartu sudah dijalankan dan peran Anda Pemilik/Petugas Registrasi.', 'error');
+        setMessage(duplicate ? 'Nomor anggota sudah dipakai kartu lain. Gunakan nomor berbeda.' : cardError(result.error, 'Kartu gagal disimpan. Pastikan migrasi kartu sudah dijalankan dan peran Anda Pemilik/Petugas Registrasi.'), 'error');
         return;
       }
       const wasNew = !editing;
@@ -1444,11 +1482,13 @@
       cards = [editing, ...cards.filter(c => c.id !== editing.id)];
       renderList();
       setMode();
-      setMessage(wasNew ? 'Kartu terbit dan QR sudah aktif. Unduh sisi depan dan belakang (PNG) untuk dicetak.' : 'Perubahan kartu tersimpan. QR tetap sama, jadi kartu lama yang sudah dicetak tetap bisa diverifikasi.');
+      if (editing.status === 'menunggu') setMessage(wasNew ? 'Kartu tersimpan dan MENUNGGU PERSETUJUAN. QR belum berlaku; kartu bisa diunduh setelah disetujui Penyetuju Kartu.' : 'Perubahan tersimpan. Kartu menunggu persetujuan ulang dari Penyetuju Kartu.');
+      else setMessage(wasNew ? 'Kartu terbit dan QR sudah aktif. Unduh sisi depan dan belakang (PNG) untuk dicetak.' : 'Perubahan kartu tersimpan. QR tetap sama, jadi kartu lama yang sudah dicetak tetap bisa diverifikasi.');
     });
 
     function downloadSide(which) {
       if (!editing) return;
+      if (approvalReady && editing.status !== 'aktif') { setMessage('Kartu hanya bisa diunduh setelah disetujui dan berstatus Aktif.', 'error'); return; }
       if (which === 'front' && !photo && !window.confirm('Belum ada foto. Unduh sisi depan tanpa foto?')) return;
       const out = document.createElement('canvas');
       render(out, which);
@@ -1468,7 +1508,7 @@
     // --- Daftar kartu ---
     const listHeading = make('div', 'workspace-heading card-list-heading');
     const listTitle = make('div');
-    listTitle.append(make('h3', '', 'Kartu yang sudah terbit'));
+    listTitle.append(make('h3', '', 'Daftar kartu'));
     listTitle.append(make('p', '', 'Ubah status menjadi Nonaktif atau Dicabut bila kartu hilang, disalahgunakan, atau anggota keluar — hasil pindai QR langsung berubah.'));
     listHeading.append(listTitle);
     const search = input('card-search', 'search', { placeholder: 'Cari nama / nomor…' });
@@ -1476,9 +1516,39 @@
     listHeading.append(search);
     const listWrap = make('div');
 
+    const pendingBox = make('div', 'card-pending');
+    async function decide(card, status) {
+      let note = null;
+      if (status === 'ditolak') {
+        note = window.prompt(`Alasan menolak kartu ${card.member_number} (${card.full_name})? Catatan ini terlihat oleh Petugas Registrasi.`, '');
+        if (note === null) return;
+        note = note.trim().slice(0, 300) || null;
+      } else if (!window.confirm(`Setujui kartu ${card.member_number} atas nama ${card.full_name} (${card.district} · ${card.jabatan})? Setelah disetujui, QR langsung berlaku.`)) return;
+      const { data: upd, error: e } = await client.from('member_cards').update(status === 'ditolak' ? { status, review_note: note } : { status }).eq('id', card.id).select(cols).single();
+      if (e) { setMessage(cardError(e, 'Keputusan gagal disimpan.'), 'error'); return; }
+      Object.assign(card, upd);
+      if (editing?.id === card.id) { editing = card; setMode(); }
+      renderList();
+      setMessage(status === 'aktif' ? `Kartu ${card.member_number} DISETUJUI. QR sudah berlaku dan kartu bisa diunduh untuk dicetak.` : `Kartu ${card.member_number} ditolak.`);
+    }
+    function renderPending() {
+      if (!approvalReady) { pendingBox.replaceChildren(); return; }
+      const waiting = cards.filter(c => c.status === 'menunggu');
+      const mine = waiting.filter(c => approver && c.submitted_by !== me);
+      if (!waiting.length) { pendingBox.replaceChildren(); pendingBox.hidden = true; return; }
+      pendingBox.hidden = false;
+      const text = approver
+        ? (mine.length ? `${mine.length} kartu menunggu persetujuan Anda.` : `${waiting.length} kartu menunggu persetujuan Penyetuju Kartu lain (Anda pembuatnya).`)
+        : `${waiting.length} kartu menunggu persetujuan Penyetuju Kartu.`;
+      pendingBox.replaceChildren(make('b', '', '⏳ '), make('span', '', text + ' Kartu yang menunggu ada di bagian atas daftar.'));
+    }
+
     function renderList() {
+      renderPending();
       const q = search.value.trim().toLowerCase();
-      const shown = cards.filter(c => !q || c.full_name.toLowerCase().includes(q) || c.member_number.toLowerCase().includes(q));
+      const rank = c => (c.status === 'menunggu' ? 0 : c.status === 'ditolak' ? 1 : 2);
+      const shown = cards.filter(c => !q || c.full_name.toLowerCase().includes(q) || c.member_number.toLowerCase().includes(q))
+        .slice().sort((a, b) => rank(a) - rank(b));
       const { wrap, body } = makeTable(['No. anggota', 'Nama', 'Kecamatan / jabatan', 'Berlaku s/d', 'Status', 'Aksi']);
       if (!shown.length) {
         listWrap.replaceChildren(make('div', 'table-empty', cards.length ? 'Tidak ada kartu yang cocok.' : 'Belum ada kartu yang diterbitkan.'));
@@ -1492,24 +1562,62 @@
         const expired = card.valid_until < today;
         row.append(make('td', expired ? 'is-expired' : '', `${window.GMPICard.formatDate(card.valid_until)}${expired ? ' (habis)' : ''}`));
         const statusCell = make('td');
+        if (approvalReady && ['menunggu', 'ditolak', 'dicabut'].includes(card.status)) {
+          statusCell.append(make('span', `card-state is-${card.status}`, CARD_STATUS_LABELS[card.status]));
+          if (card.status === 'ditolak' && card.review_note) statusCell.append(make('small', 'card-note', card.review_note));
+          if (card.status === 'menunggu' && card.submitted_by) statusCell.append(make('small', 'card-note', `diajukan ${card.submitted_by}`));
+          row.append(statusCell);
+        } else {
         const select = make('select');
-        Object.entries(CARD_STATUS_LABELS).forEach(([value, label]) => { const o = new Option(label, value); o.selected = card.status === value; select.append(o); });
+        const allowed = !approvalReady ? Object.keys(CARD_STATUS_LABELS).filter(k => !['menunggu', 'ditolak'].includes(k))
+          : card.status === 'aktif' ? ['aktif', 'nonaktif', 'dicabut']
+          : ['nonaktif', 'dicabut', ...(approver && card.submitted_by !== me ? ['aktif'] : [])];
+        allowed.forEach(value => { const o = new Option(CARD_STATUS_LABELS[value], value); o.selected = card.status === value; select.append(o); });
+        if (card.status === 'aktif' && card.approved_by && card.approved_by !== 'sebelum-fitur-persetujuan') statusCell.title = `Disetujui ${card.approved_by}`;
         select.addEventListener('change', async () => {
           if (select.value === 'dicabut' && !window.confirm(`Cabut kartu ${card.member_number}? Hasil pindai QR akan menampilkan “Kartu dicabut”.`)) { select.value = card.status; return; }
           select.disabled = true;
           const { error: updateError } = await client.from('member_cards').update({ status: select.value }).eq('id', card.id);
           select.disabled = false;
-          if (updateError) { select.value = card.status; setMessage('Status kartu gagal diubah.', 'error'); return; }
+          if (updateError) { select.value = card.status; setMessage(cardError(updateError, 'Status kartu gagal diubah.'), 'error'); return; }
           card.status = select.value;
           if (editing?.id === card.id) { editing.status = card.status; setMode(); }
           setMessage(`Status kartu ${card.member_number} menjadi ${CARD_STATUS_LABELS[card.status]}.`);
+          renderList();
         });
         statusCell.append(select);
         row.append(statusCell);
+        }
         const actions = make('td', 'card-actions');
-        const openBtn = make('button', 'admin-link-button', 'Buka & unduh');
+        const openBtn = make('button', 'admin-link-button', !approvalReady || card.status === 'aktif' ? 'Buka & unduh' : 'Buka');
         openBtn.type = 'button';
         openBtn.addEventListener('click', () => openCard(card));
+        if (approvalReady && card.status === 'menunggu' && approver) {
+          if (card.submitted_by === me) actions.append(make('small', 'card-note', 'Perlu penyetuju lain'));
+          else {
+            const okBtn = make('button', 'admin-button admin-button-red card-approve', 'Setujui');
+            okBtn.type = 'button';
+            okBtn.addEventListener('click', () => decide(card, 'aktif'));
+            const noBtn = make('button', 'admin-button admin-button-outline card-reject', 'Tolak');
+            noBtn.type = 'button';
+            noBtn.addEventListener('click', () => decide(card, 'ditolak'));
+            actions.append(okBtn, noBtn);
+          }
+        }
+        if (approvalReady && issuer && ['ditolak', 'dicabut'].includes(card.status)) {
+          const again = make('button', 'admin-link-button', 'Ajukan ulang');
+          again.type = 'button';
+          again.addEventListener('click', async () => {
+            if (card.status === 'dicabut' && !window.confirm(`Ajukan ulang kartu ${card.member_number} yang sudah dicabut? Kartu perlu disetujui lagi sebelum berlaku.`)) return;
+            const { data: upd, error: e } = await client.from('member_cards').update({ status: 'menunggu' }).eq('id', card.id).select(cols).single();
+            if (e) { setMessage(cardError(e, 'Kartu gagal diajukan ulang.'), 'error'); return; }
+            Object.assign(card, upd);
+            if (editing?.id === card.id) { editing = card; setMode(); }
+            renderList();
+            setMessage(`Kartu ${card.member_number} diajukan ulang dan menunggu persetujuan.`);
+          });
+          actions.append(again);
+        }
         const checkLink = make('a', 'admin-link-button', 'Cek QR ↗');
         checkLink.href = `verifikasi.html?k=${encodeURIComponent(card.card_token)}`;
         checkLink.target = '_blank'; checkLink.rel = 'noopener';
@@ -1521,7 +1629,7 @@
     }
     search.addEventListener('input', renderList);
 
-    workspace.replaceChildren(heading, designer, listHeading, listWrap);
+    workspace.replaceChildren(...[heading, setupNote, pendingBox, designer, listHeading, listWrap].filter(Boolean));
     resetForm();
     renderList();
   }

@@ -124,3 +124,13 @@
 .news-acc-add .admin-button{min-height:38px}
 .news-partner-del{justify-self:start;color:#9a2928}
 @media(max-width:640px){.news-admin-row{grid-template-columns:64px 1fr}.news-admin-thumb{width:64px;height:40px}.news-state,.news-admin-actions{grid-column:2}.news-partner-add{grid-template-columns:1fr}}
+/* Persetujuan kartu */
+.card-mode.is-pending{border-left-color:#d71920;background:#fbefe9}
+.card-pending{margin:0 0 18px;padding:12px 16px;background:#fff6dc;border:1px solid #e3c46a;border-left:4px solid #c69b3b;font-size:13px;color:#3d3426}
+.card-pending[hidden]{display:none}
+.card-state{display:inline-block;padding:4px 8px;font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;border:1px solid}
+.card-state.is-menunggu{color:#8a5b00;background:#fff3cf;border-color:#e3c46a}
+.card-state.is-ditolak{color:#a3161b;background:#fdecec;border-color:#efb3b5}
+.card-state.is-dicabut{color:#5b5752;background:#eeeae2;border-color:#cfc8bb}
+.card-note{display:block;margin-top:4px;font-size:11px;color:#77736d;max-width:220px;line-height:1.35}
+.card-actions .card-approve,.card-actions .card-reject{padding:7px 12px;font-size:11px;min-height:0}

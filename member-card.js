@@ -407,17 +407,18 @@
     spaced(ctx, 'SETIA BERSAUDARA SAMPAI URAT NADI', W / 2, fy + 28, 3.4, 'center');
 
     // ---------- Tanda CONTOH ----------
-    if (data.sample) {
+    const mark = data.sample ? 'CONTOH' : String(data.stamp || '');
+    if (mark) {
       ctx.save();
       ctx.translate(W / 2, H / 2 + 20);
       ctx.rotate(-0.5);
       ctx.textAlign = 'center';
       ctx.font = `150px ${F.display}`;
       ctx.fillStyle = 'rgba(255,255,255,.08)';
-      ctx.fillText('CONTOH', 0, 50);
+      ctx.fillText(mark, 0, 50);
       ctx.strokeStyle = 'rgba(255,255,255,.28)';
       ctx.lineWidth = 2;
-      ctx.strokeText('CONTOH', 0, 50);
+      ctx.strokeText(mark, 0, 50);
       ctx.restore();
     }
 
@@ -622,17 +623,18 @@
     ctx.font = `800 11.5px ${F.body}`;
     spaced(ctx, 'GERAKAN MILITANSI PEJUANG INDONESIA', W / 2, fy + 28, 3, 'center');
 
-    if (data.sample) {
+    const mark = data.sample ? 'CONTOH' : String(data.stamp || '');
+    if (mark) {
       ctx.save();
       ctx.translate(W / 2, H / 2 + 20);
       ctx.rotate(-0.5);
       ctx.textAlign = 'center';
       ctx.font = `150px ${F.display}`;
       ctx.fillStyle = 'rgba(255,255,255,.07)';
-      ctx.fillText('CONTOH', 0, 50);
+      ctx.fillText(mark, 0, 50);
       ctx.strokeStyle = 'rgba(255,255,255,.24)';
       ctx.lineWidth = 2;
-      ctx.strokeText('CONTOH', 0, 50);
+      ctx.strokeText(mark, 0, 50);
       ctx.restore();
     }
     ctx.strokeStyle = 'rgba(255,255,255,.10)';

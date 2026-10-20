@@ -51,3 +51,9 @@
 - [ ] Apakah berita media perlu **persetujuan pengurus** sebelum tayang? (bisa diatur per media)
 - [ ] Siapa pengurus yang bertugas memeriksa/menyetujui berita (peran Editor Situs).
 - [ ] Logo tiap media (PNG/JPG) untuk ditampilkan di bagian "Media mitra".
+
+
+## G. Persetujuan kartu anggota
+- [ ] Tentukan siapa **Penyetuju Kartu** (mis. Ketua DPD dan/atau Sekretaris DPD).
+- [ ] Tentukan siapa **Petugas Registrasi** (penginput kartu) — harus orang berbeda dari penyetuju.
+- [ ] Jalankan SQL 0008, undang email penyetuju, beri peran di Admin → Hak akses.

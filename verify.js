@@ -63,6 +63,15 @@
         setState('invalid', '✕', 'Kartu tidak terdaftar', 'Kode ini tidak ditemukan di basis data GMPI DPD Sidoarjo. Kartu kemungkinan palsu atau kodenya salah ketik.');
         return;
       }
+      if (card.status === 'menunggu' || card.status === 'ditolak') {
+        details.hidden = true;
+        if (card.status === 'menunggu') setState('warning', '!', 'Kartu belum disetujui', 'Kartu ini sedang menunggu persetujuan pengurus GMPI DPD Sidoarjo dan BELUM berlaku sebagai tanda anggota.');
+        else setState('invalid', '✕', 'Kartu tidak berlaku', 'Pengajuan kartu ini tidak disetujui oleh pengurus GMPI DPD Sidoarjo. Kartu tidak sah.');
+        const nowP = new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Jakarta', dateStyle: 'long', timeStyle: 'short' }).format(new Date());
+        checked.textContent = `Diperiksa ${nowP} WIB · kode ••••${token.slice(-6)}`;
+        checked.hidden = false;
+        return;
+      }
       document.querySelector('#vf-name').textContent = card.full_name;
       document.querySelector('#vf-number').textContent = card.member_number;
       document.querySelector('#vf-district').textContent = card.district;
