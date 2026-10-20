@@ -30,5 +30,32 @@
       "source": "/V/:token",
       "destination": "/verifikasi"
     }
+  ],
+  "redirects": [
+    {
+      "source": "/(.*)\\.md",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/supabase/:path*",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/uploads/:path*",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/exports/:path*",
+      "destination": "/",
+      "permanent": false
+    },
+    {
+      "source": "/kop/:path*",
+      "destination": "/",
+      "permanent": false
+    }
   ]
 }

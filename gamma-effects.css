@@ -16,8 +16,15 @@
 @media(prefers-reduced-motion:reduce){.hero-emblem:after,.hero-media:after,.video-placeholder,.play-mark{animation:none!important}.pillar-card,.gallery-tile,.pillar-icon{transition:none!important}}
 .footer-links .footer-admin{padding:8px 11px;border:1px solid rgba(224,184,85,.65);color:#e0b855;font-weight:800;letter-spacing:.7px}.footer-links .footer-admin:hover{background:#c69b3b;color:#111110}
 /* Logo divisi pada kartu pilar */
-.pillar-emblem{width:116px;height:116px;margin-top:22px;margin-bottom:4px;font-size:0;line-height:0}
-.pillar-emblem img{display:block;width:100%;height:100%;filter:drop-shadow(0 10px 18px rgba(0,0,0,.5));transition:filter .3s ease}
-.pillar-card:hover .pillar-emblem img,.pillar-card:focus-within .pillar-emblem img{filter:drop-shadow(0 10px 18px rgba(0,0,0,.5)) drop-shadow(0 0 14px rgba(224,184,85,.45))}
-.pillar-lbh:hover .pillar-emblem img{filter:drop-shadow(0 10px 18px rgba(0,0,0,.5)) drop-shadow(0 0 16px rgba(229,28,36,.55))}
-@media(max-width:640px){.pillar-emblem{width:96px;height:96px;margin-top:16px}}
+.pillar-emblem{position:relative;width:150px;height:150px;margin-top:22px;margin-bottom:6px;font-size:0;line-height:0;perspective:600px}
+.pillar-emblem:before{content:'';position:absolute;inset:-9px;border-radius:50%;border:1px dashed rgba(224,184,85,.42);animation:emblemSpin 40s linear infinite;pointer-events:none}
+.pillar-emblem:after{content:'';position:absolute;inset:0;border-radius:50%;pointer-events:none;background:linear-gradient(115deg,transparent 0 38%,rgba(255,246,214,.55) 47%,rgba(255,255,255,.85) 50%,rgba(255,246,214,.5) 53%,transparent 62% 100%);background-size:260% 100%;background-position:130% 0;mix-blend-mode:overlay;animation:emblemShine 7s ease-in-out infinite}
+.pillar-card:nth-child(2) .pillar-emblem:after{animation-delay:1.2s}.pillar-card:nth-child(3) .pillar-emblem:after{animation-delay:2.4s}.pillar-card:nth-child(4) .pillar-emblem:after{animation-delay:3.6s}
+.pillar-emblem img{display:block;width:100%;height:100%;border-radius:50%;filter:drop-shadow(0 12px 22px rgba(0,0,0,.6));transition:transform .5s cubic-bezier(.2,.8,.2,1),filter .3s ease}
+.pillar-card:hover .pillar-emblem img,.pillar-card:focus-within .pillar-emblem img{transform:rotateY(14deg) rotateX(4deg) scale(1.05);filter:drop-shadow(0 14px 24px rgba(0,0,0,.6)) drop-shadow(0 0 18px rgba(224,184,85,.5))}
+.pillar-lbh:hover .pillar-emblem img{filter:drop-shadow(0 14px 24px rgba(0,0,0,.6)) drop-shadow(0 0 18px rgba(229,28,36,.55))}
+.pillar-card:hover .pillar-emblem:after{animation-duration:1.6s}
+@keyframes emblemSpin{to{transform:rotate(360deg)}}
+@keyframes emblemShine{0%,62%{background-position:130% 0}86%,100%{background-position:-30% 0}}
+@media(prefers-reduced-motion:reduce){.pillar-emblem:before,.pillar-emblem:after{animation:none}.pillar-emblem:after{opacity:0}}
+@media(max-width:640px){.pillar-emblem{width:128px;height:128px;margin-top:16px}}
