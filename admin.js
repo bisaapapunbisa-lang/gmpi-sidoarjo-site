@@ -1841,6 +1841,7 @@
       if (/sendiri|membuat atau mengubah/i.test(msg)) return 'Kartu ini Anda yang membuat/mengubah — harus disetujui oleh Penyetuju Kartu lain.';
       if (/Hanya Penyetuju/i.test(msg)) return 'Hanya Penyetuju Kartu atau Pemilik yang dapat menyetujui/menolak kartu.';
       if (/Ajukan ulang/i.test(msg)) return 'Kartu ini harus diajukan ulang dulu sebelum bisa diaktifkan.';
+      if (/nomor khusus/i.test(msg)) return 'Nomor 0001–0100 adalah nomor khusus anggota terpilih dan hanya bisa diberikan oleh Pemilik. Gunakan nomor 0101 ke atas.';
       return fallback;
     }
 
@@ -1849,13 +1850,25 @@
 
     const today = isoDate(new Date());
     const year = today.slice(0, 4);
+    const RESERVED_MAX = 100;
+    const isReservedNumber = n => /^GMPI-SDA-[0-9]{4}-0*([1-9][0-9]?|100)$/.test(String(n || '').toUpperCase());
     function suggestNumber() {
       const prefix = `GMPI-SDA-${year}-`;
       const max = cards.reduce((acc, c) => {
         const m = c.member_number.startsWith(prefix) ? Number(c.member_number.slice(prefix.length)) : 0;
         return Number.isFinite(m) && m > acc ? m : acc;
-      }, 0);
+      }, RESERVED_MAX);
       return prefix + String(max + 1).padStart(4, '0');
+    }
+    // Nomor 0001–0100 tiap tahun = jatah khusus anggota terpilih (hanya Pemilik).
+    function freeReservedNumbers() {
+      const used = new Set(cards.map(c => c.member_number));
+      const out = [];
+      for (let i = 1; i <= RESERVED_MAX; i += 1) {
+        const n = `GMPI-SDA-${year}-${String(i).padStart(4, '0')}`;
+        if (!used.has(n)) out.push(n);
+      }
+      return out;
     }
 
     // --- Formulir & pratinjau ---
@@ -1888,7 +1901,23 @@
     const signerTitleIn = input('card-signer-title', 'text', { maxLength: 60, value: savedSigner.title || 'Ketua Umum GMPI' });
     const signatureIn = input('card-signature', 'file', { accept: 'image/png,image/webp' });
 
-    const rowA = make('div', 'card-form-row'); rowA.append(field('Nomor anggota', numberIn, 'Huruf besar, angka, titik, garis miring, atau strip.'), field('Kecamatan', districtIn));
+    const reservedPick = make('select'); reservedPick.id = 'card-number-kind'; reservedPick.className = 'card-number-kind';
+    reservedPick.setAttribute('aria-label', 'Jenis nomor anggota');
+    function fillReservedPick() {
+      reservedPick.replaceChildren(new Option(`Nomor biasa (otomatis mulai 0101)`, ''));
+      if (!isOwner()) return;
+      const g = document.createElement('optgroup'); g.label = `★ Nomor khusus anggota terpilih (${year})`;
+      const free = freeReservedNumbers();
+      free.forEach(n => g.append(new Option(`★ ${n.slice(-4)}`, n)));
+      if (!free.length) g.append(Object.assign(new Option('Semua nomor 0001–0100 sudah terpakai', ''), { disabled: true }));
+      reservedPick.append(g);
+    }
+    reservedPick.addEventListener('change', () => { numberIn.value = reservedPick.value || suggestNumber(); numberIn.dispatchEvent(new Event('input')); });
+    const numberHint = isOwner()
+      ? 'Nomor 0001–0100 khusus anggota terpilih — pilih dari daftar di atas. Anggota biasa otomatis mulai 0101.'
+      : 'Nomor otomatis mulai 0101. Nomor 0001–0100 khusus anggota terpilih dan hanya bisa diberikan Pemilik.';
+    const numberBox = make('div', 'card-number-box'); numberBox.append(reservedPick, numberIn);
+    const rowA = make('div', 'card-form-row'); rowA.append(field('Nomor anggota', numberBox, numberHint), field('Kecamatan', districtIn));
     const rowB = make('div', 'card-form-row'); rowB.append(field('Tanggal terbit', issuedIn), field('Berlaku sampai', validIn));
     const photoTools = make('div', 'card-photo-tools');
     photoTools.append(field('Perbesar foto', zoomIn), field('Geser kiri–kanan', xIn), field('Geser atas–bawah', yIn));
@@ -1997,6 +2026,7 @@
         verifyLink.hidden = true;
       }
       numberIn.readOnly = Boolean(editing);
+      reservedPick.hidden = Boolean(editing) || !isOwner();
       redraw();
     }
 
@@ -2006,6 +2036,7 @@
       signerNameIn.value = savedSigner.name || signerNameIn.defaultValue || '';
       signerTitleIn.value = savedSigner.title || 'Ketua Umum GMPI';
       try { const s2 = JSON.parse(localStorage.getItem(SIGNER_KEY) || '{}'); if (s2.name) signerNameIn.value = s2.name; if (s2.title) signerTitleIn.value = s2.title; } catch (e) { /* abaikan */ }
+      fillReservedPick(); reservedPick.value = '';
       numberIn.value = suggestNumber();
       jabatanIn.value = 'Anggota'; syncPick();
       issuedIn.value = today;
@@ -2070,6 +2101,7 @@
       } else {
         const number = numberIn.value.trim().toUpperCase();
         if (!/^[A-Z0-9][A-Z0-9./-]{2,39}$/.test(number)) { saveBtn.disabled = false; setMessage('Nomor anggota hanya boleh huruf besar, angka, titik, garis miring, atau strip (3–40 karakter).', 'error'); return; }
+        if (isReservedNumber(number) && !isOwner()) { saveBtn.disabled = false; setMessage('Nomor 0001–0100 adalah nomor khusus anggota terpilih dan hanya bisa diberikan oleh Pemilik. Gunakan nomor 0101 ke atas.', 'error'); return; }
         result = await client.from('member_cards').insert({ ...payload, member_number: number })
           .select(cols).single();
       }
@@ -2158,7 +2190,9 @@
       }
       shown.forEach(card => {
         const row = make('tr');
-        row.append(make('td', 'mono-cell', card.member_number));
+        const numCell = make('td', 'mono-cell', card.member_number);
+        if (isReservedNumber(card.member_number)) numCell.append(make('span', 'card-reserved-tag', '★ khusus'));
+        row.append(numCell);
         row.append(make('td', '', card.full_name));
         row.append(make('td', '', `${card.district} · ${card.jabatan}`));
         const expired = card.valid_until < today;

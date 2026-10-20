@@ -122,3 +122,12 @@ Batas wilayah kecamatan: data GeoJSON publik 35.15 Sidoarjo (repo GitHub sigittt
 2. Admin → tab **Struktur**. Tab ini hanya terlihat oleh Pemilik dan Editor situs. Isi nama, unggah foto (otomatis dikecilkan dan disimpan di `site-assets/pengurus/`), tambah departemen, lalu tekan **Simpan struktur**.
 3. Pengunjung umum hanya bisa membaca bagan. Perubahan hanya bisa dilakukan oleh owner/content_editor.
 4. KTA: kolom **Jabatan** kini berupa daftar pilihan sesuai AD/ART. Untuk jabatan DPC/Ranting, nama kecamatan ditambahkan otomatis. Teks tetap bisa diubah manual (maks. 60 karakter), dan jabatan yang panjang otomatis dikecilkan di kartu.
+
+## Nomor KTA khusus 0001–0100 (migration 0014)
+- Jalankan `supabase/migrations/202610200014_nomor_kta_khusus.sql` di SQL Editor. File ini aman dijalankan ulang.
+- Nomor tetap berbentuk `GMPI-SDA-<TAHUN>-<URUT>`. Urutan **0001–0100** setiap tahun menjadi jatah khusus anggota terpilih.
+- Hanya akun dengan peran **Pemilik** yang bisa memberikan nomor khusus. Caranya: Admin → Kartu anggota → kotak "Nomor anggota" → pilih **★ 0001…0100**. Nomor yang sudah terpakai tidak muncul lagi di daftar.
+- Petugas Registrasi otomatis mendapat nomor mulai **0101**. Jika Petugas Registrasi mencoba memakai nomor 0001–0100, sistem akan menolaknya, baik di layar maupun di database.
+- Tampilan kartu sama dengan kartu biasa. Di daftar Admin, nomor khusus diberi tanda "★ khusus".
+- Kartu bernomor khusus tetap harus disetujui oleh **Penyetuju Kartu lain**, karena pembuat kartu tidak boleh menyetujui kartunya sendiri.
+- Kartu yang terbit sebelum migrasi ini tidak diubah.

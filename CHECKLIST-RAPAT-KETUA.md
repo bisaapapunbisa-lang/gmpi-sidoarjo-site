@@ -79,3 +79,8 @@ Bagan di beranda sudah siap. Susunan mengikuti AD/ART Pasal 9 ayat 2, ditambah k
 - [ ] Pas foto tiap pengurus (foto HP cukup, wajah jelas, latar polos)
 - [ ] Pastikan susunan sudah sesuai SK kepengurusan DPD yang sah
 Cara mengisi: Admin → tab **Struktur** → ketik nama → **Unggah foto** → **Simpan struktur**. Jabatan yang namanya belum diisi tampil "Segera diisi".
+
+## J. Nomor KTA khusus 0001–0100 (baru)
+- [x] Nomor 0001–0100 setiap tahun disediakan untuk anggota terpilih dan hanya bisa diberikan oleh Pemilik
+- [ ] Siapa yang mendapat nomor khusus? Usulan: 0001 untuk Ketua DPD, lalu Dewan Penasihat, Dewan Pembina, dan pengurus harian
+- [ ] Siapkan daftar urutannya (nomor → nama) agar tidak berebut nomor
