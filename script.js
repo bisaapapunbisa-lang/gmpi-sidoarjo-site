@@ -31,7 +31,7 @@
     sections.forEach(section => observer.observe(section));
   }
 
-  // Load real footage only when the supplied DPC video file is present.
+  // Load real footage only when the supplied DPD video file is present.
   const video = document.querySelector('.hero-video');
   const videoPath = 'assets/hero-aksi.mp4';
   fetch(videoPath, { method: 'HEAD' }).then(response => {
@@ -118,7 +118,7 @@
 
   joinForm.addEventListener('submit', event => {
     event.preventDefault();
-    joinStatus.textContent = 'Pendaftaran belum dikirim. Ini hanya prototipe: data pribadi dan file tidak diunggah maupun disimpan. DPC perlu mengaktifkan sistem registrasi aman dan menerbitkan pemberitahuan privasi terlebih dahulu.';
+    joinStatus.textContent = 'Pendaftaran belum dikirim. Ini hanya prototipe: data pribadi dan file tidak diunggah maupun disimpan. DPD perlu mengaktifkan sistem registrasi aman dan menerbitkan pemberitahuan privasi terlebih dahulu.';
   });
 
   // Public CMS fields are read-only for visitors; Supabase RLS controls all writes.

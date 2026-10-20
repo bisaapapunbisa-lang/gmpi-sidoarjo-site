@@ -41,10 +41,10 @@
       return;
     }
     if (!config.url || !config.publishableKey) {
-      setState('warning', '!', 'Verifikasi belum aktif', 'Situs belum terhubung ke basis data. Hubungi pengurus DPC.');
+      setState('warning', '!', 'Verifikasi belum aktif', 'Situs belum terhubung ke basis data. Hubungi pengurus DPD.');
       return;
     }
-    setState('loading', '◌', 'Memeriksa…', 'Mencocokkan kode dengan basis data resmi DPC.');
+    setState('loading', '◌', 'Memeriksa…', 'Mencocokkan kode dengan basis data resmi DPD.');
     try {
       const root = config.url.endsWith('/') ? config.url.slice(0, -1) : config.url;
       const response = await fetch(`${root}/rest/v1/rpc/verify_member_card`, {
@@ -60,7 +60,7 @@
       const rows = await response.json();
       const card = Array.isArray(rows) ? rows[0] : null;
       if (!card) {
-        setState('invalid', '✕', 'Kartu tidak terdaftar', 'Kode ini tidak ditemukan di basis data GMPI DPC Sidoarjo. Kartu kemungkinan palsu atau kodenya salah ketik.');
+        setState('invalid', '✕', 'Kartu tidak terdaftar', 'Kode ini tidak ditemukan di basis data GMPI DPD Sidoarjo. Kartu kemungkinan palsu atau kodenya salah ketik.');
         return;
       }
       document.querySelector('#vf-name').textContent = card.full_name;
@@ -73,13 +73,13 @@
       if (card.is_sample) {
         setState('sample', 'i', 'Ini kartu contoh', 'QR ini berasal dari contoh kartu di situs. Bukan kartu anggota sungguhan dan tidak berlaku sebagai identitas.');
       } else if (card.status === 'dicabut') {
-        setState('invalid', '✕', 'Kartu dicabut', 'Kartu ini terdaftar tetapi sudah dicabut oleh DPC dan tidak berlaku.');
+        setState('invalid', '✕', 'Kartu dicabut', 'Kartu ini terdaftar tetapi sudah dicabut oleh DPD dan tidak berlaku.');
       } else if (card.status === 'nonaktif') {
         setState('warning', '!', 'Keanggotaan nonaktif', 'Kartu ini terdaftar, tetapi status anggota sedang nonaktif.');
       } else if (expired) {
-        setState('warning', '!', 'Kartu kedaluwarsa', 'Kartu ini asli dan terdaftar, tetapi masa berlakunya sudah habis. Silakan perpanjang di DPC.');
+        setState('warning', '!', 'Kartu kedaluwarsa', 'Kartu ini asli dan terdaftar, tetapi masa berlakunya sudah habis. Silakan perpanjang di DPD.');
       } else {
-        setState('valid', '✓', 'Kartu asli & aktif', 'Kartu ini terdaftar resmi di GMPI DPC Sidoarjo. Cocokkan nama dan nomor dengan yang tercetak di kartu.');
+        setState('valid', '✓', 'Kartu asli & aktif', 'Kartu ini terdaftar resmi di GMPI DPD Sidoarjo. Cocokkan nama dan nomor dengan yang tercetak di kartu.');
       }
       const now = new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Jakarta', dateStyle: 'long', timeStyle: 'short' }).format(new Date());
       checked.textContent = `Diperiksa ${now} WIB · kode ••••${token.slice(-6)}`;

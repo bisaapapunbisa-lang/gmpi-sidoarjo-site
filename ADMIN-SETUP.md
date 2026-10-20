@@ -1,4 +1,4 @@
-# Panel Admin GMPI DPC Sidoarjo
+# Panel Admin GMPI DPD Sidoarjo
 
 ## Perilaku aman saat ini
 
@@ -30,7 +30,7 @@ where lower(email) = lower('EMAIL-OWNER-ANDA');
 
 Arsip perubahan harus mencakup `admin.html`, `admin.css`, `admin.js`, `supabase-config.js`, dan migrasi kedua. Setelah berkas-berkas baru masuk ke branch `main`, Vercel akan membuat deployment baru karena repo telah tersambung.
 
-**Catatan:** migrasi kedua mengatur hak akses panel, tetapi belum membuat API untuk menerima aduan/pendaftaran. Draf privasi `PRIVACY-NOTICE-DRAFT.md` masih harus diperiksa dan disetujui DPC; email resmi LBH juga belum tersedia. Jangan masukkan data nyata saat uji coba.
+**Catatan:** migrasi kedua mengatur hak akses panel, tetapi belum membuat API untuk menerima aduan/pendaftaran. Draf privasi `PRIVACY-NOTICE-DRAFT.md` masih harus diperiksa dan disetujui DPD; email resmi LBH juga belum tersedia. Jangan masukkan data nyata saat uji coba.
 
 ## Logo situs (dapat diganti dari Admin)
 
@@ -57,5 +57,5 @@ Contoh kartu di beranda memakai kode `CONTOH` dan ditandai sebagai kartu contoh 
 ### Sisi belakang kartu
 - Di tab **Kartu anggota**, klik pratinjau (atau tombol **Depan/Belakang**) untuk membalik kartu.
 - Buka **Pengaturan sisi belakang** untuk mengisi nama & jabatan penanda tangan (diingat di browser) dan, bila perlu, tanda tangan PNG transparan (tidak diunggah).
-- Unduh **depan** dan **belakang** sebagai dua file PNG, lalu cetak bolak-balik. Area **CAP DPC** disediakan untuk stempel basah.
+- Unduh **depan** dan **belakang** sebagai dua file PNG, lalu cetak bolak-balik. Area **CAP DPD** disediakan untuk stempel basah.
 - Di beranda, pengunjung bisa mengklik contoh kartu untuk melihatnya berputar ke sisi belakang.

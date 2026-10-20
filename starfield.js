@@ -1,5 +1,5 @@
 /*
-  Latar bintang 3D GMPI DPC Sidoarjo.
+  Latar bintang 3D GMPI DPD Sidoarjo.
   Bintang melaju dari kejauhan ke arah layar (efek keluar layar), sedikit mengikuti arah
   kursor/kemiringan, dan melesat lebih cepat saat halaman digulir.
   Hemat daya: berhenti saat tab tidak aktif, jumlah bintang menyesuaikan ukuran layar,

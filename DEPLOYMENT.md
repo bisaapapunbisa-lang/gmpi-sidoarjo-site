@@ -1,4 +1,4 @@
-# Publikasi GMPI DPC Sidoarjo — GitHub, Vercel, Supabase
+# Publikasi GMPI DPD Sidoarjo — GitHub, Vercel, Supabase
 
 ## Status saat ini
 
@@ -6,7 +6,7 @@
 - Pengguna telah menyambungkan repository ke Vercel.
 - Project Supabase `gmpi` sehat di region Singapore. Migrasi `202610200001_private_intake.sql` berhasil dijalankan; tabel `citizen_reports` dan `member_registrations` terlihat di Table Editor.
 - Panel Admin baru telah disiapkan di source lokal. Perubahan terbaru belum diunggah ke GitHub. Migrasi role `202610200002_admin_panel_roles.sql` belum dijalankan, `supabase-config.js` belum diisi dengan publishable key, dan belum ada akun yang diberi role.
-- Formulir publik masih prototipe dan tidak mengirim/menyimpan data. Email LBH resmi belum tersedia dan draf privasi belum disetujui DPC.
+- Formulir publik masih prototipe dan tidak mengirim/menyimpan data. Email LBH resmi belum tersedia dan draf privasi belum disetujui DPD.
 
 ## Perbarui source di GitHub
 
@@ -20,4 +20,4 @@ Ikuti `ADMIN-SETUP.md` secara berurutan. Migrasi Admin menambahkan role `owner`,
 
 ## Formulir publik
 
-Belum ada endpoint server-side untuk menerima data. Jangan mengubah formulir menjadi insert langsung dari browser. Sebelum pendaftaran dan aduan nyata diaktifkan, DPC harus menyetujui pemberitahuan privasi, menetapkan email resmi LBH, mengonfirmasi masa simpan dan petugas yang berwenang, serta menyiapkan endpoint HTTPS anti-spam dan unggahan dokumen privat. Draf kerja ada pada `PRIVACY-NOTICE-DRAFT.md` dan belum untuk dipublikasikan.
+Belum ada endpoint server-side untuk menerima data. Jangan mengubah formulir menjadi insert langsung dari browser. Sebelum pendaftaran dan aduan nyata diaktifkan, DPD harus menyetujui pemberitahuan privasi, menetapkan email resmi LBH, mengonfirmasi masa simpan dan petugas yang berwenang, serta menyiapkan endpoint HTTPS anti-spam dan unggahan dokumen privat. Draf kerja ada pada `PRIVACY-NOTICE-DRAFT.md` dan belum untuk dipublikasikan.

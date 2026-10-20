@@ -166,7 +166,7 @@
     const heading = make('div', 'workspace-heading');
     const titleBlock = make('div');
     titleBlock.append(make('h3', '', 'Teks situs yang dapat diedit'));
-    titleBlock.append(make('p', '', 'Perubahan disimpan ke Supabase dan akan tampil di halaman publik setelah dimuat ulang. Gunakan teks yang telah disetujui DPC.'));
+    titleBlock.append(make('p', '', 'Perubahan disimpan ke Supabase dan akan tampil di halaman publik setelah dimuat ulang. Gunakan teks yang telah disetujui DPD.'));
     heading.append(titleBlock);
     const form = make('form', 'content-form');
     CMS_FIELDS.forEach(field => {
@@ -991,7 +991,7 @@
     const heading = make('div', 'workspace-heading');
     const titleBlock = make('div');
     titleBlock.append(make('h3', '', 'Aduan warga'));
-    titleBlock.append(make('p', '', 'Hanya petugas LBH dan pemilik Admin yang diberi peran ini dapat membaca laporan. Tidak ada pengaduan yang masuk sampai formulir publik diaktifkan dengan persetujuan DPC.'));
+    titleBlock.append(make('p', '', 'Hanya petugas LBH dan pemilik Admin yang diberi peran ini dapat membaca laporan. Tidak ada pengaduan yang masuk sampai formulir publik diaktifkan dengan persetujuan DPD.'));
     heading.append(titleBlock);
     const { data, error } = await client.from('citizen_reports').select('id,created_at,name,contact,district,topic,summary,status').order('created_at', { ascending: false }).limit(100);
     if (error) return showWorkspaceError('Daftar aduan tidak dapat dibuka. Periksa migrasi dan peran LBH.');
@@ -1169,7 +1169,7 @@
 
   // ---- Kartu Tanda Anggota (KTA) dengan QR verifikasi ----
   const DISTRICTS = ['Sidoarjo','Buduran','Gedangan','Waru','Sukodono','Taman','Krian','Balongbendo','Tarik','Prambon','Krembung','Porong','Jabon','Tanggulangin','Candi','Tulangan','Wonoayu','Sedati'];
-  const JABATAN_SUGGESTIONS = ['Anggota', 'Pengurus DPC', 'Pengurus PAC', 'Satgas Brigade', 'LBH GMPI', 'MPI Sidoarjo', 'SB GMPI', 'Ketua PAC', 'Ketua DPC'];
+  const JABATAN_SUGGESTIONS = ['Anggota', 'Pengurus DPD', 'Pengurus PAC', 'Satgas Brigade', 'LBH GMPI', 'MPI Sidoarjo', 'SB GMPI', 'Ketua PAC', 'Ketua DPD'];
   const CARD_STATUS_LABELS = { aktif: 'Aktif', nonaktif: 'Nonaktif', dicabut: 'Dicabut' };
 
   function isoDate(date) {
@@ -1257,8 +1257,9 @@
     const yIn = input('card-y', 'range', { min: -100, max: 100, value: 0 });
     const SIGNER_KEY = 'gmpi-card-signer';
     const savedSigner = (() => { try { return JSON.parse(localStorage.getItem(SIGNER_KEY) || '{}'); } catch (e) { return {}; } })();
-    const signerNameIn = input('card-signer-name', 'text', { maxLength: 80, placeholder: 'Nama Ketua DPC', value: savedSigner.name || '' });
-    const signerTitleIn = input('card-signer-title', 'text', { maxLength: 60, value: savedSigner.title || 'Ketua DPC GMPI Sidoarjo' });
+    ['name', 'title'].forEach(k => { if (typeof savedSigner[k] === 'string') savedSigner[k] = savedSigner[k].replace(/\bDPC\b/g, 'DPD'); });
+    const signerNameIn = input('card-signer-name', 'text', { maxLength: 80, placeholder: 'Nama Ketua DPD', value: savedSigner.name || '' });
+    const signerTitleIn = input('card-signer-title', 'text', { maxLength: 60, value: savedSigner.title || 'Ketua DPD GMPI Sidoarjo' });
     const signatureIn = input('card-signature', 'file', { accept: 'image/png,image/webp' });
 
     const rowA = make('div', 'card-form-row'); rowA.append(field('Nomor anggota', numberIn, 'Huruf besar, angka, titik, garis miring, atau strip.'), field('Kecamatan', districtIn));
@@ -1368,7 +1369,7 @@
       editing = null;
       formEl.reset();
       signerNameIn.value = savedSigner.name || signerNameIn.defaultValue || '';
-      signerTitleIn.value = savedSigner.title || 'Ketua DPC GMPI Sidoarjo';
+      signerTitleIn.value = savedSigner.title || 'Ketua DPD GMPI Sidoarjo';
       try { const s2 = JSON.parse(localStorage.getItem(SIGNER_KEY) || '{}'); if (s2.name) signerNameIn.value = s2.name; if (s2.title) signerTitleIn.value = s2.title; } catch (e) { /* abaikan */ }
       numberIn.value = suggestNumber();
       jabatanIn.value = 'Anggota';

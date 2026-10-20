@@ -1,5 +1,5 @@
 /*
-  GMPI DPC Sidoarjo — Kartu Tanda Anggota (KTA) vertikal.
+  GMPI DPD Sidoarjo — Kartu Tanda Anggota (KTA) vertikal.
   Satu renderer dipakai untuk: contoh kartu di beranda, pratinjau & unduhan di Admin.
   Ukuran kartu: standar ID card CR80 (54 × 85,6 mm) potret, diekspor 1276 × 2024 px (± 600 dpi).
   Butuh: vendor/qrcode-generator.js (global `qrcode`).
@@ -277,7 +277,7 @@
     spaced(ctx, 'GMPI', 154, 118, 3);
     ctx.fillStyle = C.gold;
     ctx.font = `800 13px ${F.body}`;
-    spaced(ctx, 'DPC SIDOARJO', 157, 140, 4.2);
+    spaced(ctx, 'DPD SIDOARJO', 157, 140, 4.2);
 
     // ---------- Label kartu ----------
     ctx.font = `800 11.5px ${F.body}`;
@@ -449,10 +449,10 @@
 
   const PLEDGE = 'Dengan kesadaran penuh, saya menyatakan setia kepada NKRI, Pancasila, UUD 1945, serta siap mematuhi AD/ART dan komando perjuangan GMPI Sidoarjo.';
   const RULES = [
-    'Kartu ini milik GMPI DPC Sidoarjo dan hanya berlaku bagi nama yang tercantum di sisi depan.',
+    'Kartu ini milik GMPI DPD Sidoarjo dan hanya berlaku bagi nama yang tercantum di sisi depan.',
     'Keaslian dan status kartu dicek dengan memindai QR di sisi depan melalui situs resmi.',
     'Kartu tidak berlaku bila dicabut, nonaktif, atau melewati masa berlaku.',
-    'Jika menemukan kartu ini, mohon serahkan kepada pengurus GMPI DPC Sidoarjo.'
+    'Jika menemukan kartu ini, mohon serahkan kepada pengurus GMPI DPD Sidoarjo.'
   ];
 
   function drawBack(canvas, data = {}) {
@@ -515,7 +515,7 @@
     spaced(ctx, 'GMPI', W - 118, 72, 2, 'right');
     ctx.fillStyle = C.gold;
     ctx.font = `800 9.5px ${F.body}`;
-    spaced(ctx, 'DPC SIDOARJO', W - 118, 90, 3, 'right');
+    spaced(ctx, 'DPD SIDOARJO', W - 118, 90, 3, 'right');
     ctx.textAlign = 'left';
     ctx.fillStyle = C.muted;
     ctx.font = `800 8.6px ${F.body}`;
@@ -579,7 +579,7 @@
     ctx.restore();
     ctx.fillStyle = 'rgba(215,172,76,.55)';
     ctx.font = `800 9px ${F.body}`;
-    spaced(ctx, 'CAP DPC', 150, sy + 96, 2.5, 'center');
+    spaced(ctx, 'CAP DPD', 150, sy + 96, 2.5, 'center');
 
     const cx = 440;
     ctx.textAlign = 'center';
@@ -589,7 +589,7 @@
     ctx.fillText(issuedLong ? `Sidoarjo, ${issuedLong}` : 'Sidoarjo, ....................', cx, sy + 18);
     ctx.fillStyle = C.white;
     ctx.font = `800 10.5px ${F.body}`;
-    spaced(ctx, String(data.signerTitle || 'KETUA DPC GMPI SIDOARJO').toUpperCase(), cx, sy + 38, 1.4, 'center');
+    spaced(ctx, String(data.signerTitle || 'KETUA DPD GMPI SIDOARJO').toUpperCase(), cx, sy + 38, 1.4, 'center');
     if (data.signature) {
       ctx.save();
       const sw = 200, sh = 80;
@@ -606,7 +606,7 @@
     ctx.font = signer ? `800 14px ${F.body}` : `600 12px ${F.body}`;
     let fs = 14;
     if (signer) { while (fs > 10 && ctx.measureText(signer.toUpperCase()).width > 250) { fs -= 0.5; ctx.font = `800 ${fs}px ${F.body}`; } }
-    ctx.fillText(signer ? signer.toUpperCase() : '( nama Ketua DPC )', cx, sy + 168);
+    ctx.fillText(signer ? signer.toUpperCase() : '( nama Ketua DPD )', cx, sy + 168);
 
     // ---------- Verifikasi ----------
     ctx.fillStyle = C.gold;
