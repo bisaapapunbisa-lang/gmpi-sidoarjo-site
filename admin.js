@@ -1169,7 +1169,7 @@
 
   // ---- Kartu Tanda Anggota (KTA) dengan QR verifikasi ----
   const DISTRICTS = ['Sidoarjo','Buduran','Gedangan','Waru','Sukodono','Taman','Krian','Balongbendo','Tarik','Prambon','Krembung','Porong','Jabon','Tanggulangin','Candi','Tulangan','Wonoayu','Sedati'];
-  const JABATAN_SUGGESTIONS = ['Anggota', 'Pengurus DPD', 'Pengurus PAC', 'Satgas Brigade', 'LBH GMPI', 'MPI Sidoarjo', 'SB GMPI', 'Ketua PAC', 'Ketua DPD'];
+  const JABATAN_SUGGESTIONS = ['Anggota', 'Warga GMPI', 'Ketua DPD', 'Wakil Ketua DPD', 'Sekretaris DPD', 'Bendahara DPD', 'Ketua Departemen DPD', 'Pengurus DPD', 'Ketua DPC', 'Pengurus DPC', 'Korja Ranting', 'LBH GMPI', 'MPI Sidoarjo', 'SB GMPI', 'Satgas Brigade'];
   const CARD_STATUS_LABELS = { aktif: 'Aktif', nonaktif: 'Nonaktif', dicabut: 'Dicabut' };
 
   function isoDate(date) {
@@ -1258,8 +1258,9 @@
     const SIGNER_KEY = 'gmpi-card-signer';
     const savedSigner = (() => { try { return JSON.parse(localStorage.getItem(SIGNER_KEY) || '{}'); } catch (e) { return {}; } })();
     ['name', 'title'].forEach(k => { if (typeof savedSigner[k] === 'string') savedSigner[k] = savedSigner[k].replace(/\bDPC\b/g, 'DPD'); });
-    const signerNameIn = input('card-signer-name', 'text', { maxLength: 80, placeholder: 'Nama Ketua DPD', value: savedSigner.name || '' });
-    const signerTitleIn = input('card-signer-title', 'text', { maxLength: 60, value: savedSigner.title || 'Ketua DPD GMPI Sidoarjo' });
+    if (/^Ketua DP[CD] GMPI Sidoarjo$/i.test(savedSigner.title || '')) delete savedSigner.title; // bawaan lama → ikuti ART Pasal 4f (Ketua Umum)
+    const signerNameIn = input('card-signer-name', 'text', { maxLength: 80, placeholder: 'Nama Ketua Umum GMPI', value: savedSigner.name || '' });
+    const signerTitleIn = input('card-signer-title', 'text', { maxLength: 60, value: savedSigner.title || 'Ketua Umum GMPI' });
     const signatureIn = input('card-signature', 'file', { accept: 'image/png,image/webp' });
 
     const rowA = make('div', 'card-form-row'); rowA.append(field('Nomor anggota', numberIn, 'Huruf besar, angka, titik, garis miring, atau strip.'), field('Kecamatan', districtIn));
@@ -1285,8 +1286,8 @@
     newBtn.type = 'button';
     const btnRow = make('div', 'card-buttons'); btnRow.append(saveBtn, downloadBtn, downloadBackBtn, newBtn);
 
-    formEl.append(statusLine, field('Nama lengkap', nameIn), rowA, field('Jabatan / keterangan', jabatanIn, 'Contoh: Anggota, Pengurus PAC, Satgas Brigade.'), list, rowB,
-      field('Foto anggota (pas foto, latar polos)', photoIn, 'Foto hanya dipakai di perangkat ini untuk membuat gambar kartu — tidak diunggah atau disimpan di server. Simpan file kartu (PNG) hasil unduhan.'),
+    formEl.append(statusLine, field('Nama lengkap', nameIn), rowA, field('Jabatan / keterangan', jabatanIn, 'Contoh: Anggota, Ketua DPC Candi, Korja Ranting, Satgas Brigade.'), list, rowB,
+      field('Foto anggota (pas foto 4×6, latar biru)', photoIn, 'Foto hanya dipakai di perangkat ini untuk membuat gambar kartu — tidak diunggah atau disimpan di server. Simpan file kartu (PNG) hasil unduhan.'),
       photoTools, backTools, btnRow);
 
     const preview = make('div', 'card-preview');
@@ -1369,7 +1370,7 @@
       editing = null;
       formEl.reset();
       signerNameIn.value = savedSigner.name || signerNameIn.defaultValue || '';
-      signerTitleIn.value = savedSigner.title || 'Ketua DPD GMPI Sidoarjo';
+      signerTitleIn.value = savedSigner.title || 'Ketua Umum GMPI';
       try { const s2 = JSON.parse(localStorage.getItem(SIGNER_KEY) || '{}'); if (s2.name) signerNameIn.value = s2.name; if (s2.title) signerTitleIn.value = s2.title; } catch (e) { /* abaikan */ }
       numberIn.value = suggestNumber();
       jabatanIn.value = 'Anggota';

@@ -447,7 +447,7 @@
     return lines;
   }
 
-  const PLEDGE = 'Dengan kesadaran penuh, saya menyatakan setia kepada NKRI, Pancasila, UUD 1945, serta siap mematuhi AD/ART dan komando perjuangan GMPI Sidoarjo.';
+  const PLEDGE = 'Dengan kesadaran penuh, saya menyatakan setia kepada NKRI, Pancasila, UUD 1945, serta siap mematuhi AD/ART, Kode Etik, dan komando perjuangan GMPI Sidoarjo.';
   const RULES = [
     'Kartu ini milik GMPI DPD Sidoarjo dan hanya berlaku bagi nama yang tercantum di sisi depan.',
     'Keaslian dan status kartu dicek dengan memindai QR di sisi depan melalui situs resmi.',
@@ -589,7 +589,7 @@
     ctx.fillText(issuedLong ? `Sidoarjo, ${issuedLong}` : 'Sidoarjo, ....................', cx, sy + 18);
     ctx.fillStyle = C.white;
     ctx.font = `800 10.5px ${F.body}`;
-    spaced(ctx, String(data.signerTitle || 'KETUA DPD GMPI SIDOARJO').toUpperCase(), cx, sy + 38, 1.4, 'center');
+    spaced(ctx, String(data.signerTitle || 'KETUA UMUM GMPI').toUpperCase(), cx, sy + 38, 1.4, 'center');
     if (data.signature) {
       ctx.save();
       const sw = 200, sh = 80;
@@ -606,7 +606,7 @@
     ctx.font = signer ? `800 14px ${F.body}` : `600 12px ${F.body}`;
     let fs = 14;
     if (signer) { while (fs > 10 && ctx.measureText(signer.toUpperCase()).width > 250) { fs -= 0.5; ctx.font = `800 ${fs}px ${F.body}`; } }
-    ctx.fillText(signer ? signer.toUpperCase() : '( nama Ketua DPD )', cx, sy + 168);
+    ctx.fillText(signer ? signer.toUpperCase() : '( nama Ketua Umum )', cx, sy + 168);
 
     // ---------- Verifikasi ----------
     ctx.fillStyle = C.gold;

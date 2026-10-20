@@ -367,7 +367,7 @@
     lines.push('');
     lines.push(`Nama: ${order.name}`);
     lines.push(`WhatsApp: ${order.phone}`);
-    lines.push(`Kecamatan/PAC: ${order.district}`);
+    lines.push(`Kecamatan/DPC: ${order.district}`);
     if (order.note) lines.push(`Catatan: ${order.note}`);
     lines.push('');
     lines.push(order.delivery === 'kirim'
