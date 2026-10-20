@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="kta.css">
   <link rel="stylesheet" href="starfield.css">
   <link rel="stylesheet" href="store.css">
+  <link rel="stylesheet" href="news.css">
 </head>
 <body>
   <canvas id="starfield" aria-hidden="true"></canvas>
@@ -27,6 +28,7 @@
       <a href="#pilar" class="nav-link">Pilar Pergerakan</a>
       <a href="#posko" class="nav-link">Posko Digital</a>
       <a href="#lensa" class="nav-link">Lensa Kegiatan</a>
+      <a href="#berita" class="nav-link">Berita</a>
       <a href="#perlengkapan" class="nav-link">Perlengkapan</a>
       <a href="#gabung" class="nav-join">Gabung Barisan <span>↗</span></a>
     </nav>
@@ -109,6 +111,17 @@
       </div>
       <div class="gallery-note"><span>↗</span><span data-cms-key="gallery_note">Galeri ini menunggu foto aksi resmi dari DPC/PAC. Gunakan dokumentasi asli dengan izin publikasi dan keterangan lokasi yang akurat.</span></div>
       <div class="district-line"><span>MENJANGKAU</span><b>Balongbendo · Buduran · Candi · Gedangan · Jabon · Krembung · Krian · Porong · Prambon · Sedati · Sidoarjo · Sukodono · Taman · Tanggulangin · Tarik · Tulangan · Waru · Wonoayu</b></div>
+    </section>
+
+    <section class="section news-section" id="berita" aria-labelledby="news-title" data-news-mode="home">
+      <div class="section-head">
+        <div><div class="eyebrow"><span class="eyebrow-line"></span> KABAR MEDIA MITRA</div><h2 id="news-title">Berita <em>terkini.</em></h2></div>
+        <p class="section-intro">Liputan kegiatan dan kabar GMPI Sidoarjo dari media yang bekerja sama dengan kami. Setiap berita ditulis dan dikelola langsung oleh redaksi media mitra.</p>
+      </div>
+      <div class="news-filters" id="news-filters" role="group" aria-label="Pilih media" hidden></div>
+      <div class="news-grid" id="news-grid" aria-live="polite"><div class="news-empty">Memuat berita…</div></div>
+      <div class="news-more-wrap"><button type="button" class="news-more" id="news-more" hidden>Muat berita lainnya</button><a class="news-more news-all" id="news-all" href="berita.html" hidden>Lihat semua berita →</a></div>
+      <div class="news-partners" id="news-partners" hidden><span>Media mitra</span><div class="news-partner-logos"></div></div>
     </section>
 
     <section class="join-section" id="gabung">
@@ -223,7 +236,7 @@
   <footer class="site-footer">
     <a class="brand footer-brand" href="#top"><img data-site-logo src="assets/logo-gmpi-sidoarjo-crop.webp" alt=""><span class="brand-text"><strong>GMPI</strong><small>DPC SIDOARJO</small></span></a>
     <p>Gerakan Militansi Pejuang Indonesia<br><span data-cms-key="footer_slogan">Setia Bersaudara Sampai Urat Nadi</span></p>
-    <div class="footer-links"><a href="#pilar">Pilar Pergerakan</a><a href="#posko">Posko Digital</a><a href="#lensa">Lensa Kegiatan</a><a href="#perlengkapan">Perlengkapan</a><a href="#legalitas">Legalitas</a><a href="verifikasi.html">Verifikasi Kartu</a><a class="footer-admin" href="admin.html" aria-label="Masuk ke panel Admin GMPI">Admin ↗</a></div>
+    <div class="footer-links"><a href="#pilar">Pilar Pergerakan</a><a href="#posko">Posko Digital</a><a href="#lensa">Lensa Kegiatan</a><a href="berita.html">Berita</a><a href="#perlengkapan">Perlengkapan</a><a href="#legalitas">Legalitas</a><a href="verifikasi.html">Verifikasi Kartu</a><a class="footer-admin" href="admin.html" aria-label="Masuk ke panel Admin GMPI">Admin ↗</a></div>
     <small class="copyright">© <span id="year"></span> GMPI DPC Sidoarjo<br>Berbadan hukum · AHU-0010942.AH.01.07.TAHUN 2021</small>
   </footer>
 
@@ -285,6 +298,9 @@
       </div>
     </div>
   </aside>
+  <div class="news-reader" id="news-reader" role="dialog" aria-modal="true" aria-label="Baca berita" hidden>
+    <div class="news-scroll"><button type="button" class="news-close" aria-label="Tutup berita">×</button><article class="news-article"></article></div>
+  </div>
   <div class="photo-viewer" id="photo-viewer" role="dialog" aria-modal="true" aria-label="Foto barang" hidden>
     <div class="pv-frame">
       <div class="pv-head"><div><b class="pv-title"></b><span class="pv-label"></span></div><button type="button" class="pv-close" aria-label="Tutup foto">×</button></div>
@@ -298,5 +314,6 @@
   <script src="script.js"></script>
   <script src="starfield.js"></script>
   <script src="store.js"></script>
+  <script src="news.js"></script>
 </body>
 </html>

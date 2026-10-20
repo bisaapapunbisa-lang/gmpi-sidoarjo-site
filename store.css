@@ -200,3 +200,7 @@ body.cart-open{overflow:hidden}
 .pv-nav[hidden]{display:none}
 .pv-prev{left:0}.pv-next{right:0}
 @media(max-width:760px){.product-angle{width:36px;height:36px}.product-angle span{font-size:6px}.product-angles{gap:4px;bottom:6px}.product-media .product-badge{bottom:auto;top:34px}}
+.product-illus{position:absolute;right:10px;top:10px;z-index:2;padding:5px 8px;background:rgba(255,255,255,.88);color:#57534c;border:1px solid #d6cfbf;font:800 8px var(--body);letter-spacing:1px;text-transform:uppercase}
+.product-media .product-badge + .product-illus,.product-illus + .product-badge{top:36px}
+.product-zoom img[src$=".svg"]{object-fit:contain;background:#efebe3}
+@media(max-width:760px){.product-illus{top:34px;right:auto;left:10px;font-size:7px;padding:3px 5px}}

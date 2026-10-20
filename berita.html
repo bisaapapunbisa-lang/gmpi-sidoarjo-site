@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111110">
+  <meta name="description" content="Berita dan kabar GMPI Sidoarjo dari media mitra.">
+  <title>Berita — GMPI DPC Sidoarjo</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="gamma-effects.css">
+  <link rel="stylesheet" href="starfield.css">
+  <link rel="stylesheet" href="news.css">
+</head>
+<body class="news-page" data-page="berita">
+  <canvas id="starfield" aria-hidden="true"></canvas>
+  <div class="topline"><span class="topline-mark"></span> GERAKAN MILITANSI PEJUANG INDONESIA <span class="topline-sep">/</span> DPC SIDOARJO <span class="topline-right">SETIA BERSAUDARA SAMPAI URAT NADI</span></div>
+  <header class="site-header" id="top">
+    <a class="brand" href="index.html" aria-label="GMPI Sidoarjo, ke beranda">
+      <img data-site-logo src="assets/logo-gmpi-sidoarjo-crop.webp" alt="Lambang GMPI Sidoarjo">
+      <span class="brand-text"><strong>GMPI</strong><small>DPC SIDOARJO</small></span>
+    </a>
+    <button class="menu-toggle" aria-label="Buka menu" aria-expanded="false"><span></span><span></span></button>
+    <nav class="main-nav" aria-label="Navigasi utama">
+      <a href="index.html" class="nav-link">Beranda</a>
+      <a href="index.html#pilar" class="nav-link">Pilar Pergerakan</a>
+      <a href="index.html#posko" class="nav-link">Posko Digital</a>
+      <a href="index.html#lensa" class="nav-link">Lensa Kegiatan</a>
+      <a href="berita.html" class="nav-link is-current" aria-current="page">Berita</a>
+      <a href="index.html#perlengkapan" class="nav-link">Perlengkapan</a>
+      <a href="index.html#gabung" class="nav-join">Gabung Barisan <span>↗</span></a>
+    </nav>
+  </header>
+
+  <main class="news-page-main">
+    <section class="section news-section" id="berita" aria-labelledby="news-title" data-news-mode="full">
+      <a class="news-crumb" href="index.html">← Beranda</a>
+      <div class="section-head">
+        <div><div class="eyebrow"><span class="eyebrow-line"></span> KABAR MEDIA MITRA</div><h1 id="news-title">Berita <em>GMPI Sidoarjo.</em></h1></div>
+        <p class="section-intro">Liputan kegiatan dan kabar GMPI Sidoarjo dari media yang bekerja sama dengan kami. Setiap berita ditulis dan dikelola langsung oleh redaksi media mitra.</p>
+      </div>
+      <div class="news-filters" id="news-filters" role="group" aria-label="Pilih media" hidden></div>
+      <div class="news-grid" id="news-grid" aria-live="polite"><div class="news-empty">Memuat berita…</div></div>
+      <div class="news-more-wrap"><button type="button" class="news-more" id="news-more" hidden>Muat berita lainnya</button></div>
+      <div class="news-partners" id="news-partners" hidden><span>Media mitra</span><div class="news-partner-logos"></div></div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <a class="brand footer-brand" href="index.html"><img data-site-logo src="assets/logo-gmpi-sidoarjo-crop.webp" alt=""><span class="brand-text"><strong>GMPI</strong><small>DPC SIDOARJO</small></span></a>
+    <p>Gerakan Militansi Pejuang Indonesia<br><span>Setia Bersaudara Sampai Urat Nadi</span></p>
+    <div class="footer-links"><a href="index.html#pilar">Pilar Pergerakan</a><a href="index.html#posko">Posko Digital</a><a href="berita.html">Berita</a><a href="index.html#perlengkapan">Perlengkapan</a><a href="index.html#legalitas">Legalitas</a><a href="verifikasi.html">Verifikasi Kartu</a><a class="footer-admin" href="admin.html">Admin ↗</a></div>
+    <small class="copyright">© <span id="year"></span> GMPI DPC Sidoarjo<br>Berbadan hukum · AHU-0010942.AH.01.07.TAHUN 2021</small>
+  </footer>
+
+  <div class="news-reader" id="news-reader" role="dialog" aria-modal="true" aria-label="Baca berita" hidden>
+    <div class="news-scroll"><button type="button" class="news-close" aria-label="Tutup berita">×</button><article class="news-article"></article></div>
+  </div>
+
+  <script src="supabase-config.js"></script>
+  <script src="starfield.js"></script>
+  <script src="news.js"></script>
+</body>
+</html>

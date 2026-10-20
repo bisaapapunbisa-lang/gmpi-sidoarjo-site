@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><defs>
+<radialGradient id="bg" cx="50%" cy="45%" r="70%"><stop offset="0" stop-color="#f7f4ee"/><stop offset="1" stop-color="#e3ddd1"/></radialGradient>
+<linearGradient id="cloth" x1="0" x2="1"><stop offset="0" stop-color="#1b1b1c"/><stop offset=".5" stop-color="#262628"/><stop offset="1" stop-color="#18181a"/></linearGradient>
+<linearGradient id="red" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#e3262d"/><stop offset="1" stop-color="#b8141b"/></linearGradient>
+</defs>
+<rect width="400" height="400" fill="url(#bg)"/><g transform="translate(46 4) scale(.77)">
+<ellipse cx="200" cy="372" rx="120" ry="10" fill="#000" opacity=".10"/>
+<path d="M98 94 58 172Q78 186 102 190L106 150Z" fill="url(#cloth)" stroke="#0b0b0c" stroke-width="2" stroke-linejoin="round"/>
+<path d="M302 94 342 172Q322 186 298 190L294 150Z" fill="url(#cloth)" stroke="#0b0b0c" stroke-width="2" stroke-linejoin="round"/>
+<path d="M140 76 98 94 104 186 106 354Q200 364 294 354L296 186 302 94 260 76Q200 70 140 76Z" fill="url(#cloth)" stroke="#0b0b0c" stroke-width="2" stroke-linejoin="round"/>
+<path d="M142 78Q200 62 258 78L254 92Q200 80 146 92Z" fill="url(#red)" stroke="#0b0b0c" stroke-width="2" stroke-linejoin="round"/>
+<path d="M112 112Q200 122 288 112" fill="none" stroke="#0b0b0c" stroke-width="1.6"/>
+<text x="200" y="168" text-anchor="middle" font-family="Impact,'Arial Narrow',Arial,sans-serif" font-size="44" font-weight="900" fill="#fff" letter-spacing="3">GMPI</text>
+<rect x="132" y="176" width="136" height="2" fill="#fff" opacity=".8"/>
+<text x="200" y="190" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="7.2" font-weight="700" fill="#fff" letter-spacing=".6">GERAKAN MILITANSI PEJUANG INDONESIA</text>
+<g opacity=".95"><circle cx="80" cy="140" r="9" fill="#fff"/><circle cx="80" cy="140" r="7.74" fill="url(#red)"/><circle cx="80" cy="140" r="5.58" fill="none" stroke="#fff" stroke-width="0.72"/>
+<path transform="translate(80 140) scale(0.45)" d="M0-10 2.9-3.1 10.5-3.1 4.4 1.4 6.7 8.6 0 4.3-6.7 8.6-4.4 1.4-10.5-3.1-2.9-3.1Z" fill="#fff"/></g>
+
+</g></svg>

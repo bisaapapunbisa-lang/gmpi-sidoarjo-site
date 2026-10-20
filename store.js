@@ -82,6 +82,10 @@
       p.images.slice(0, 3).forEach((path, i) => { const url = imageUrl(path); if (url) list.push({ url, label: ANGLES[i] }); });
     }
     if (!list.length) { const url = imageUrl(p.image_path); if (url) list.push({ url, label: 'Depan' }); }
+    if (!list.length && /seragam|pdh|kemeja/i.test(`${p.name} ${p.category}`)) {
+      // Belum ada foto asli: pakai ilustrasi model seragam GMPI (hitam, kerah & tutup saku merah).
+      ['depan', 'kiri', 'kanan'].forEach((k, i) => list.push({ url: `assets/products/seragam-${k}.svg`, label: ANGLES[i], illustration: true }));
+    }
     return list;
   }
 
@@ -134,7 +138,7 @@
     viewer.querySelector('.pv-img').src = photos[index].url;
     viewer.querySelector('.pv-img').alt = `${p.name} — ${photos[index].label}`;
     viewer.querySelector('.pv-title').textContent = p.name;
-    viewer.querySelector('.pv-label').textContent = `${photos[index].label} · ${index + 1}/${photos.length}`;
+    viewer.querySelector('.pv-label').textContent = `${photos[index].illustration ? 'Ilustrasi · ' : ''}${photos[index].label} · ${index + 1}/${photos.length}`;
     viewer.querySelectorAll('.pv-nav').forEach(b => { b.hidden = photos.length < 2; });
   }
   function openPhotoViewer(p, photos, index) {
@@ -195,6 +199,7 @@
       const photos = productPhotos(p);
       if (photos.length) {
         media.append(buildGallery(p, photos));
+        if (photos[0].illustration) { media.append(el('span', 'product-illus', 'Ilustrasi model')); card.classList.add('has-illus'); }
       } else {
         const ph = el('div', 'product-placeholder');
         const icon = iconFor(p);

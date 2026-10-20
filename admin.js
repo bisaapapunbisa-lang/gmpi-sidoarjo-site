@@ -18,7 +18,8 @@
     owner: 'Pemilik / pengelola',
     content_editor: 'Editor situs',
     lbh_officer: 'Petugas LBH',
-    registrar: 'Petugas registrasi (data sensitif)'
+    registrar: 'Petugas registrasi (data sensitif)',
+    media_partner: 'Mitra media (berita)'
   };
   const REPORT_STATUSES = ['diterima', 'ditinjau', 'ditindaklanjuti', 'ditutup'];
   const MEMBER_STATUSES = ['menunggu_verifikasi', 'ditinjau', 'diterima', 'ditolak'];
@@ -42,6 +43,7 @@
   function canEditContent() { return roles.includes('owner') || roles.includes('content_editor'); }
   function canSeeMembers() { return roles.includes('registrar'); }
   function isOwner() { return roles.includes('owner'); }
+  function canManageNews() { return canEditContent() || roles.includes('media_partner'); }
   function canManageCards() { return roles.includes('owner') || roles.includes('registrar'); }
 
   if (!config.url || !config.publishableKey) {
@@ -126,6 +128,7 @@
     const tabs = [];
     if (canEditContent()) tabs.push(['content', 'Isi situs']);
     if (canEditContent()) tabs.push(['shop', 'Toko']);
+    if (canManageNews()) tabs.push(['news', 'Berita']);
     if (canSeeReports()) tabs.push(['reports', 'Aduan LBH']);
     if (canSeeMembers()) tabs.push(['members', 'Pendaftaran anggota']);
     if (canManageCards()) tabs.push(['cards', 'Kartu anggota']);
@@ -148,6 +151,7 @@
     workspace.replaceChildren(make('div', 'table-empty', 'Memuat…'));
     if (key === 'content' && canEditContent()) return renderContentEditor();
     if (key === 'shop' && canEditContent()) return renderShop();
+    if (key === 'news' && canManageNews()) return renderNews();
     if (key === 'reports' && canSeeReports()) return renderReports();
     if (key === 'members' && canSeeMembers()) return renderMembers();
     if (key === 'cards' && canManageCards()) return renderCards();
@@ -212,11 +216,11 @@
     return path ? client.storage.from('site-assets').getPublicUrl(path).data.publicUrl : '';
   }
 
-  async function compressProductImage(file) {
+  async function compressProductImage(file, maxSize = 1000) {
     const url = URL.createObjectURL(file);
     try {
       const img = await new Promise((resolve, reject) => { const i = new Image(); i.onload = () => resolve(i); i.onerror = reject; i.src = url; });
-      const max = 1000;
+      const max = maxSize;
       const scale = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
       const canvas = document.createElement('canvas');
       canvas.width = Math.round(img.naturalWidth * scale);
@@ -411,6 +415,369 @@
     addButton.addEventListener('click', () => openEditor(null));
     renderList();
     workspace.replaceChildren(settingsHead, settingsForm, listHead, editorSlot, list);
+  }
+
+  // ---- Berita media mitra ----
+  const NEWS_STATUS = { draft: 'Draf', review: 'Menunggu persetujuan', published: 'Tayang', hidden: 'Disembunyikan pengurus' };
+  const fmtDateAdmin = iso => (iso ? new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '—');
+  function assetUrlAdmin(path) { return path ? client.storage.from('site-assets').getPublicUrl(path).data.publicUrl : ''; }
+
+  async function uploadImage(file, folder, max) {
+    if (file.size > 15 * 1024 * 1024) throw new Error('Ukuran file lebih dari 15 MB.');
+    const blob = await compressProductImage(file, max);
+    const path = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
+    const { error } = await client.storage.from('site-assets').upload(path, blob, { contentType: 'image/jpeg', cacheControl: '31536000', upsert: false });
+    if (error) throw error;
+    return path;
+  }
+
+  async function renderNews() {
+    const editor = canEditContent();
+    const email = (currentUser?.email || '').toLowerCase();
+    const [{ data: partnerRows, error: pErr }, memberRes] = await Promise.all([
+      client.from('media_partners').select('*').order('sort_order', { ascending: true }).order('name', { ascending: true }),
+      editor ? client.from('media_partner_members').select('email,partner_id') : client.from('media_partner_members').select('email,partner_id').eq('email', email)
+    ]);
+    if (pErr || memberRes.error) return showWorkspaceError('Kolom berita belum aktif. Jalankan migrasi 202610200006_media_news.sql di Supabase (SQL Editor) terlebih dahulu.');
+    const allPartners = partnerRows || [];
+    const members = memberRes.data || [];
+    const myPartnerIds = new Set(members.filter(m => m.email === email).map(m => m.partner_id));
+    const partners = editor ? allPartners : allPartners.filter(p => myPartnerIds.has(p.id) && p.is_active);
+    const partnerName = id => (id ? (allPartners.find(p => p.id === id)?.name || 'Media') : 'Redaksi GMPI Sidoarjo');
+
+    if (!editor && !partners.length) {
+      return workspace.replaceChildren(make('div', 'admin-message is-warning', 'Akun Anda belum dihubungkan ke media mitra mana pun, atau medianya sedang dinonaktifkan. Hubungi pengurus GMPI Sidoarjo.'));
+    }
+
+    let query = client.from('news_posts').select('id,partner_id,title,summary,body,cover_path,source_url,status,published_at,created_by,updated_at').order('updated_at', { ascending: false }).limit(200);
+    if (!editor) query = query.in('partner_id', [...myPartnerIds]);
+    const { data: postRows, error: nErr } = await query;
+    if (nErr) return showWorkspaceError('Daftar berita tidak dapat dimuat.');
+    let posts = postRows || [];
+
+    const heading = make('div', 'workspace-heading');
+    const hb = make('div');
+    hb.append(make('h3', '', editor ? 'Berita' : `Berita ${partners.map(p => p.name).join(', ')}`),
+      make('p', '', editor
+        ? 'Kelola semua berita dari media mitra. Berita berstatus “Menunggu persetujuan” perlu Anda terbitkan. Pengurus dapat menyembunyikan berita apa pun.'
+        : 'Tulis dan kelola berita media Anda. Berita yang diterbitkan tampil di kolom “Berita” website GMPI Sidoarjo.'));
+    const newBtn = make('button', 'admin-button admin-button-gold', '+ Tulis berita');
+    newBtn.type = 'button';
+    heading.append(hb, newBtn);
+
+    const filterBar = make('div', 'news-admin-filters');
+    let statusFilter = '';
+    const editorSlot = make('div');
+    const list = make('div', 'news-admin-list');
+
+    function renderFilterBar() {
+      const counts = posts.reduce((a, p) => { a[p.status] = (a[p.status] || 0) + 1; return a; }, {});
+      const opts = [['', `Semua (${posts.length})`], ...Object.entries(NEWS_STATUS).filter(([k]) => counts[k]).map(([k, l]) => [k, `${l} (${counts[k]})`])];
+      filterBar.replaceChildren(...opts.map(([k, l]) => {
+        const b = make('button', `admin-tab${statusFilter === k ? ' is-active' : ''}${k === 'review' ? ' is-alert' : ''}`, l);
+        b.type = 'button';
+        b.addEventListener('click', () => { statusFilter = k; renderFilterBar(); renderList(); });
+        return b;
+      }));
+    }
+
+    function renderList() {
+      const rows = posts.filter(p => !statusFilter || p.status === statusFilter);
+      if (!rows.length) { list.replaceChildren(make('div', 'table-empty', posts.length ? 'Tidak ada berita dengan status ini.' : 'Belum ada berita. Klik “Tulis berita”.')); return; }
+      list.replaceChildren(...rows.map(p => {
+        const row = make('div', `news-admin-row is-${p.status}`);
+        const thumb = make('div', 'shop-admin-thumb news-admin-thumb');
+        if (p.cover_path) { const im = make('img'); im.src = assetUrlAdmin(p.cover_path); im.alt = ''; thumb.append(im); } else thumb.textContent = 'TANPA FOTO';
+        const info = make('div', 'shop-admin-info');
+        info.append(make('b', '', p.title));
+        info.append(make('small', '', `${partnerName(p.partner_id)} · ${p.status === 'published' ? `tayang ${fmtDateAdmin(p.published_at)}` : `diubah ${fmtDateAdmin(p.updated_at)}`}${editor && p.created_by ? ` · ${p.created_by}` : ''}`));
+        const state = make('span', `news-state is-${p.status}`, NEWS_STATUS[p.status]);
+        const actions = make('div', 'news-admin-actions');
+        const edit = make('button', 'admin-button admin-button-outline', p.status === 'hidden' && !editor ? 'Lihat' : 'Ubah');
+        edit.type = 'button';
+        edit.addEventListener('click', () => openEditor(p));
+        actions.append(edit);
+        if (editor && p.status === 'review') {
+          const ok = make('button', 'admin-button admin-button-gold', 'Terbitkan'); ok.type = 'button';
+          ok.addEventListener('click', () => quickStatus(p, 'published'));
+          actions.append(ok);
+        }
+        if (p.status === 'published') {
+          const view = make('a', 'admin-link-button', 'Lihat ↗'); view.href = `index.html#berita/${p.id}`; view.target = '_blank'; view.rel = 'noopener';
+          actions.append(view);
+        }
+        row.append(thumb, info, state, actions);
+        return row;
+      }));
+    }
+
+    async function quickStatus(p, status) {
+      const { data, error } = await client.from('news_posts').update({ status }).eq('id', p.id).select().single();
+      if (error) return setMessage(`Status gagal diubah: ${error.message || ''}`, 'error');
+      posts = posts.map(x => (x.id === data.id ? data : x));
+      renderFilterBar(); renderList();
+      setMessage(`“${data.title}” sekarang: ${NEWS_STATUS[data.status]}.`);
+    }
+
+    function openEditor(post) {
+      const isNew = !post;
+      const p = post || { partner_id: partners[0]?.id || null, title: '', summary: '', body: '', cover_path: null, source_url: '', status: 'draft' };
+      const locked = !editor && p.status === 'hidden';
+      const box = make('form', 'admin-card shop-editor content-form news-editor');
+      box.noValidate = true;
+      box.append(make('h4', 'shop-editor-title', isNew ? 'Tulis berita baru' : (locked ? 'Berita disembunyikan pengurus' : 'Ubah berita')));
+      if (locked) box.append(make('div', 'admin-message is-warning', 'Berita ini disembunyikan oleh pengurus GMPI Sidoarjo sehingga tidak dapat diubah. Hubungi pengurus bila ada pertanyaan.'));
+
+      const partnerSel = make('select'); partnerSel.id = 'nw-partner';
+      if (editor) partnerSel.append(new Option('Redaksi GMPI Sidoarjo (tanpa media)', ''));
+      partners.forEach(m => partnerSel.append(new Option(`${m.name}${m.is_active ? '' : ' (nonaktif)'}`, m.id)));
+      partnerSel.value = p.partner_id || '';
+      partnerSel.disabled = !isNew && !editor;
+      const titleIn = input('nw-title', 'text', { maxLength: 160, value: p.title, required: true, placeholder: 'Judul berita' });
+      const summaryIn = make('textarea'); summaryIn.id = 'nw-summary'; summaryIn.maxLength = 400; summaryIn.rows = 3; summaryIn.value = p.summary || ''; summaryIn.placeholder = 'Ringkasan 1–2 kalimat yang tampil di kartu berita.';
+      const bodyIn = make('textarea'); bodyIn.id = 'nw-body'; bodyIn.maxLength = 20000; bodyIn.rows = 14; bodyIn.value = p.body || ''; bodyIn.placeholder = 'Isi berita. Pisahkan paragraf dengan satu baris kosong.';
+      const srcIn = input('nw-src', 'text', { maxLength: 500, value: p.source_url || '', placeholder: 'https://namamedia.com/berita/...' });
+
+      let coverPath = p.cover_path;
+      const coverPrev = make('div', 'shop-admin-thumb news-cover-prev');
+      const coverPick = make('label', 'file-button', 'Pilih foto sampul');
+      const coverIn = make('input'); coverIn.type = 'file'; coverIn.accept = 'image/png,image/jpeg,image/webp'; coverIn.hidden = true;
+      coverPick.append(coverIn);
+      const coverClear = make('button', 'shop-photo-clear', 'Hapus foto'); coverClear.type = 'button';
+      const coverNote = make('small', 'privacy-mini', 'Foto mendatar (16:9) paling bagus. Otomatis diperkecil.');
+      const renderCover = () => {
+        coverPrev.replaceChildren();
+        if (coverPath) { const im = make('img'); im.src = assetUrlAdmin(coverPath); im.alt = ''; coverPrev.append(im); } else coverPrev.textContent = 'Belum ada foto';
+        coverClear.hidden = !coverPath;
+      };
+      renderCover();
+      coverIn.addEventListener('change', async () => {
+        const file = coverIn.files && coverIn.files[0]; coverIn.value = '';
+        if (!file) return;
+        coverNote.textContent = 'Mengunggah foto…'; coverPrev.classList.add('is-loading');
+        try { coverPath = await uploadImage(file, 'news', 1600); renderCover(); coverNote.textContent = 'Foto terunggah. Jangan lupa simpan berita.'; }
+        catch (e) { coverNote.textContent = `Foto gagal diunggah. ${e.message || ''}`; }
+        finally { coverPrev.classList.remove('is-loading'); }
+      });
+      coverClear.addEventListener('click', () => { coverPath = null; renderCover(); });
+      const coverTools = make('div', 'shop-admin-imgtools');
+      const coverSide = make('div', 'news-cover-side'); coverSide.append(coverPick, coverClear, coverNote);
+      coverTools.append(coverPrev, coverSide);
+
+      const counter = make('small', 'privacy-mini', '');
+      const updCount = () => { counter.textContent = `${bodyIn.value.length.toLocaleString('id-ID')} / 20.000 karakter`; };
+      bodyIn.addEventListener('input', updCount); updCount();
+
+      box.append(
+        field('Media', partnerSel, editor ? 'Pilih media penulis berita. “Redaksi GMPI Sidoarjo” untuk berita dari pengurus sendiri.' : null),
+        field('Judul', titleIn),
+        field('Ringkasan', summaryIn),
+        field('Isi berita', bodyIn), counter,
+        field('Foto sampul', coverTools),
+        field('Tautan berita asli (opsional)', srcIn, 'Bila berita juga tayang di situs media Anda, tempel tautannya. Pembaca akan melihat tombol “Baca di …”.')
+      );
+      if (locked) box.querySelectorAll('input,textarea,select,button,label.file-button').forEach(n => { n.disabled = true; n.style.pointerEvents = 'none'; });
+
+      const actions = make('div', 'shop-editor-actions');
+      const selectedPartner = () => allPartners.find(m => m.id === partnerSel.value);
+      const needsReview = () => !editor && !!selectedPartner()?.requires_review;
+      const draftBtn = make('button', 'admin-button admin-button-outline', 'Simpan draf'); draftBtn.type = 'button';
+      const pubBtn = make('button', 'admin-button admin-button-gold', ''); pubBtn.type = 'button';
+      const refreshPubLabel = () => { pubBtn.textContent = needsReview() ? 'Kirim untuk ditinjau' : (p.status === 'published' ? 'Simpan & tetap tayang' : 'Terbitkan'); };
+      refreshPubLabel();
+      partnerSel.addEventListener('change', refreshPubLabel);
+      const cancel = make('button', 'admin-button admin-button-outline', 'Tutup'); cancel.type = 'button';
+      cancel.addEventListener('click', () => editorSlot.replaceChildren());
+      if (!locked) actions.append(pubBtn, draftBtn);
+      actions.append(cancel);
+      if (!isNew && editor) {
+        const hideBtn = make('button', 'admin-button admin-button-outline', p.status === 'hidden' ? 'Tampilkan lagi (tayang)' : 'Sembunyikan'); hideBtn.type = 'button';
+        hideBtn.addEventListener('click', async () => { await save(p.status === 'hidden' ? 'published' : 'hidden'); });
+        actions.append(hideBtn);
+      }
+      if (!isNew && !locked) {
+        const del = make('button', 'admin-button admin-button-red', 'Hapus'); del.type = 'button';
+        del.addEventListener('click', async () => {
+          if (!window.confirm(`Hapus berita “${p.title}”? Tindakan ini tidak bisa dibatalkan.`)) return;
+          const { error } = await client.from('news_posts').delete().eq('id', p.id);
+          if (error) return setMessage('Berita gagal dihapus.', 'error');
+          posts = posts.filter(x => x.id !== p.id);
+          editorSlot.replaceChildren(); renderFilterBar(); renderList(); setMessage('Berita dihapus.');
+        });
+        actions.append(del);
+      }
+      box.append(actions);
+
+      async function save(status) {
+        const title = titleIn.value.trim();
+        if (title.length < 5) { titleIn.focus(); return setMessage('Judul minimal 5 karakter.', 'error'); }
+        let src = srcIn.value.trim();
+        if (src && !/^https?:\/\//i.test(src)) src = `https://${src}`;
+        if (src && !/^https?:\/\/[^\s]{3,500}$/.test(src)) { srcIn.focus(); return setMessage('Tautan berita tidak valid.', 'error'); }
+        if (status === 'published' && !bodyIn.value.trim() && !src) { bodyIn.focus(); return setMessage('Isi berita masih kosong. Tulis isi berita atau tempel tautan berita asli.', 'error'); }
+        const payload = {
+          title, summary: summaryIn.value.trim(), body: bodyIn.value.replace(/\r/g, '').trim(),
+          cover_path: coverPath || null, source_url: src || null, status
+        };
+        if (isNew || editor) payload.partner_id = partnerSel.value || null;
+        [pubBtn, draftBtn].forEach(b => { b.disabled = true; });
+        const q = isNew ? client.from('news_posts').insert(payload).select().single() : client.from('news_posts').update(payload).eq('id', p.id).select().single();
+        const { data, error } = await q;
+        [pubBtn, draftBtn].forEach(b => { b.disabled = false; });
+        if (error) return setMessage(`Berita tidak tersimpan. ${error.message || ''}`, 'error');
+        if (isNew) posts.unshift(data); else posts = posts.map(x => (x.id === data.id ? data : x));
+        editorSlot.replaceChildren(); renderFilterBar(); renderList();
+        const msg = { draft: 'disimpan sebagai draf', review: 'dikirim dan menunggu persetujuan pengurus', published: 'tayang di website', hidden: 'disembunyikan dari website' }[data.status];
+        setMessage(`“${data.title}” ${msg}.`);
+      }
+      pubBtn.addEventListener('click', () => save('published'));
+      draftBtn.addEventListener('click', () => save('draft'));
+
+      editorSlot.replaceChildren(box);
+      box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    newBtn.addEventListener('click', () => openEditor(null));
+    renderFilterBar(); renderList();
+    const nodes = [heading, filterBar, editorSlot, list];
+    if (editor) nodes.push(await buildPartnerManager(allPartners, members));
+    workspace.replaceChildren(...nodes);
+  }
+
+  async function buildPartnerManager(partners, members) {
+    const owner = isOwner();
+    const section = make('section', 'news-partner-manager');
+    const head = make('div', 'workspace-heading');
+    const hb = make('div');
+    hb.append(make('h3', '', 'Media mitra & akun redaksi'),
+      make('p', '', owner
+        ? 'Tambahkan media yang bekerja sama, lalu hubungkan email redaksinya. Akun media hanya bisa mengelola berita medianya sendiri. Undang email tersebut lebih dulu di Supabase → Authentication → Users → Invite user.'
+        : 'Daftar media mitra. Hanya Pemilik yang dapat menambah atau mencabut akun redaksi media.'));
+    head.append(hb);
+    section.append(head);
+
+    // Tambah media
+    const addForm = make('form', 'admin-inline-form news-partner-add');
+    const nameIn = input('mp-name', 'text', { maxLength: 80, required: true, placeholder: 'Nama media, contoh: Sidoarjo Terkini' });
+    const webIn = input('mp-web', 'text', { maxLength: 300, placeholder: 'https://situsmedia.com (opsional)' });
+    const addBtn = make('button', 'admin-button admin-button-gold', '+ Tambah media'); addBtn.type = 'submit';
+    const l1 = make('label', '', 'Nama media'); l1.append(nameIn);
+    const l2 = make('label', '', 'Situs web'); l2.append(webIn);
+    addForm.append(l1, l2, addBtn);
+    addForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      const name = nameIn.value.trim();
+      if (name.length < 2) return;
+      let web = webIn.value.trim(); if (web && !/^https?:\/\//i.test(web)) web = `https://${web}`;
+      addBtn.disabled = true;
+      const { error } = await client.from('media_partners').insert({ name, website_url: web || null, sort_order: (partners.length + 1) * 10 });
+      addBtn.disabled = false;
+      if (error) return setMessage(`Media gagal ditambahkan. ${error.message || ''}`, 'error');
+      setMessage(`Media “${name}” ditambahkan.`); renderNews();
+    });
+    section.append(addForm);
+
+    if (!partners.length) { section.append(make('div', 'table-empty', 'Belum ada media mitra.')); return section; }
+    const grid = make('div', 'news-partner-list');
+    partners.forEach(mp => {
+      const cardEl = make('div', `news-partner-card${mp.is_active ? '' : ' is-off'}`);
+      const top = make('div', 'news-partner-top');
+      const logo = make('div', 'shop-admin-thumb news-partner-logo');
+      const renderLogo = () => { logo.replaceChildren(); if (mp.logo_path) { const im = make('img'); im.src = assetUrlAdmin(mp.logo_path); im.alt = ''; logo.append(im); } else logo.textContent = 'LOGO'; };
+      renderLogo();
+      const info = make('div', 'shop-admin-info');
+      info.append(make('b', '', mp.name), make('small', '', mp.website_url || 'Tanpa situs web'));
+      top.append(logo, info);
+
+      const opts = make('div', 'news-partner-opts');
+      const mkCheck = (labelText, checked, onChange) => {
+        const l = make('label', 'shop-admin-check'); const c = make('input'); c.type = 'checkbox'; c.checked = checked;
+        c.addEventListener('change', () => onChange(c)); l.append(c, document.createTextNode(` ${labelText}`)); return l;
+      };
+      const upd = async (patch, c) => {
+        const { error } = await client.from('media_partners').update(patch).eq('id', mp.id);
+        if (error) { c.checked = !c.checked; return setMessage('Pengaturan media gagal disimpan.', 'error'); }
+        Object.assign(mp, patch); cardEl.classList.toggle('is-off', !mp.is_active); setMessage(`Pengaturan “${mp.name}” disimpan.`);
+      };
+      opts.append(
+        mkCheck('Aktif (berita tampil di website)', mp.is_active, c => upd({ is_active: c.checked }, c)),
+        mkCheck('Berita perlu persetujuan pengurus', mp.requires_review, c => upd({ requires_review: c.checked }, c))
+      );
+      const logoPick = make('label', 'file-button', mp.logo_path ? 'Ganti logo' : 'Unggah logo');
+      const logoIn = make('input'); logoIn.type = 'file'; logoIn.accept = 'image/png,image/jpeg,image/webp'; logoIn.hidden = true; logoPick.append(logoIn);
+      logoIn.addEventListener('change', async () => {
+        const file = logoIn.files && logoIn.files[0]; logoIn.value = ''; if (!file) return;
+        try {
+          const path = await uploadImage(file, 'media', 600);
+          const { error } = await client.from('media_partners').update({ logo_path: path }).eq('id', mp.id);
+          if (error) throw error;
+          mp.logo_path = path; renderLogo(); setMessage(`Logo “${mp.name}” diperbarui.`);
+        } catch (e) { setMessage(`Logo gagal diunggah. ${e.message || ''}`, 'error'); }
+      });
+      opts.append(logoPick);
+
+      // Akun redaksi
+      const accounts = make('div', 'news-partner-accounts');
+      accounts.append(make('b', 'news-acc-title', 'Akun redaksi'));
+      const mine = members.filter(m => m.partner_id === mp.id);
+      if (!mine.length) accounts.append(make('small', 'privacy-mini', 'Belum ada akun.'));
+      mine.forEach(m => {
+        const row = make('div', 'news-acc-row');
+        row.append(make('span', '', m.email));
+        if (owner) {
+          const rm = make('button', 'admin-link-button', 'Cabut'); rm.type = 'button';
+          rm.addEventListener('click', async () => {
+            if (!window.confirm(`Cabut akses ${m.email} dari ${mp.name}?`)) return;
+            const { error } = await client.from('media_partner_members').delete().eq('email', m.email).eq('partner_id', mp.id);
+            if (error) return setMessage('Akses gagal dicabut.', 'error');
+            if (!members.some(x => x.email === m.email && x.partner_id !== mp.id)) {
+              await client.from('admin_profiles').delete().eq('email', m.email).eq('role', 'media_partner');
+            }
+            setMessage(`Akses ${m.email} dicabut.`); renderNews();
+          });
+          row.append(rm);
+        }
+        accounts.append(row);
+      });
+      if (owner) {
+        const f = make('form', 'news-acc-add');
+        const em = input(`mp-email-${mp.id}`, 'email', { placeholder: 'email redaksi', required: true });
+        const b = make('button', 'admin-button admin-button-outline', 'Hubungkan'); b.type = 'submit';
+        f.append(em, b);
+        f.addEventListener('submit', async e => {
+          e.preventDefault();
+          const mail = em.value.trim().toLowerCase();
+          if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) return setMessage('Email tidak valid.', 'error');
+          b.disabled = true;
+          const { error: e1 } = await client.from('admin_profiles').upsert({ email: mail, role: 'media_partner', active: true }, { onConflict: 'email,role' });
+          const { error: e2 } = e1 ? { error: e1 } : await client.from('media_partner_members').upsert({ email: mail, partner_id: mp.id }, { onConflict: 'email,partner_id' });
+          b.disabled = false;
+          if (e2) return setMessage(`Akun gagal dihubungkan. ${e2.message || ''}`, 'error');
+          setMessage(`${mail} terhubung ke ${mp.name}. Pastikan email ini sudah diundang di Supabase → Authentication → Users → Invite user.`);
+          renderNews();
+        });
+        accounts.append(f);
+      }
+
+      cardEl.append(top, opts, accounts);
+      if (owner) {
+        const del = make('button', 'admin-link-button news-partner-del', 'Hapus media'); del.type = 'button';
+        del.addEventListener('click', async () => {
+          if (!window.confirm(`Hapus media “${mp.name}”? SEMUA berita dari media ini juga ikut terhapus. Untuk sementara, lebih aman hapus centang “Aktif”.`)) return;
+          const emails = mine.map(m => m.email);
+          const { error } = await client.from('media_partners').delete().eq('id', mp.id);
+          if (error) return setMessage('Media gagal dihapus.', 'error');
+          for (const mail of emails) {
+            if (!members.some(x => x.email === mail && x.partner_id !== mp.id)) await client.from('admin_profiles').delete().eq('email', mail).eq('role', 'media_partner');
+          }
+          setMessage(`Media “${mp.name}” dihapus.`); renderNews();
+        });
+        cardEl.append(del);
+      }
+      grid.append(cardEl);
+    });
+    section.append(grid);
+    return section;
   }
 
   // ---- Logo situs: unggah, pilih dari riwayat, kembalikan bawaan ----
