@@ -1633,7 +1633,7 @@
 
   // ---- Kartu Tanda Anggota (KTA) dengan QR verifikasi ----
   const DISTRICTS = ['Sidoarjo','Buduran','Gedangan','Waru','Sukodono','Taman','Krian','Balongbendo','Tarik','Prambon','Krembung','Porong','Jabon','Tanggulangin','Candi','Tulangan','Wonoayu','Sedati'];
-  const JABATAN_SUGGESTIONS = ['Anggota', 'Warga GMPI', 'Ketua DPD', 'Wakil Ketua DPD', 'Sekretaris DPD', 'Bendahara DPD', 'Ketua Departemen DPD', 'Pengurus DPD', 'Ketua DPC', 'Pengurus DPC', 'Korja Ranting', 'LBH GMPI', 'MPI Sidoarjo', 'SB GMPI', 'Satgas Brigade'];
+  const JABATAN_SUGGESTIONS = ['Anggota', 'Warga GMPI', 'Ketua DPD', 'Wakil Ketua DPD', 'Sekretaris DPD', 'Bendahara DPD', 'Ketua Departemen DPD', 'Pengurus DPD', 'Ketua DPC', 'Pengurus DPC', 'Korja Ranting', 'LBH GMPI', 'MPI Sidoarjo', 'SB GMPI', 'Squad Militansi', 'Tagana'];
   const CARD_STATUS_LABELS = { menunggu: 'Menunggu persetujuan', ditolak: 'Ditolak', aktif: 'Aktif', nonaktif: 'Nonaktif', dicabut: 'Dicabut' };
   const CARD_COLS_BASE = 'id,card_token,member_number,full_name,district,jabatan,status,issued_at,valid_until';
   const CARD_COLS = CARD_COLS_BASE + ',submitted_by,approved_by,approved_at,review_note';
@@ -1769,7 +1769,7 @@
     newBtn.type = 'button';
     const btnRow = make('div', 'card-buttons'); btnRow.append(saveBtn, downloadBtn, downloadBackBtn, newBtn);
 
-    formEl.append(statusLine, field('Nama lengkap', nameIn), rowA, field('Jabatan / keterangan', jabatanIn, 'Contoh: Anggota, Ketua DPC Candi, Korja Ranting, Satgas Brigade.'), list, rowB,
+    formEl.append(statusLine, field('Nama lengkap', nameIn), rowA, field('Jabatan / keterangan', jabatanIn, 'Contoh: Anggota, Ketua DPC Candi, Korja Ranting, Squad Militansi.'), list, rowB,
       field('Foto anggota (pas foto 4×6, latar biru)', photoIn, 'Foto hanya dipakai di perangkat ini untuk membuat gambar kartu — tidak diunggah atau disimpan di server. Simpan file kartu (PNG) hasil unduhan.'),
       photoTools, backTools, btnRow);
 
