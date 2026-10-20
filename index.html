@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="news.css">
   <link rel="stylesheet" href="sos.css">
   <link rel="stylesheet" href="sebaran.css">
+  <link rel="stylesheet" href="struktur.css">
 </head>
 <body>
   <canvas id="starfield" aria-hidden="true"></canvas>
@@ -124,6 +125,15 @@
       <div class="news-grid" id="news-grid" aria-live="polite"><div class="news-empty">Memuat berita…</div></div>
       <div class="news-more-wrap"><button type="button" class="news-more" id="news-more" hidden>Muat berita lainnya</button><a class="news-more news-all" id="news-all" href="berita.html" hidden>Lihat semua berita →</a></div>
       <div class="news-partners" id="news-partners" hidden><span>Media mitra</span><div class="news-partner-logos"></div></div>
+    </section>
+
+    <section class="section struktur-section" id="struktur" aria-labelledby="struktur-title">
+      <div class="section-head">
+        <div><div class="eyebrow"><span class="eyebrow-line"></span> SUSUNAN PENGURUS</div><h2 id="struktur-title">Struktur <em>organisasi.</em></h2></div>
+        <p class="section-intro">Dewan Penasihat, Dewan Pembina, dan Dewan Pengurus GMPI DPD Sidoarjo sesuai AD/ART GMPI 2021 Pasal 9.</p>
+      </div>
+      <div id="struktur-chart"></div>
+      <p class="struktur-note">Susunan pengurus DPD ditetapkan dan disahkan sesuai AD/ART GMPI. Garis putus-putus: fungsi nasihat dan pembinaan.</p>
     </section>
 
     <section class="sebaran-section" id="sebaran" aria-labelledby="sebaran-title">
@@ -262,7 +272,7 @@
   <footer class="site-footer">
     <a class="brand footer-brand" href="#top"><img data-site-logo src="assets/logo-gmpi-sidoarjo-crop.webp" alt=""><span class="brand-text"><strong>GMPI</strong><small>DPD SIDOARJO</small></span></a>
     <p>Gerakan Militansi Pejuang Indonesia<br><span data-cms-key="footer_slogan">Setia Bersaudara Sampai Urat Nadi</span></p>
-    <div class="footer-links"><a href="#pilar">Pilar Pergerakan</a><a href="#posko">Posko Digital</a><a href="#lensa">Lensa Kegiatan</a><a href="berita.html">Berita</a><a href="#perlengkapan">Perlengkapan</a><a href="#legalitas">Legalitas</a><a href="verifikasi.html">Verifikasi Kartu</a><a href="darurat.html">Darurat / SOS</a><a class="footer-admin" href="admin.html" aria-label="Masuk ke panel Admin GMPI">Admin ↗</a></div>
+    <div class="footer-links"><a href="#pilar">Pilar Pergerakan</a><a href="#posko">Posko Digital</a><a href="#lensa">Lensa Kegiatan</a><a href="berita.html">Berita</a><a href="#perlengkapan">Perlengkapan</a><a href="#struktur">Struktur Organisasi</a><a href="#legalitas">Legalitas</a><a href="verifikasi.html">Verifikasi Kartu</a><a href="darurat.html">Darurat / SOS</a><a class="footer-admin" href="admin.html" aria-label="Masuk ke panel Admin GMPI">Admin ↗</a></div>
     <small class="copyright">© <span id="year"></span> GMPI DPD Sidoarjo<br>Berbadan hukum · AHU-0010942.AH.01.07.TAHUN 2021</small>
   </footer>
 
@@ -343,5 +353,6 @@
   <script src="store.js"></script>
   <script src="news.js"></script>
   <script src="sebaran.js"></script>
+  <script src="struktur.js"></script>
 </body>
 </html>

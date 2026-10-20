@@ -116,3 +116,9 @@ Beranda punya bagian **"Barisan di 18 kecamatan"**: peta 18 kecamatan (warna mak
 Yang boleh mengisi: Pemilik, Editor situs, Petugas registrasi. Publik hanya melihat **angka** — tanpa nama, alamat, NIK, atau nomor HP.
 
 Batas wilayah kecamatan: data GeoJSON publik 35.15 Sidoarjo (repo GitHub sigitttd/geojsanjson, bersumber dari batas administrasi resmi), disederhanakan ±11 KB dan ditanam di `sebaran.js` — tidak butuh Google Maps atau API key.
+
+## Struktur organisasi DPD (migration 0013)
+1. Jalankan `supabase/migrations/202610200013_struktur_organisasi.sql` di Supabase SQL Editor. Tabel `org_structure` akan dibuat beserta 18 slot awal: Penasihat ×3, Pembina ×3, Ketua, Wakil Ketua I–III, Sekretaris, Wakil Sekretaris I–III, Bendahara, dan Wakil Bendahara I–III. Aman dijalankan ulang karena slot tidak akan dobel.
+2. Admin → tab **Struktur**. Tab ini hanya terlihat oleh Pemilik dan Editor situs. Isi nama, unggah foto (otomatis dikecilkan dan disimpan di `site-assets/pengurus/`), tambah departemen, lalu tekan **Simpan struktur**.
+3. Pengunjung umum hanya bisa membaca bagan. Perubahan hanya bisa dilakukan oleh owner/content_editor.
+4. KTA: kolom **Jabatan** kini berupa daftar pilihan sesuai AD/ART. Untuk jabatan DPC/Ranting, nama kecamatan ditambahkan otomatis. Teks tetap bisa diubah manual (maks. 60 karakter), dan jabatan yang panjang otomatis dikecilkan di kartu.

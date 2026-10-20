@@ -44,6 +44,7 @@
 - [ ] Foto barang (latar polos, persegi) untuk diunggah di Admin → tab **Toko**.
 - [ ] **NPWP organisasi**: apakah sudah ada? Bila ada, isi di Admin → Toko.
 - [ ] **DPD atau DPD?** Bank, QRIS, dan stempel bertuliskan *DPD Kabupaten Sidoarjo*, sedangkan website & kartu memakai *DPD Sidoarjo*. Putuskan satu nama agar seragam.
+- [x] Nama badan ke-4: **ikut AD/ART → Squad Militansi** (bukan Satgas Brigade); Tagana masuk pilihan bidang. ✅ sudah diterapkan di website.
 - [ ] Penanda tangan KTA: AD/ART menyebut KTA ditandatangani **Ketua Umum**; saat ini default kartu "Ketua DPD" (bisa diubah di Admin → Kartu anggota).
 
 ## F. Kolom berita media mitra (baru)
@@ -67,3 +68,14 @@
 - [ ] Sepakati alur: siapa menekan **Terima**, siapa berangkat (**Menuju lokasi**), kapan **Selesai**; kapan wajib lapor polisi/112.
 - [ ] Setujui teks privasi: lokasi dicatat untuk Tim Siaga & dihapus otomatis 7 hari.
 - [ ] **Peta sebaran (Tahap 3, sudah dibuat):** siapkan jumlah anggota per kecamatan (18 angka) dari data DPC → diisi di Admin → tab Sebaran. Setujui angka itu boleh dipublikasikan.
+
+## I. Struktur organisasi DPD (baru)
+Bagan di beranda sudah siap. Susunan mengikuti AD/ART Pasal 9 ayat 2, ditambah keputusan kita soal jumlah dewan dan wakil. Yang perlu dibawa pulang dari rapat:
+- [ ] Nama lengkap + gelar: **Dewan Penasihat** (3 orang) dan **Dewan Pembina** (3 orang)
+- [ ] **Ketua DPD** dan **Wakil Ketua I, II, III**
+- [ ] **Sekretaris** dan **Wakil Sekretaris I, II, III**
+- [ ] **Bendahara** dan **Wakil Bendahara I, II, III**
+- [ ] Daftar **Departemen** beserta nama Wakil Ketua Departemen masing-masing
+- [ ] Pas foto tiap pengurus (foto HP cukup, wajah jelas, latar polos)
+- [ ] Pastikan susunan sudah sesuai SK kepengurusan DPD yang sah
+Cara mengisi: Admin → tab **Struktur** → ketik nama → **Unggah foto** → **Simpan struktur**. Jabatan yang namanya belum diisi tampil "Segera diisi".

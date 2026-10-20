@@ -139,6 +139,7 @@
     if (canEditContent()) tabs.push(['shop', 'Toko']);
     if (canSeeSiaga()) tabs.push(['siaga', 'Siaga']);
     if (canEditContent()) tabs.push(['sos', 'Darurat']);
+    if (canEditContent()) tabs.push(['struktur', 'Struktur']);
     if (canEditSebaran()) tabs.push(['sebaran', 'Sebaran']);
     if (canManageNews()) tabs.push(['news', 'Berita']);
     if (canSeeReports()) tabs.push(['reports', 'Aduan LBH']);
@@ -167,6 +168,7 @@
     if (key === 'shop' && canEditContent()) return renderShop();
     if (key === 'siaga' && canSeeSiaga()) return renderSiaga();
     if (key === 'sos' && canEditContent()) return renderSos();
+    if (key === 'struktur' && canEditContent()) return renderStruktur();
     if (key === 'sebaran' && canEditSebaran()) return renderSebaran();
     if (key === 'news' && canManageNews()) return renderNews();
     if (key === 'reports' && canSeeReports()) return renderReports();
@@ -621,6 +623,133 @@
     siaga.refresh = refresh;
     if (!siaga.selected) { const first = sorted(visible())[0]; if (first) siaga.selected = first.id; }
     refresh();
+  }
+
+  // ================= STRUKTUR ORGANISASI =================
+  async function renderStruktur() {
+    const heading = make('div', 'workspace-heading');
+    const hb = make('div');
+    hb.append(make('h3', '', 'Struktur organisasi DPD'), make('p', '', 'Isi nama dan foto pengurus. Bagan langsung tampil di beranda (bagian "Struktur organisasi"). Susunan mengikuti AD/ART Pasal 9: Dewan Penasihat & Pembina, Ketua, Sekretaris, Bendahara (masing-masing dengan Wakil I–III), dan Departemen. Kosongkan nama bila belum ditetapkan — tampil "Segera diisi".'));
+    heading.append(hb);
+    const { data, error } = await client.from('org_structure').select('id,section,jabatan,department,person_name,photo_path,sort_order').order('sort_order', { ascending: true });
+    if (error) {
+      workspace.replaceChildren(heading, make('div', 'admin-message is-error', 'Struktur belum bisa dibuka. Jalankan migrasi 202610200013_struktur_organisasi.sql di Supabase SQL Editor, lalu muat ulang halaman.'));
+      return;
+    }
+    let rows = (data || []).map(r => ({ ...r }));
+    const removed = [];
+    const photoUrl = path => client.storage.from('site-assets').getPublicUrl(path).data.publicUrl;
+    const SECTIONS = [
+      ['penasihat', 'Dewan Penasihat'], ['pembina', 'Dewan Pembina'], ['ketua', 'Ketua'], ['wakil_ketua', 'Wakil Ketua'],
+      ['sekretaris', 'Sekretaris'], ['bendahara', 'Bendahara'], ['wakil_sekretaris', 'Wakil Sekretaris'], ['wakil_bendahara', 'Wakil Bendahara'],
+      ['departemen', 'Departemen (dipimpin Wakil Ketua Departemen)']
+    ];
+    const layout = make('div', 'org-admin');
+    const formEl = make('form', 'org-admin-form');
+    const preview = make('div', 'org-admin-preview');
+    const previewHost = make('div');
+    preview.append(make('b', '', 'Pratinjau bagan di beranda'), previewHost);
+    let timer = 0;
+    const refreshPreview = () => { clearTimeout(timer); timer = setTimeout(() => window.GMPIStruktur && window.GMPIStruktur.render(previewHost, rows, photoUrl), 150); };
+
+    function rowEditor(r) {
+      const line = make('div', 'org-admin-row');
+      const thumb = make('div', 'org-admin-thumb');
+      const paintThumb = () => {
+        thumb.replaceChildren();
+        if (r.photo_path) { const img = new Image(); img.src = photoUrl(r.photo_path); img.alt = ''; thumb.append(img); }
+        else thumb.textContent = 'FOTO';
+      };
+      paintThumb();
+      const tools = make('div', 'org-admin-phototools');
+      const pick = make('label', 'file-button', r.photo_path ? 'Ganti foto' : 'Unggah foto');
+      const file = make('input'); file.type = 'file'; file.accept = 'image/png,image/jpeg,image/webp'; file.hidden = true;
+      pick.append(file);
+      const clear = make('button', 'shop-photo-clear', 'Hapus foto'); clear.type = 'button'; clear.hidden = !r.photo_path;
+      file.addEventListener('change', async () => {
+        const f = file.files && file.files[0]; if (!f) return;
+        thumb.classList.add('is-loading');
+        try {
+          r.photo_path = await uploadImage(f, 'pengurus', 600);
+          paintThumb(); clear.hidden = false; pick.firstChild.textContent = 'Ganti foto';
+          setMessage('Foto terunggah. Tekan "Simpan struktur" agar tampil di beranda.', 'warning');
+          refreshPreview();
+        } catch (e) { setMessage('Foto gagal diunggah: ' + (e.message || 'periksa koneksi/ukuran file (maks. 15 MB).'), 'error'); }
+        thumb.classList.remove('is-loading'); file.value = '';
+      });
+      clear.addEventListener('click', () => { r.photo_path = null; paintThumb(); clear.hidden = true; pick.firstChild.textContent = 'Unggah foto'; refreshPreview(); });
+      tools.append(pick, clear);
+      const fields = make('div', 'org-admin-fields');
+      if (r.section === 'departemen') {
+        const dep = make('input'); dep.maxLength = 80; dep.placeholder = 'Nama departemen, mis. Hukum & Advokasi'; dep.value = r.department || '';
+        dep.setAttribute('aria-label', 'Nama departemen');
+        dep.addEventListener('input', () => { r.department = dep.value; refreshPreview(); });
+        fields.append(dep);
+      }
+      const jab = make('input'); jab.maxLength = 80; jab.value = r.jabatan; jab.setAttribute('aria-label', 'Jabatan'); jab.className = 'org-admin-jabatan';
+      jab.addEventListener('input', () => { r.jabatan = jab.value; refreshPreview(); });
+      const nm = make('input'); nm.maxLength = 120; nm.placeholder = 'Nama lengkap (kosong = "Segera diisi")'; nm.value = r.person_name || '';
+      nm.setAttribute('aria-label', `Nama ${r.jabatan}`);
+      nm.addEventListener('input', () => { r.person_name = nm.value; refreshPreview(); });
+      fields.append(jab, nm);
+      line.append(thumb, fields, tools);
+      if (r.section === 'departemen') {
+        const del = make('button', 'admin-link-button org-admin-del', 'Hapus departemen'); del.type = 'button';
+        del.addEventListener('click', () => {
+          if (!window.confirm('Hapus departemen ini dari bagan?')) return;
+          if (r.id) removed.push(r.id);
+          rows = rows.filter(x => x !== r); build(); refreshPreview();
+        });
+        tools.append(del);
+      }
+      return line;
+    }
+
+    const groupsHost = make('div', 'org-admin-groups');
+    function build() {
+      groupsHost.replaceChildren(...SECTIONS.map(([key, label]) => {
+        const fs = make('fieldset', 'org-admin-group');
+        fs.append(make('legend', '', label));
+        rows.filter(r => r.section === key).forEach(r => fs.append(rowEditor(r)));
+        if (key === 'departemen') {
+          const add = make('button', 'admin-button admin-button-outline', '＋ Tambah departemen'); add.type = 'button';
+          add.addEventListener('click', () => {
+            const maxSort = rows.reduce((m, x) => Math.max(m, x.sort_order || 0), 90);
+            rows.push({ section: 'departemen', jabatan: 'Wakil Ketua Departemen', department: '', person_name: '', photo_path: null, sort_order: maxSort + 1 });
+            build(); refreshPreview();
+            const last = groupsHost.querySelector('.org-admin-group:last-child .org-admin-row:last-of-type input'); if (last) last.focus();
+          });
+          fs.append(add);
+        }
+        return fs;
+      }));
+    }
+    build();
+    const save = make('button', 'admin-button admin-button-red', 'Simpan struktur'); save.type = 'submit';
+    const view = make('a', 'admin-link-button', 'Lihat di beranda ↗'); view.href = 'index.html#struktur'; view.target = '_blank'; view.rel = 'noopener';
+    const btnRow = make('div', 'card-buttons org-admin-actions'); btnRow.append(save, view);
+    formEl.append(groupsHost, btnRow);
+    formEl.addEventListener('submit', async event => {
+      event.preventDefault();
+      const bad = rows.find(r => (r.jabatan || '').trim().length < 2 || (r.section === 'departemen' && !(r.department || '').trim()));
+      if (bad) { setMessage(bad.section === 'departemen' ? 'Isi nama setiap departemen (atau hapus departemen yang kosong).' : 'Jabatan tidak boleh kosong.', 'error'); return; }
+      const pick = r => ({ section: r.section, jabatan: r.jabatan.trim(), department: r.section === 'departemen' ? (r.department || '').trim() : null, person_name: (r.person_name || '').trim() || null, photo_path: r.photo_path || null, sort_order: r.sort_order || 0 });
+      save.disabled = true;
+      const existing = rows.filter(r => r.id).map(r => ({ id: r.id, ...pick(r) }));
+      const fresh = rows.filter(r => !r.id).map(pick);
+      const results = [];
+      if (existing.length) results.push(await client.from('org_structure').upsert(existing, { onConflict: 'id' }));
+      if (fresh.length) results.push(await client.from('org_structure').insert(fresh));
+      if (removed.length) results.push(await client.from('org_structure').delete().in('id', removed));
+      save.disabled = false;
+      const err = results.find(r => r.error);
+      if (err) { setMessage('Struktur tidak tersimpan. Pastikan peran Anda Pemilik/Editor situs dan migrasi 0013 sudah dijalankan.', 'error'); return; }
+      setMessage('Struktur organisasi tersimpan dan langsung tampil di beranda.');
+      renderStruktur();
+    });
+    layout.append(formEl, preview);
+    workspace.replaceChildren(heading, layout);
+    refreshPreview();
   }
 
   // ================= SEBARAN ANGGOTA (Tahap 3) =================
@@ -1633,7 +1762,16 @@
 
   // ---- Kartu Tanda Anggota (KTA) dengan QR verifikasi ----
   const DISTRICTS = ['Sidoarjo','Buduran','Gedangan','Waru','Sukodono','Taman','Krian','Balongbendo','Tarik','Prambon','Krembung','Porong','Jabon','Tanggulangin','Candi','Tulangan','Wonoayu','Sedati'];
-  const JABATAN_SUGGESTIONS = ['Anggota', 'Warga GMPI', 'Ketua DPD', 'Wakil Ketua DPD', 'Sekretaris DPD', 'Bendahara DPD', 'Ketua Departemen DPD', 'Pengurus DPD', 'Ketua DPC', 'Pengurus DPC', 'Korja Ranting', 'LBH GMPI', 'MPI Sidoarjo', 'SB GMPI', 'Squad Militansi', 'Tagana'];
+  const JABATAN_GROUPS = [
+    ['Dewan DPD', ['Dewan Penasihat DPD', 'Dewan Pembina DPD']],
+    ['Pengurus harian DPD', ['Ketua DPD', 'Wakil Ketua I DPD', 'Wakil Ketua II DPD', 'Wakil Ketua III DPD', 'Sekretaris DPD', 'Wakil Sekretaris I DPD', 'Wakil Sekretaris II DPD', 'Wakil Sekretaris III DPD', 'Bendahara DPD', 'Wakil Bendahara I DPD', 'Wakil Bendahara II DPD', 'Wakil Bendahara III DPD']],
+    ['Departemen DPD', ['Wakil Ketua Departemen DPD', 'Pengurus Departemen DPD']],
+    ['DPC (kecamatan)', ['Ketua DPC', 'Sekretaris DPC', 'Bendahara DPC', 'Ketua Bidang DPC', 'Pengurus DPC']],
+    ['Ranting (desa)', ['Korja Ranting', 'Wakil Korja Ranting', 'Sekretaris Ranting']],
+    ['Organisasi otonom', ['LBH GMPI', 'Squad Militansi', 'MPI Sidoarjo', 'SB GMPI', 'Tagana']],
+    ['Keanggotaan', ['Anggota', 'Warga GMPI']]
+  ];
+  const JABATAN_SUGGESTIONS = JABATAN_GROUPS.flatMap(([, items]) => items);
   const CARD_STATUS_LABELS = { menunggu: 'Menunggu persetujuan', ditolak: 'Ditolak', aktif: 'Aktif', nonaktif: 'Nonaktif', dicabut: 'Dicabut' };
   const CARD_COLS_BASE = 'id,card_token,member_number,full_name,district,jabatan,status,issued_at,valid_until';
   const CARD_COLS = CARD_COLS_BASE + ',submitted_by,approved_by,approved_at,review_note';
@@ -1729,9 +1867,13 @@
     districtIn.append(new Option('Pilih kecamatan', ''));
     DISTRICTS.forEach(d => districtIn.append(new Option(d, d)));
     const jabatanIn = input('card-jabatan', 'text', { required: true, maxLength: 60, value: 'Anggota' });
-    const list = make('datalist'); list.id = 'card-jabatan-list';
-    JABATAN_SUGGESTIONS.forEach(j => list.append(new Option(j, j)));
-    jabatanIn.setAttribute('list', list.id);
+    const list = make('select'); list.id = 'card-jabatan-pick'; list.className = 'card-jabatan-pick';
+    list.setAttribute('aria-label', 'Pilih jabatan');
+    list.append(new Option('— Pilih jabatan dari daftar —', ''));
+    JABATAN_GROUPS.forEach(([label, items]) => { const g = document.createElement('optgroup'); g.label = label; items.forEach(j => g.append(new Option(j, j))); list.append(g); });
+    const syncPick = () => { const v = jabatanIn.value.trim(); const hit = JABATAN_SUGGESTIONS.filter(j => v === j || v.startsWith(j + ' ')).sort((a, b) => b.length - a.length)[0]; list.value = hit || ''; };
+    list.addEventListener('change', () => { if (!list.value) return; let v = list.value; if (/(DPC|Ranting)$/.test(v) && districtIn.value) v = `${v} ${districtIn.value}`; jabatanIn.value = v; jabatanIn.dispatchEvent(new Event('input')); });
+    jabatanIn.addEventListener('input', syncPick);
     const issuedIn = input('card-issued', 'date', { required: true, value: today });
     const validIn = input('card-valid', 'date', { required: true, value: addYears(today, 2) });
     const photoIn = input('card-photo', 'file', { accept: 'image/png,image/jpeg,image/webp' });
@@ -1769,7 +1911,7 @@
     newBtn.type = 'button';
     const btnRow = make('div', 'card-buttons'); btnRow.append(saveBtn, downloadBtn, downloadBackBtn, newBtn);
 
-    formEl.append(statusLine, field('Nama lengkap', nameIn), rowA, field('Jabatan / keterangan', jabatanIn, 'Contoh: Anggota, Ketua DPC Candi, Korja Ranting, Squad Militansi.'), list, rowB,
+    formEl.append(statusLine, field('Nama lengkap', nameIn), rowA, field('Jabatan', list, 'Pilih dari daftar sesuai AD/ART. Untuk DPC/Ranting, nama kecamatan ikut ditambahkan otomatis.'), field('Jabatan tertulis di kartu', jabatanIn, 'Boleh diketik/diubah manual, mis. "Ketua DPC Candi" atau "Wakil Ketua Departemen Hukum".'), rowB,
       field('Foto anggota (pas foto 4×6, latar biru)', photoIn, 'Foto hanya dipakai di perangkat ini untuk membuat gambar kartu — tidak diunggah atau disimpan di server. Simpan file kartu (PNG) hasil unduhan.'),
       photoTools, backTools, btnRow);
 
@@ -1865,7 +2007,7 @@
       signerTitleIn.value = savedSigner.title || 'Ketua Umum GMPI';
       try { const s2 = JSON.parse(localStorage.getItem(SIGNER_KEY) || '{}'); if (s2.name) signerNameIn.value = s2.name; if (s2.title) signerTitleIn.value = s2.title; } catch (e) { /* abaikan */ }
       numberIn.value = suggestNumber();
-      jabatanIn.value = 'Anggota';
+      jabatanIn.value = 'Anggota'; syncPick();
       issuedIn.value = today;
       validIn.value = addYears(today, 2);
       photo = null; photoTools.hidden = true;
@@ -1878,7 +2020,7 @@
       nameIn.value = card.full_name;
       numberIn.value = card.member_number;
       districtIn.value = card.district;
-      jabatanIn.value = card.jabatan;
+      jabatanIn.value = card.jabatan; syncPick();
       issuedIn.value = card.issued_at;
       validIn.value = card.valid_until;
       setMode();

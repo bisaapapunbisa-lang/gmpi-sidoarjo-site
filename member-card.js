@@ -335,15 +335,20 @@
     lines.forEach((line, i) => ctx.fillText(line, W / 2, nameTop + i * (size * 0.98)));
     const afterName = nameTop + (lines.length - 1) * size * 0.98;
 
-    ctx.font = `800 12.5px ${F.body}`;
-    const chipW = Math.min(520, spacedWidth(ctx, jabatan, 2.4) + 40);
+    let chipSize = 12.5, chipGap = 2.4;
+    ctx.font = `800 ${chipSize}px ${F.body}`;
+    while (chipSize > 9 && spacedWidth(ctx, jabatan, chipGap) > 480) {
+      chipSize -= 0.5; chipGap = Math.max(1, chipGap - 0.15);
+      ctx.font = `800 ${chipSize}px ${F.body}`;
+    }
+    const chipW = Math.min(520, spacedWidth(ctx, jabatan, chipGap) + 40);
     const chipY = afterName + 18;
     const chipG = ctx.createLinearGradient(W / 2 - chipW / 2, 0, W / 2 + chipW / 2, 0);
     chipG.addColorStop(0, C.gold); chipG.addColorStop(1, C.goldHi);
     ctx.fillStyle = chipG;
     rr(ctx, W / 2 - chipW / 2, chipY, chipW, 32, 16); ctx.fill();
     ctx.fillStyle = '#16130b';
-    spaced(ctx, jabatan, W / 2, chipY + 21, 2.4, 'center');
+    spaced(ctx, jabatan, W / 2, chipY + 16 + chipSize * 0.38, chipGap, 'center');
 
     // ---------- Data ----------
     const infoY = 714;
