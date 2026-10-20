@@ -99,3 +99,20 @@ Aturan (dijaga oleh database):
 - Anti-iseng: maks. 3 kiriman per nomor HP per 5 menit, 40 kiriman per 10 menit total.
 - Website **tidak** melacak anggota terus-menerus; lokasi hanya terkirim saat anggota sendiri menekan tombol darurat.
 - `vercel.json` wajib berisi `geolocation=(self)` (bukan `geolocation=()`), kalau tidak lokasi selalu ditolak browser.
+
+## Peta sebaran anggota per kecamatan (migration 0011)
+
+Beranda punya bagian **"Barisan di 18 kecamatan"**: peta 18 kecamatan (warna makin terang = makin banyak anggota), total anggota, jumlah kecamatan terjangkau, dan peringkat per kecamatan.
+
+**Angka yang tampil per kecamatan:**
+- Bila pengurus mengisi angka manual → angka itu yang tampil.
+- Bila dikosongkan → jumlah **Kartu Anggota AKTIF** (yang sudah disetujui dan belum kedaluwarsa) di kecamatan itu.
+- Bila semua masih 0 → tampil "Data sebaran sedang dihimpun" (tidak menampilkan angka 0).
+
+**Langkah:**
+1. Supabase → SQL Editor → jalankan `202610200011_sebaran_anggota.sql` (harus *Success*).
+2. Admin → tab **Sebaran** → isi jumlah anggota tiap kecamatan → **Simpan angka sebaran**.
+
+Yang boleh mengisi: Pemilik, Editor situs, Petugas registrasi. Publik hanya melihat **angka** — tanpa nama, alamat, NIK, atau nomor HP.
+
+Batas wilayah kecamatan: data GeoJSON publik 35.15 Sidoarjo (repo GitHub sigitttd/geojsanjson, bersumber dari batas administrasi resmi), disederhanakan ±11 KB dan ditanam di `sebaran.js` — tidak butuh Google Maps atau API key.

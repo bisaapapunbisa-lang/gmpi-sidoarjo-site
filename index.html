@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="store.css">
   <link rel="stylesheet" href="news.css">
   <link rel="stylesheet" href="sos.css">
+  <link rel="stylesheet" href="sebaran.css">
 </head>
 <body>
   <canvas id="starfield" aria-hidden="true"></canvas>
@@ -123,6 +124,30 @@
       <div class="news-grid" id="news-grid" aria-live="polite"><div class="news-empty">Memuat berita…</div></div>
       <div class="news-more-wrap"><button type="button" class="news-more" id="news-more" hidden>Muat berita lainnya</button><a class="news-more news-all" id="news-all" href="berita.html" hidden>Lihat semua berita →</a></div>
       <div class="news-partners" id="news-partners" hidden><span>Media mitra</span><div class="news-partner-logos"></div></div>
+    </section>
+
+    <section class="sebaran-section" id="sebaran" aria-labelledby="sebaran-title">
+      <div class="sebaran-head">
+        <div><div class="eyebrow eyebrow-light"><span class="eyebrow-line"></span> SEBARAN ANGGOTA</div><h2 id="sebaran-title">Barisan di <em>18 kecamatan.</em></h2></div>
+        <p class="section-intro">Dari Waru sampai Jabon, dari Tarik sampai Sedati—saudara GMPI hadir di tengah warga Sidoarjo. Ketuk kecamatan pada peta untuk melihat jumlah anggotanya.</p>
+      </div>
+      <div class="sebaran-stats">
+        <div class="sebaran-stat"><span>Anggota terdata</span><b id="sebaran-total">—</b></div>
+        <div class="sebaran-stat"><span>Kecamatan terjangkau</span><b id="sebaran-reach">—</b></div>
+        <div class="sebaran-stat"><span>Barisan terbesar</span><b id="sebaran-top">—</b></div>
+      </div>
+      <div class="sebaran-body">
+        <div class="sebaran-mapwrap">
+          <div id="sebaran-map"></div>
+          <div class="sebaran-info" id="sebaran-info" hidden></div>
+          <div class="sebaran-legend"><span>Sedikit</span><i></i><span>Banyak</span><em>Belum ada</em></div>
+        </div>
+        <div class="sebaran-listwrap"><ol class="sebaran-list" id="sebaran-list"></ol></div>
+      </div>
+      <div class="sebaran-foot">
+        <p class="sebaran-note" id="sebaran-note">Data sebaran sedang dihimpun pengurus DPD.</p>
+        <a class="button button-gold" href="#gabung">Perkuat barisan di kecamatanmu <span>↗</span></a>
+      </div>
     </section>
 
     <section class="join-section" id="gabung">
@@ -317,5 +342,6 @@
   <script src="starfield.js"></script>
   <script src="store.js"></script>
   <script src="news.js"></script>
+  <script src="sebaran.js"></script>
 </body>
 </html>

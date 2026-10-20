@@ -49,6 +49,7 @@
   function canManageCards() { return roles.includes('owner') || roles.includes('registrar') || roles.includes('card_approver'); }
   function canIssueCards() { return roles.includes('owner') || roles.includes('registrar'); }
   function canApproveCards() { return roles.includes('owner') || roles.includes('card_approver'); }
+  function canEditSebaran() { return roles.includes('owner') || roles.includes('content_editor') || roles.includes('registrar'); }
   function canSeeSiaga() { return roles.includes('owner') || roles.includes('siaga'); }
   function myEmail() { return String(currentUser?.email || '').toLowerCase(); }
 
@@ -138,6 +139,7 @@
     if (canEditContent()) tabs.push(['shop', 'Toko']);
     if (canSeeSiaga()) tabs.push(['siaga', 'Siaga']);
     if (canEditContent()) tabs.push(['sos', 'Darurat']);
+    if (canEditSebaran()) tabs.push(['sebaran', 'Sebaran']);
     if (canManageNews()) tabs.push(['news', 'Berita']);
     if (canSeeReports()) tabs.push(['reports', 'Aduan LBH']);
     if (canSeeMembers()) tabs.push(['members', 'Pendaftaran anggota']);
@@ -165,6 +167,7 @@
     if (key === 'shop' && canEditContent()) return renderShop();
     if (key === 'siaga' && canSeeSiaga()) return renderSiaga();
     if (key === 'sos' && canEditContent()) return renderSos();
+    if (key === 'sebaran' && canEditSebaran()) return renderSebaran();
     if (key === 'news' && canManageNews()) return renderNews();
     if (key === 'reports' && canSeeReports()) return renderReports();
     if (key === 'members' && canSeeMembers()) return renderMembers();
@@ -618,6 +621,80 @@
     siaga.refresh = refresh;
     if (!siaga.selected) { const first = sorted(visible())[0]; if (first) siaga.selected = first.id; }
     refresh();
+  }
+
+  // ================= SEBARAN ANGGOTA (Tahap 3) =================
+  async function renderSebaran() {
+    const heading = make('div', 'workspace-heading');
+    const hb = make('div');
+    hb.append(make('h3', '', 'Sebaran anggota per kecamatan'), make('p', '', 'Angka ini tampil di beranda (peta 18 kecamatan). Isi jumlah anggota sebenarnya per kecamatan. Bila kolom dikosongkan, website memakai jumlah Kartu Anggota AKTIF di kecamatan itu. Hanya angka yang tampil — tanpa nama atau data pribadi.'));
+    heading.append(hb);
+    const [{ data: dist, error: e1 }, { data: manual, error: e2 }] = await Promise.all([
+      client.rpc('member_distribution'),
+      client.from('district_members').select('district,manual_count,updated_at,updated_by')
+    ]);
+    if (e1 || e2) {
+      workspace.replaceChildren(heading, make('div', 'admin-message is-error', 'Data sebaran belum bisa dibuka. Jalankan migrasi 202610200011_sebaran_anggota.sql di Supabase SQL Editor, lalu muat ulang halaman.'));
+      return;
+    }
+    const names = (window.GMPISebaran && window.GMPISebaran.names) || (dist || []).map(r => r.district);
+    const cards = new Map((dist || []).map(r => [r.district, r.card_count || 0]));
+    const man = new Map((manual || []).map(r => [r.district, r]));
+    const fmt = n => new Intl.NumberFormat('id-ID').format(n || 0);
+    const body = make('div', 'sebaran-admin');
+    const form = make('form', 'sebaran-admin-form');
+    const { wrap, body: tbody } = makeTable(['Kecamatan', 'Kartu aktif (otomatis)', 'Jumlah anggota (isi manual)', 'Tampil di website']);
+    const inputs = new Map();
+    const shown = new Map();
+    [...names].sort((a, b) => a.localeCompare(b)).forEach(name => {
+      const tr = make('tr');
+      tr.append(make('td', 'mono-cell', name), make('td', '', fmt(cards.get(name))));
+      const td = make('td');
+      const inp = make('input'); inp.type = 'number'; inp.min = '0'; inp.max = '1000000'; inp.step = '1'; inp.inputMode = 'numeric';
+      inp.placeholder = `kosong = ${cards.get(name) || 0}`;
+      const m = man.get(name);
+      inp.value = m && m.manual_count !== null && m.manual_count !== undefined ? m.manual_count : '';
+      inp.setAttribute('aria-label', `Jumlah anggota ${name}`);
+      td.append(inp);
+      if (m && m.updated_by) td.append(make('small', 'card-note', `Diubah ${m.updated_by} · ${new Date(m.updated_at).toLocaleDateString('id-ID')}`));
+      const out = make('td', 'sebaran-admin-out');
+      tr.append(td, out);
+      tbody.append(tr);
+      inputs.set(name, inp); shown.set(name, out);
+    });
+    const totalLine = make('div', 'admin-message');
+    const preview = make('div', 'sebaran-admin-preview');
+    const previewMap = make('div');
+    preview.append(make('b', '', 'Pratinjau peta di beranda'), previewMap);
+    function value(name) {
+      const raw = inputs.get(name).value.trim();
+      return raw === '' ? (cards.get(name) || 0) : Math.max(0, Math.floor(Number(raw) || 0));
+    }
+    function update() {
+      let total = 0, reached = 0;
+      const rows = names.map(name => { const v = value(name); total += v; if (v) reached++; shown.get(name).textContent = fmt(v) + (inputs.get(name).value.trim() === '' ? ' (otomatis)' : ''); return { district: name, total: v }; });
+      totalLine.textContent = `Total tampil di website: ${fmt(total)} anggota · ${reached}/18 kecamatan terjangkau.`;
+      if (window.GMPISebaran) window.GMPISebaran.draw(previewMap, rows);
+    }
+    inputs.forEach(inp => inp.addEventListener('input', update));
+    const save = make('button', 'admin-button admin-button-red', 'Simpan angka sebaran'); save.type = 'submit';
+    const view = make('a', 'admin-link-button', 'Lihat di beranda ↗'); view.href = 'index.html#sebaran'; view.target = '_blank'; view.rel = 'noopener';
+    const row = make('div', 'card-buttons'); row.append(save, view);
+    form.append(wrap, totalLine, row);
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      const payload = names.map(name => {
+        const raw = inputs.get(name).value.trim();
+        return { district: name, manual_count: raw === '' ? null : Math.max(0, Math.floor(Number(raw) || 0)) };
+      });
+      save.disabled = true;
+      const { error } = await client.from('district_members').upsert(payload, { onConflict: 'district' });
+      save.disabled = false;
+      setMessage(error ? 'Angka sebaran tidak tersimpan. Pastikan peran Anda Pemilik, Editor situs, atau Petugas registrasi.' : 'Angka sebaran tersimpan dan langsung tampil di beranda.', error ? 'error' : 'ok');
+    });
+    body.append(form, preview);
+    workspace.replaceChildren(heading, body);
+    update();
   }
 
   async function renderShop() {

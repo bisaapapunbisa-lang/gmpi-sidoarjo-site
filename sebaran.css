@@ -1,0 +1,46 @@
+/* Peta sebaran anggota per kecamatan */
+.sebaran-section{position:relative;color:#fff;padding:96px 7.3%;background:linear-gradient(180deg,rgba(8,8,10,.55),rgba(8,8,10,.25) 40%,rgba(8,8,10,.6));border-top:1px solid rgba(255,255,255,.08)}
+.sebaran-section .section-intro{color:#bdb9b0}
+.sebaran-section h2 em{color:var(--gold-hi,#e0b855)}
+.sebaran-head{display:flex;align-items:flex-end;justify-content:space-between;gap:40px;margin-bottom:30px;max-width:1460px;margin-inline:auto}
+.sebaran-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.12);max-width:1460px;margin:0 auto 22px}
+.sebaran-stat{background:rgba(12,12,12,.78);padding:18px 20px;display:grid;gap:6px}
+.sebaran-stat span{font-size:9px;font-weight:900;letter-spacing:1.8px;color:#a9a69f;text-transform:uppercase}
+.sebaran-stat b{font:clamp(30px,4vw,52px)/1 Impact,'Arial Narrow',sans-serif;letter-spacing:.5px;color:#fff}
+.sebaran-stat:first-child b{color:var(--gold-hi,#e0b855)}
+.sebaran-body{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(280px,1fr);gap:22px;max-width:1460px;margin:0 auto;align-items:start}
+.sebaran-mapwrap{position:relative;padding:18px;background:rgba(10,10,12,.62);border:1px solid rgba(255,255,255,.1)}
+.sebaran-svg{display:block;width:100%;height:auto;overflow:visible}
+.sebaran-kec{stroke:rgba(240,195,90,.55);stroke-width:1.6;stroke-linejoin:round;cursor:pointer;transition:fill .3s,stroke .2s,filter .2s;outline:none}
+.sebaran-kec:not(.has-members){stroke:rgba(255,255,255,.25);stroke-dasharray:4 4}
+.sebaran-kec:hover,.sebaran-kec:focus-visible{stroke:#fff;stroke-width:2.6;filter:brightness(1.18)}
+.sebaran-kec.is-active{stroke:#fff;stroke-width:3.4;stroke-dasharray:none;filter:brightness(1.25) drop-shadow(0 0 10px rgba(240,195,90,.6))}
+.sebaran-labels text{pointer-events:none;text-anchor:middle;font-family:Arial,Helvetica,sans-serif;paint-order:stroke;stroke:rgba(0,0,0,.75);stroke-width:3px}
+.sebaran-name{font-size:14px;font-weight:700;fill:#f4f1ea;letter-spacing:.3px}
+.sebaran-num{font-size:21px;font-weight:900;fill:#fff}
+.sebaran-num.is-zero{fill:rgba(255,255,255,.45)}
+.sebaran-info{position:absolute;left:18px;top:18px;display:grid;gap:2px;padding:10px 14px;background:rgba(10,10,10,.88);border-left:3px solid var(--gold,#c69b3b);pointer-events:none}
+.sebaran-info b{font:20px/1 Impact,'Arial Narrow',sans-serif;text-transform:uppercase;letter-spacing:.5px}
+.sebaran-info span{font-size:12px;color:#e0b855;font-weight:700}
+.sebaran-legend{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:10px;color:#a9a69f}
+.sebaran-legend i{flex:0 1 180px;height:8px;background:linear-gradient(90deg,rgb(90,20,22),rgb(229,28,36),rgb(240,195,90))}
+.sebaran-legend em{font-style:normal;display:inline-flex;align-items:center;gap:6px;margin-left:auto}
+.sebaran-legend em:before{content:'';width:14px;height:10px;border:1px dashed rgba(255,255,255,.4)}
+.sebaran-listwrap{background:rgba(10,10,12,.62);border:1px solid rgba(255,255,255,.1);padding:8px 0}
+.sebaran-list{list-style:none;margin:0;padding:0;display:grid}
+.sebaran-row{display:grid;grid-template-columns:26px minmax(92px,auto) 1fr 52px;gap:10px;align-items:center;padding:7px 16px;cursor:pointer;font-size:12px;border-left:3px solid transparent;outline:none}
+.sebaran-row:hover,.sebaran-row:focus-visible{background:rgba(255,255,255,.05)}
+.sebaran-row.is-active{background:rgba(240,195,90,.12);border-left-color:var(--gold-hi,#e0b855)}
+.sebaran-rank{font:13px Impact,'Arial Narrow',sans-serif;color:#77736d}
+.sebaran-rname{font-weight:700;color:#efebe3}
+.sebaran-bar{height:6px;background:rgba(255,255,255,.07);overflow:hidden}
+.sebaran-bar i{display:block;height:100%;transition:width .8s cubic-bezier(.2,.8,.2,1)}
+.sebaran-row b{text-align:right;font-size:13px;color:#fff}
+.sebaran-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:14px;max-width:1460px;margin:18px auto 0}
+.sebaran-note{margin:0;font-size:11px;line-height:1.6;color:#a9a69f;max-width:640px}
+.sebaran-section.is-empty .sebaran-stat b{color:#6f6c66}
+.sebaran-section.is-empty .sebaran-labels .sebaran-num{display:none}
+@media(max-width:900px){.sebaran-body{grid-template-columns:1fr}.sebaran-head{display:block}.sebaran-head .section-intro{margin-top:14px}}
+@media(max-width:640px){.sebaran-section{padding:70px 5%}.sebaran-mapwrap{padding:6px}.sebaran-name{display:none}.sebaran-num{font-size:30px;transform:translateY(-10px)}.sebaran-stat{padding:12px}.sebaran-stat span{font-size:8px;letter-spacing:1px}.sebaran-info{left:8px;top:8px}.sebaran-row{grid-template-columns:24px 1fr 1fr 44px;padding:8px 12px}}
+.sebaran-section h2{font:clamp(44px,5.3vw,68px)/.98 Impact,'Arial Narrow',sans-serif;letter-spacing:-.8px;text-transform:uppercase;margin:20px 0 0;color:#fff}
+.sebaran-section h2 em{font-family:Georgia,'Times New Roman',serif;font-style:italic;text-transform:none;font-size:.86em;letter-spacing:0}

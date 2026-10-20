@@ -66,4 +66,4 @@
 - [ ] Tunjuk **anggota Tim Siaga** (nama + email) → diberi peran "Tim Siaga (darurat)" di Admin. Siapa piket jam berapa?
 - [ ] Sepakati alur: siapa menekan **Terima**, siapa berangkat (**Menuju lokasi**), kapan **Selesai**; kapan wajib lapor polisi/112.
 - [ ] Setujui teks privasi: lokasi dicatat untuk Tim Siaga & dihapus otomatis 7 hari.
-- [ ] (Tahap 3) Peta sebaran jumlah anggota per kecamatan.
+- [ ] **Peta sebaran (Tahap 3, sudah dibuat):** siapkan jumlah anggota per kecamatan (18 angka) dari data DPC → diisi di Admin → tab Sebaran. Setujui angka itu boleh dipublikasikan.
