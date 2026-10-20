@@ -74,3 +74,28 @@ Aturan (dijaga oleh database):
 - **Pembuat/pengubah kartu tidak bisa menyetujui kartunya sendiri.** Siapkan minimal 2 orang (mis. Petugas Registrasi + Ketua DPD).
 - Kartu ditolak bisa diperbaiki lalu **Ajukan ulang**. Kartu dicabut harus diajukan ulang dan disetujui lagi.
 - Kartu yang terbit sebelum fitur ini tetap Aktif (dianggap sudah disetujui).
+
+## Tombol Darurat (SOS) & Tim Siaga (migration 0009 + 0010)
+
+**Cara kerja untuk anggota** (`/darurat`, juga tombol SOS merah di kiri bawah situs):
+1. Pilih masalah → lokasi HP terbaca otomatis → isi nama, no. anggota, no. HP (diingat di HP).
+2. Tekan **Kirim ke Piket Siaga** → WhatsApp terbuka berisi pesan + link Google Maps.
+   Sekaligus permintaan **tercatat untuk Tim Siaga** di Admin.
+3. Selama halaman darurat terbuka, lokasi anggota diperbarui otomatis (maks. 3 jam) dan anggota melihat status: *Tercatat → Diterima → Bantuan menuju lokasi*.
+4. Tombol **Saya sudah aman** mengakhiri permintaan.
+
+**Langkah pemilik:**
+1. Supabase → SQL Editor → jalankan `202610200009_sos_piket.sql`, lalu `202610200010_sos_alerts.sql` (harus *Success*).
+2. Admin → tab **Darurat** → isi nomor WA piket siaga (format 62…).
+3. Undang akun petugas lewat Supabase Authentication → Admin → **Hak akses** → peran **Tim Siaga (darurat)**.
+4. Petugas siaga membuka Admin → tab **Siaga** → tekan **🔔 Aktifkan bunyi & notifikasi** → biarkan tab Admin terbuka.
+
+**Panel Siaga:** peta semua permintaan (merah = baru, kuning = ditangani, abu = selesai), peta Google lokasi terpilih, tombol Telepon / WhatsApp / **Rute ke lokasi**, status *Terima → Menuju lokasi → Selesai/Palsu*, catatan penanganan. Ada bunyi + notifikasi + judul tab berkedip saat permintaan baru masuk (dicek tiap 15 detik).
+
+**Privasi & keamanan:**
+- Pengunjung tidak bisa membaca daftar permintaan; hanya Pemilik & Tim Siaga.
+- Pembaruan lokasi/status/pembatalan hanya bisa dari HP pengirim (kode rahasia acak).
+- Data dihapus otomatis 7 hari setelah dibuat. Hapus permanen manual: hanya Pemilik.
+- Anti-iseng: maks. 3 kiriman per nomor HP per 5 menit, 40 kiriman per 10 menit total.
+- Website **tidak** melacak anggota terus-menerus; lokasi hanya terkirim saat anggota sendiri menekan tombol darurat.
+- `vercel.json` wajib berisi `geolocation=(self)` (bukan `geolocation=()`), kalau tidak lokasi selalu ditolak browser.

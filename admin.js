@@ -20,7 +20,8 @@
     lbh_officer: 'Petugas LBH',
     registrar: 'Petugas registrasi (data sensitif)',
     media_partner: 'Mitra media (berita)',
-    card_approver: 'Penyetuju kartu anggota'
+    card_approver: 'Penyetuju kartu anggota',
+    siaga: 'Tim Siaga (darurat)'
   };
   const REPORT_STATUSES = ['diterima', 'ditinjau', 'ditindaklanjuti', 'ditutup'];
   const MEMBER_STATUSES = ['menunggu_verifikasi', 'ditinjau', 'diterima', 'ditolak'];
@@ -48,6 +49,7 @@
   function canManageCards() { return roles.includes('owner') || roles.includes('registrar') || roles.includes('card_approver'); }
   function canIssueCards() { return roles.includes('owner') || roles.includes('registrar'); }
   function canApproveCards() { return roles.includes('owner') || roles.includes('card_approver'); }
+  function canSeeSiaga() { return roles.includes('owner') || roles.includes('siaga'); }
   function myEmail() { return String(currentUser?.email || '').toLowerCase(); }
 
   if (!config.url || !config.publishableKey) {
@@ -70,6 +72,7 @@
     document.querySelector('#signed-in-email').textContent = currentUser.email || 'Akun Admin';
     roleList.replaceChildren(...roles.map(role => make('span', 'role-chip', ROLE_LABELS[role] || role)));
     buildTabs();
+    startSiagaPolling();
   }
 
   async function loadAuthorizedUser(user) {
@@ -120,6 +123,7 @@
   }
 
   document.querySelector('#logout-button').addEventListener('click', async () => {
+    stopSiagaPolling();
     if (client) await client.auth.signOut();
     currentUser = null;
     roles = [];
@@ -132,6 +136,7 @@
     const tabs = [];
     if (canEditContent()) tabs.push(['content', 'Isi situs']);
     if (canEditContent()) tabs.push(['shop', 'Toko']);
+    if (canSeeSiaga()) tabs.push(['siaga', 'Siaga']);
     if (canEditContent()) tabs.push(['sos', 'Darurat']);
     if (canManageNews()) tabs.push(['news', 'Berita']);
     if (canSeeReports()) tabs.push(['reports', 'Aduan LBH']);
@@ -142,6 +147,7 @@
     tabs.forEach(([key, label], index) => {
       const button = make('button', `admin-tab${index === 0 ? ' is-active' : ''}`, label);
       button.type = 'button';
+      button.dataset.tab = key;
       button.addEventListener('click', () => {
         tabsContainer.querySelectorAll('.admin-tab').forEach(tab => tab.classList.toggle('is-active', tab === button));
         openTab(key);
@@ -153,9 +159,11 @@
   }
 
   async function openTab(key) {
+    if (key !== 'siaga') siaga.mounted = null;
     workspace.replaceChildren(make('div', 'table-empty', 'Memuat…'));
     if (key === 'content' && canEditContent()) return renderContentEditor();
     if (key === 'shop' && canEditContent()) return renderShop();
+    if (key === 'siaga' && canSeeSiaga()) return renderSiaga();
     if (key === 'sos' && canEditContent()) return renderSos();
     if (key === 'news' && canManageNews()) return renderNews();
     if (key === 'reports' && canSeeReports()) return renderReports();
@@ -247,7 +255,7 @@
     const ready = vals.has('sos_whatsapp');
     const heading = make('div', 'workspace-heading');
     const hb = make('div');
-    hb.append(make('h3', '', 'Tombol Darurat (SOS)'), make('p', '', 'Anggota menekan tombol SOS di website → memilih masalah → WhatsApp terbuka dengan pesan berisi lokasi persis (link Google Maps). Pesan dikirim ke nomor piket di bawah atau ke grup WA pilihan anggota. Website tidak menyimpan lokasi anggota.'));
+    hb.append(make('h3', '', 'Tombol Darurat (SOS)'), make('p', '', 'Anggota menekan tombol SOS di website → memilih masalah → WhatsApp terbuka dengan pesan berisi lokasi persis (link Google Maps). Pesan dikirim ke nomor piket di bawah atau ke grup WA pilihan anggota. Bila migrasi 0010 sudah dijalankan, permintaan juga tercatat di tab “Siaga” untuk Tim Siaga (dihapus otomatis setelah 7 hari).'));
     heading.append(hb);
     const box = make('form', 'content-form shop-settings');
     if (!ready) box.append(make('div', 'admin-message is-error', 'Jalankan migrasi 202610200009_sos_piket.sql di Supabase SQL Editor agar nomor piket bisa disimpan. Sementara ini tombol darurat memakai nomor WhatsApp toko.'));
@@ -275,6 +283,341 @@
     const tips = make('div', 'admin-message');
     tips.append(make('b', '', 'Saran pemakaian: '), make('span', '', 'bagikan alamat website/darurat ke grup WA anggota dan minta setiap anggota memasangnya di layar HP (menu ⋮ → Tambahkan ke layar utama). Buat juga grup WA “Siaga GMPI” per DPC agar pesan darurat cepat sampai ke saudara terdekat.'));
     workspace.replaceChildren(heading, box, tips);
+  }
+
+  // ================= TIM SIAGA (Tahap 2 darurat) =================
+  const SOS_COLS = 'id,created_at,name,member_number,phone,kind,note,lat,lng,accuracy,location_updated_at,member_verified,status,handled_by,handler_note,resolved_at,updated_at';
+  const SOS_ACTIVE = ['baru', 'diterima', 'menuju'];
+  const SOS_LABEL = { baru: 'BARU — belum ditangani', diterima: 'Diterima', menuju: 'Menuju lokasi', selesai: 'Selesai', palsu: 'Palsu / iseng', dibatalkan: 'Dibatalkan (sudah aman)' };
+  const siaga = { alerts: [], known: null, timer: 0, selected: null, filter: 'aktif', ready: true, map: null, layer: null, flash: 0, audio: null, mounted: null, fitted: false };
+
+  function sosAgo(iso) {
+    if (!iso) return '-';
+    const s = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
+    if (s < 60) return `${s} dtk lalu`;
+    if (s < 3600) return `${Math.floor(s / 60)} mnt lalu`;
+    if (s < 86400) return `${Math.floor(s / 3600)} jam ${Math.floor((s % 3600) / 60)} mnt lalu`;
+    return `${Math.floor(s / 86400)} hari lalu`;
+  }
+  function sosTime(iso) {
+    return iso ? new Intl.DateTimeFormat('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(iso)) + ' WIB' : '-';
+  }
+  function sosHasLoc(a) { return typeof a.lat === 'number' && typeof a.lng === 'number'; }
+  function sosLatLng(a) { return `${a.lat.toFixed(6)},${a.lng.toFixed(6)}`; }
+
+  function siagaBeep() {
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return;
+      siaga.audio = siaga.audio || new Ctx();
+      const ctx = siaga.audio;
+      if (ctx.state === 'suspended') ctx.resume();
+      [0, 0.35, 0.7].forEach(t => {
+        const o = ctx.createOscillator(); const g = ctx.createGain();
+        o.type = 'square'; o.frequency.value = 880;
+        g.gain.setValueAtTime(0.0001, ctx.currentTime + t);
+        g.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + t + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + t + 0.25);
+        o.connect(g); g.connect(ctx.destination);
+        o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + 0.27);
+      });
+    } catch (e) { /* abaikan */ }
+  }
+  const baseTitle = document.title;
+  function siagaFlash(on) {
+    clearInterval(siaga.flash);
+    document.title = baseTitle;
+    if (!on) return;
+    let t = false;
+    siaga.flash = setInterval(() => { t = !t; document.title = t ? '🆘 DARURAT BARU!' : baseTitle; }, 900);
+  }
+  window.addEventListener('focus', () => { if (siaga.mounted) siagaFlash(false); });
+  document.addEventListener('pointerdown', () => { if (siaga.flash) siagaFlash(false); });
+
+  function siagaTabLabel() {
+    const tab = tabsContainer.querySelector('[data-tab="siaga"]');
+    if (!tab) return;
+    const n = siaga.alerts.filter(a => a.status === 'baru').length;
+    tab.textContent = n ? `🆘 Siaga (${n} baru)` : 'Siaga';
+    tab.classList.toggle('is-alert', n > 0);
+  }
+
+  async function siagaFetch() {
+    const since = new Date(Date.now() - 7 * 86400000).toISOString();
+    const { data, error } = await client.from('sos_alerts').select(SOS_COLS).gte('created_at', since).order('created_at', { ascending: false }).limit(300);
+    if (error) { siaga.ready = false; return false; }
+    siaga.ready = true;
+    const fresh = (data || []).filter(a => a.status === 'baru' && siaga.known && !siaga.known.has(a.id));
+    siaga.known = new Set((data || []).map(a => a.id));
+    siaga.alerts = data || [];
+    if (fresh.length) {
+      siagaBeep();
+      siagaFlash(true);
+      if ('Notification' in window && Notification.permission === 'granted') {
+        try {
+          const a = fresh[0];
+          const n = new Notification('🆘 DARURAT — Saudara GMPI butuh bantuan', { body: `${a.name}: ${a.kind}${a.note ? ' — ' + a.note : ''}`, tag: 'gmpi-sos-' + a.id, requireInteraction: true });
+          n.onclick = () => { window.focus(); const t = tabsContainer.querySelector('[data-tab="siaga"]'); if (t) t.click(); siaga.selected = a.id; n.close(); };
+        } catch (e) { /* abaikan */ }
+      }
+      if (!siaga.selected) siaga.selected = fresh[0].id;
+    }
+    siagaTabLabel();
+    return true;
+  }
+  function startSiagaPolling() {
+    stopSiagaPolling();
+    if (!canSeeSiaga()) return;
+    siagaFetch();
+    siaga.timer = setInterval(async () => {
+      await siagaFetch();
+      if (siaga.mounted && siaga.mounted.isConnected) siaga.refresh();
+    }, 15000);
+  }
+  function stopSiagaPolling() {
+    clearInterval(siaga.timer); siaga.timer = 0; siaga.known = null; siaga.alerts = []; siaga.mounted = null; siaga.selected = null; siaga.fitted = false;
+    siagaFlash(false);
+  }
+
+  let leafletLoading = null;
+  function loadLeaflet() {
+    if (window.L) return Promise.resolve(true);
+    if (leafletLoading) return leafletLoading;
+    leafletLoading = new Promise(resolve => {
+      const css = document.createElement('link');
+      css.rel = 'stylesheet'; css.href = 'vendor/leaflet/leaflet.css';
+      document.head.append(css);
+      const s = document.createElement('script');
+      s.src = 'vendor/leaflet/leaflet.js';
+      s.onload = () => resolve(Boolean(window.L));
+      s.onerror = () => resolve(false);
+      document.head.append(s);
+      setTimeout(() => resolve(Boolean(window.L)), 8000);
+    });
+    return leafletLoading;
+  }
+
+  async function renderSiaga() {
+    client.rpc('purge_old_sos').then(() => {}, () => {});
+    await siagaFetch();
+    siagaFlash(false);
+    const rootEl = make('div', 'siaga');
+    const heading = make('div', 'workspace-heading');
+    const hb = make('div');
+    hb.append(make('h3', '', 'Tim Siaga — permintaan darurat'), make('p', '', 'Permintaan dari tombol DARURAT anggota muncul di sini otomatis (diperbarui tiap 15 detik). Lokasi anggota ikut bergerak selama HP-nya membuka halaman darurat. Data dihapus otomatis setelah 7 hari. Jangan sebarkan lokasi/nomor anggota di luar penanganan.'));
+    heading.append(hb);
+    const bell = make('button', 'admin-button admin-button-gold siaga-bell', '🔔 Aktifkan bunyi & notifikasi');
+    bell.type = 'button';
+    const bellState = () => {
+      const granted = 'Notification' in window && Notification.permission === 'granted';
+      bell.textContent = granted ? '🔔 Notifikasi aktif — tes bunyi' : '🔔 Aktifkan bunyi & notifikasi';
+    };
+    bellState();
+    bell.addEventListener('click', async () => {
+      siagaBeep();
+      if ('Notification' in window && Notification.permission === 'default') { try { await Notification.requestPermission(); } catch (e) { /* abaikan */ } }
+      bellState();
+      setMessage('Bunyi aktif. Biarkan halaman Admin ini terbuka (boleh di tab lain) agar peringatan darurat terdengar.');
+    });
+    heading.append(bell);
+    rootEl.append(heading);
+
+    if (!siaga.ready) {
+      rootEl.append(make('div', 'admin-message is-error', 'Data darurat belum bisa dibuka. Jalankan migrasi 202610200010_sos_alerts.sql di Supabase SQL Editor, lalu pastikan akun Anda punya peran “Tim Siaga (darurat)” atau Pemilik.'));
+      workspace.replaceChildren(rootEl);
+      return;
+    }
+
+    const filters = make('div', 'news-admin-filters');
+    const mapBox = make('div', 'siaga-map');
+    const mapNote = make('p', 'privacy-mini siaga-map-note', 'Titik merah = belum ditangani · kuning = sedang ditangani · abu-abu = selesai. Klik titik untuk membuka detail.');
+    const detail = make('div', 'siaga-detail');
+    const list = make('div', 'siaga-list');
+    rootEl.append(filters, mapBox, mapNote, detail, list);
+    workspace.replaceChildren(rootEl);
+    siaga.mounted = rootEl;
+    siaga.map = null; siaga.layer = null; siaga.fitted = false;
+
+    const visible = () => siaga.filter === 'aktif' ? siaga.alerts.filter(a => SOS_ACTIVE.includes(a.status)) : siaga.alerts;
+    const sorted = arr => [...arr].sort((a, b) => {
+      const ra = SOS_ACTIVE.includes(a.status) ? (a.status === 'baru' ? 0 : 1) : 2;
+      const rb = SOS_ACTIVE.includes(b.status) ? (b.status === 'baru' ? 0 : 1) : 2;
+      return ra - rb || new Date(b.created_at) - new Date(a.created_at);
+    });
+
+    function renderFilters() {
+      const nActive = siaga.alerts.filter(a => SOS_ACTIVE.includes(a.status)).length;
+      filters.replaceChildren(...[['aktif', `Perlu ditangani (${nActive})`], ['semua', `Semua 7 hari (${siaga.alerts.length})`]].map(([k, label]) => {
+        const b = make('button', `admin-tab${siaga.filter === k ? ' is-active' : ''}${k === 'aktif' && nActive ? ' is-alert' : ''}`, label);
+        b.type = 'button';
+        b.addEventListener('click', () => { siaga.filter = k; siaga.fitted = false; refresh(); });
+        return b;
+      }));
+    }
+
+    async function setStatus(a, status, btn) {
+      if (status === 'palsu' && !window.confirm('Tandai sebagai palsu / iseng?')) return;
+      if (btn) btn.disabled = true;
+      const { error } = await client.from('sos_alerts').update({ status }).eq('id', a.id);
+      if (btn) btn.disabled = false;
+      if (error) return setMessage('Status tidak tersimpan. Periksa koneksi atau peran Anda.', 'error');
+      setMessage(`Status diperbarui: ${SOS_LABEL[status]}.${status === 'diterima' || status === 'menuju' ? ' Anggota melihat status ini di HP-nya.' : ''}`);
+      await siagaFetch();
+      refresh();
+    }
+
+    function statusButtons(a) {
+      const row = make('div', 'siaga-actions');
+      const add = (label, status, cls) => {
+        const b = make('button', `admin-button ${cls}`, label); b.type = 'button';
+        b.addEventListener('click', e => { e.stopPropagation(); setStatus(a, status, b); });
+        row.append(b);
+      };
+      if (a.status === 'baru') add('✓ Terima', 'diterima', 'admin-button-red');
+      if (a.status === 'baru' || a.status === 'diterima') add('🚗 Menuju lokasi', 'menuju', 'admin-button-gold');
+      if (SOS_ACTIVE.includes(a.status)) { add('Selesai', 'selesai', 'admin-button-outline'); add('Palsu', 'palsu', 'admin-button-outline'); }
+      return row;
+    }
+    function contactButtons(a) {
+      const row = make('div', 'siaga-contact');
+      if (a.phone) {
+        const tel = make('a', 'siaga-link', `📞 Telepon ${a.phone}`); tel.href = `tel:+${a.phone}`;
+        const wa = make('a', 'siaga-link', '💬 WhatsApp');
+        wa.href = `https://wa.me/${a.phone}?text=${encodeURIComponent(`Assalamualaikum/salam, saya dari Tim Siaga GMPI DPD Sidoarjo. Permintaan darurat Anda (${a.kind}) sudah kami terima. Bagaimana kondisi Anda sekarang?`)}`;
+        wa.target = '_blank'; wa.rel = 'noopener';
+        row.append(tel, wa);
+      }
+      if (sosHasLoc(a)) {
+        const g = make('a', 'siaga-link', '📍 Google Maps'); g.href = `https://www.google.com/maps/search/?api=1&query=${sosLatLng(a)}`; g.target = '_blank'; g.rel = 'noopener';
+        const r = make('a', 'siaga-link is-strong', '🧭 Rute ke lokasi'); r.href = `https://www.google.com/maps/dir/?api=1&destination=${sosLatLng(a)}&travelmode=driving`; r.target = '_blank'; r.rel = 'noopener';
+        row.append(r, g);
+      }
+      return row;
+    }
+    function badges(a) {
+      const wrap = make('div', 'siaga-badges');
+      wrap.append(make('span', `siaga-state is-${a.status}`, SOS_LABEL[a.status] || a.status));
+      wrap.append(make('span', `siaga-verified${a.member_verified ? ' is-yes' : ''}`, a.member_verified ? '✓ Anggota terverifikasi' : 'Belum terverifikasi'));
+      return wrap;
+    }
+
+    let detailKey = '';
+    function renderDetail() {
+      const a = siaga.alerts.find(x => x.id === siaga.selected);
+      if (!a) { detail.replaceChildren(); detail.hidden = true; detailKey = ''; return; }
+      const key = `${a.id}|${a.updated_at}|${a.location_updated_at}`;
+      if (key === detailKey) { const ago = detail.querySelector('.siaga-ago'); if (ago) ago.textContent = sosAgo(a.created_at); return; }
+      if (detail.contains(document.activeElement) && document.activeElement.tagName === 'TEXTAREA') return; // jangan ganggu yang sedang mengetik
+      detailKey = key;
+      detail.hidden = false;
+      const top = make('div', 'siaga-detail-top');
+      const info = make('div', 'siaga-detail-info');
+      const title = make('h4', '', `${a.name}${a.member_number ? ' · ' + a.member_number : ''}`);
+      info.append(badges(a), title, make('p', 'siaga-kind', a.kind));
+      if (a.note) info.append(make('p', 'siaga-note', `“${a.note}”`));
+      const meta = make('p', 'siaga-meta');
+      meta.append(make('span', '', `Masuk ${sosTime(a.created_at)} · `), make('span', 'siaga-ago', sosAgo(a.created_at)));
+      info.append(meta);
+      if (sosHasLoc(a)) info.append(make('p', 'siaga-meta', `Lokasi ± ${Math.round(a.accuracy || 0)} m · diperbarui ${sosAgo(a.location_updated_at || a.created_at)}`));
+      else info.append(make('div', 'admin-message is-warning', 'Lokasi tidak terbaca otomatis. Hubungi anggota lewat telepon/WA dan minta “Bagikan lokasi terkini”.'));
+      if (a.handled_by) info.append(make('p', 'siaga-meta', `Ditangani: ${a.handled_by}${a.resolved_at ? ' · ditutup ' + sosTime(a.resolved_at) : ''}`));
+      info.append(contactButtons(a), statusButtons(a));
+      const noteForm = make('form', 'siaga-note-form');
+      const ta = make('textarea'); ta.maxLength = 300; ta.rows = 2; ta.placeholder = 'Catatan penanganan (siapa berangkat, kondisi, tindak lanjut)…'; ta.value = a.handler_note || '';
+      const sv = make('button', 'admin-button admin-button-outline', 'Simpan catatan'); sv.type = 'submit';
+      noteForm.append(ta, sv);
+      noteForm.addEventListener('submit', async e => {
+        e.preventDefault(); sv.disabled = true;
+        const { error } = await client.from('sos_alerts').update({ handler_note: ta.value.trim() || null }).eq('id', a.id);
+        sv.disabled = false; ta.blur();
+        setMessage(error ? 'Catatan tidak tersimpan.' : 'Catatan penanganan tersimpan.', error ? 'error' : 'ok');
+        if (!error) { await siagaFetch(); refresh(); }
+      });
+      info.append(noteForm);
+      if (isOwner()) {
+        const del = make('button', 'admin-link-button siaga-del', 'Hapus permanen'); del.type = 'button';
+        del.addEventListener('click', async () => {
+          if (!window.confirm('Hapus permintaan ini permanen?')) return;
+          const { error } = await client.from('sos_alerts').delete().eq('id', a.id);
+          if (error) return setMessage('Gagal menghapus.', 'error');
+          siaga.selected = null; await siagaFetch(); refresh();
+        });
+        info.append(del);
+      }
+      top.append(info);
+      if (sosHasLoc(a)) {
+        const frame = make('iframe', 'siaga-gmap');
+        frame.title = `Lokasi ${a.name} di Google Maps`;
+        frame.loading = 'lazy';
+        frame.referrerPolicy = 'no-referrer-when-downgrade';
+        frame.src = `https://maps.google.com/maps?q=${sosLatLng(a)}&z=17&output=embed`;
+        top.append(frame);
+      }
+      detail.replaceChildren(top);
+    }
+
+    function renderList() {
+      const rows = sorted(visible());
+      if (!rows.length) {
+        list.replaceChildren(make('div', 'table-empty', siaga.filter === 'aktif' ? 'Tidak ada permintaan darurat yang perlu ditangani. Alhamdulillah, semua aman. Biarkan halaman ini terbuka agar peringatan baru terdengar.' : 'Belum ada permintaan darurat dalam 7 hari terakhir.'));
+        return;
+      }
+      list.replaceChildren(...rows.map(a => {
+        const item = make('div', `siaga-row is-${a.status}${a.id === siaga.selected ? ' is-selected' : ''}`);
+        item.tabIndex = 0;
+        const main = make('div', 'siaga-row-main');
+        main.append(badges(a), make('b', '', `${a.name}${a.member_number ? ' · ' + a.member_number : ''}`), make('span', 'siaga-kind', `${a.kind}${a.note ? ' — ' + a.note : ''}`));
+        const side = make('div', 'siaga-row-side');
+        side.append(make('span', '', sosAgo(a.created_at)), make('small', '', sosHasLoc(a) ? `📍 ± ${Math.round(a.accuracy || 0)} m` : '📍 tanpa lokasi'));
+        item.append(main, side);
+        const pick = () => { siaga.selected = a.id; refresh(); detail.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
+        item.addEventListener('click', pick);
+        item.addEventListener('keydown', e => { if (e.key === 'Enter') pick(); });
+        return item;
+      }));
+    }
+
+    async function renderMap() {
+      const ok = await loadLeaflet();
+      if (!rootEl.isConnected) return;
+      if (!ok) { mapBox.classList.add('is-off'); mapBox.textContent = 'Peta tidak dapat dimuat (periksa koneksi). Gunakan tombol Google Maps / Rute pada tiap permintaan.'; return; }
+      const L = window.L;
+      if (!siaga.map) {
+        siaga.map = L.map(mapBox, { scrollWheelZoom: false }).setView([-7.45, 112.7], 11); // Sidoarjo
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(siaga.map);
+        siaga.layer = L.layerGroup().addTo(siaga.map);
+      }
+      siaga.layer.clearLayers();
+      const pts = [];
+      visible().filter(sosHasLoc).forEach(a => {
+        const color = a.status === 'baru' ? '#e51c24' : SOS_ACTIVE.includes(a.status) ? '#e0a92b' : '#8f897f';
+        const m = L.circleMarker([a.lat, a.lng], { radius: a.id === siaga.selected ? 12 : 9, color: '#fff', weight: 2, fillColor: color, fillOpacity: 0.95 });
+        if (a.accuracy && SOS_ACTIVE.includes(a.status)) L.circle([a.lat, a.lng], { radius: Math.min(a.accuracy, 2000), color, weight: 1, fillOpacity: 0.08 }).addTo(siaga.layer);
+        m.bindTooltip(`${a.name} — ${a.kind}`);
+        m.on('click', () => { siaga.selected = a.id; refresh(); });
+        m.addTo(siaga.layer);
+        pts.push([a.lat, a.lng]);
+      });
+      const sel = siaga.alerts.find(x => x.id === siaga.selected && sosHasLoc(x));
+      if (!siaga.fitted && pts.length) {
+        if (pts.length === 1) siaga.map.setView(pts[0], 15); else siaga.map.fitBounds(pts, { padding: [30, 30], maxZoom: 15 });
+        siaga.fitted = true;
+      } else if (sel && siaga.lastPanned !== sel.id) siaga.map.panTo([sel.lat, sel.lng]);
+      siaga.lastPanned = sel ? sel.id : null;
+      setTimeout(() => siaga.map && siaga.map.invalidateSize(), 50);
+    }
+
+    function refresh() {
+      if (!rootEl.isConnected) return;
+      siagaTabLabel();
+      renderFilters();
+      renderDetail();
+      renderList();
+      renderMap();
+    }
+    siaga.refresh = refresh;
+    if (!siaga.selected) { const first = sorted(visible())[0]; if (first) siaga.selected = first.id; }
+    refresh();
   }
 
   async function renderShop() {

@@ -63,4 +63,7 @@
 - [ ] Buat grup WA **Siaga GMPI** (per DPC bila perlu) untuk pesan darurat.
 - [ ] Sebarkan alamat **/darurat** ke anggota; minta dipasang di layar HP.
 - [ ] Sepakati aturan: hanya untuk darurat sungguhan; siapa yang wajib merespons.
-- [ ] (Tahap berikut) Panel Tim Siaga dengan peta Google Maps & peta sebaran anggota per kecamatan.
+- [ ] Tunjuk **anggota Tim Siaga** (nama + email) → diberi peran "Tim Siaga (darurat)" di Admin. Siapa piket jam berapa?
+- [ ] Sepakati alur: siapa menekan **Terima**, siapa berangkat (**Menuju lokasi**), kapan **Selesai**; kapan wajib lapor polisi/112.
+- [ ] Setujui teks privasi: lokasi dicatat untuk Tim Siaga & dihapus otomatis 7 hari.
+- [ ] (Tahap 3) Peta sebaran jumlah anggota per kecamatan.

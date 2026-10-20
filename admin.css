@@ -134,3 +134,46 @@
 .card-state.is-dicabut{color:#5b5752;background:#eeeae2;border-color:#cfc8bb}
 .card-note{display:block;margin-top:4px;font-size:11px;color:#77736d;max-width:220px;line-height:1.35}
 .card-actions .card-approve,.card-actions .card-reject{padding:7px 12px;font-size:11px;min-height:0}
+/* Tim Siaga */
+.admin-tab.is-alert:not(.is-active){border-color:#e51c24;background:#fde9e9;color:#a3161b;animation:siaga-pulse 1.2s infinite alternate}
+@keyframes siaga-pulse{to{background:#e51c24;color:#fff}}
+.siaga-bell{min-height:38px;white-space:nowrap;flex:none}
+.siaga-map{height:340px;border:1px solid #ded9ce;background:#e9e5dc;z-index:0}
+.siaga-map.is-off{display:grid;place-items:center;height:auto;min-height:70px;padding:16px;font-size:12px;color:#6d6961;text-align:center}
+.siaga-map-note{margin:6px 0 16px}
+.siaga-detail{border:2px solid #171715;background:#fff;padding:16px;margin-bottom:16px}
+.siaga-detail-top{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+.siaga-detail h4{font:24px/1.05 Impact,'Arial Narrow',sans-serif;text-transform:uppercase;margin:10px 0 4px;overflow-wrap:anywhere}
+.siaga-kind{font-size:14px;font-weight:800;color:#9a2928;margin:0}
+.siaga-note{font-size:13px;line-height:1.5;margin:6px 0 0;color:#37352f}
+.siaga-meta{font-size:11px;color:#6d6961;margin:6px 0 0}
+.siaga-gmap{width:100%;height:300px;border:0;background:#eee}
+.siaga-badges{display:flex;flex-wrap:wrap;gap:6px}
+.siaga-state{font-size:9px;font-weight:900;letter-spacing:.6px;text-transform:uppercase;padding:5px 8px;background:#e4dfd4;color:#6d6961}
+.siaga-state.is-baru{background:#e51c24;color:#fff}
+.siaga-state.is-diterima{background:#f5ecd5;color:#7a5d17}
+.siaga-state.is-menuju{background:#c69b3b;color:#171715}
+.siaga-state.is-selesai{background:#dfeedd;color:#2f5e29}
+.siaga-verified{font-size:9px;font-weight:800;padding:5px 8px;border:1px solid #d9d4c9;color:#8a8478}
+.siaga-verified.is-yes{border-color:#9cc596;color:#2f5e29;background:#f0f7ee}
+.siaga-contact,.siaga-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.siaga-actions .admin-button{margin-top:0;min-height:40px}
+.siaga-link{display:inline-flex;align-items:center;min-height:38px;padding:0 12px;border:1px solid #cbc5b8;background:#faf8f2;color:#171715;font-size:12px;font-weight:800;text-decoration:none}
+.siaga-link:hover{background:#171715;color:#fff}
+.siaga-link.is-strong{background:#171715;color:#fff;border-color:#171715}
+.siaga-note-form{margin-top:12px;display:grid!important;grid-template-columns:1fr auto;gap:8px!important;align-items:end}
+.siaga-note-form textarea{min-height:0;font-size:12px!important}
+.siaga-note-form .admin-button{min-height:40px}
+.siaga-del{margin-top:10px;color:#9a2928!important}
+.siaga-list{display:grid;gap:8px}
+.siaga-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px;border:1px solid #ded9ce;border-left:5px solid #cbc5b8;background:#fff;cursor:pointer}
+.siaga-row:hover,.siaga-row:focus{outline:none;border-color:#171715}
+.siaga-row.is-baru{border-left-color:#e51c24;background:#fff5f5}
+.siaga-row.is-diterima,.siaga-row.is-menuju{border-left-color:#c69b3b}
+.siaga-row.is-selected{box-shadow:0 0 0 2px #171715}
+.siaga-row.is-selesai,.siaga-row.is-palsu,.siaga-row.is-dibatalkan{opacity:.7}
+.siaga-row-main{display:grid;gap:5px;min-width:0}
+.siaga-row-main b{font-size:14px;overflow-wrap:anywhere}
+.siaga-row-main .siaga-kind{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.siaga-row-side{display:grid;justify-items:end;gap:3px;font-size:11px;color:#6d6961;white-space:nowrap}
+@media(max-width:700px){.siaga-detail-top{grid-template-columns:1fr}.siaga-gmap{height:240px;order:-1}.siaga-map{height:260px}.workspace-heading:has(.siaga-bell){flex-direction:column}.siaga-note-form{grid-template-columns:1fr}}

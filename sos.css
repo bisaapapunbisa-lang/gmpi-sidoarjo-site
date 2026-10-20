@@ -54,7 +54,7 @@
 .sos-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .sos-step label{display:block;font-size:12px;font-weight:700;color:#d8d3c9;margin-bottom:10px}
 .sos-step label small{font-weight:400;color:#99938a}
-.sos-step input[type=text],.sos-step textarea{display:block;width:100%;margin-top:6px;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.35);color:#fff;font:15px Arial,Helvetica,sans-serif}
+.sos-step input[type=text],.sos-step input[type=tel],.sos-step textarea{display:block;width:100%;margin-top:6px;padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,.18);background:rgba(0,0,0,.35);color:#fff;font:15px Arial,Helvetica,sans-serif}
 .sos-step textarea{resize:vertical;min-height:62px}
 .sos-step input:focus,.sos-step textarea:focus{outline:none;border-color:#f0c35a}
 .sos-actions{display:grid;gap:9px;margin:4px 0 0}
@@ -84,3 +84,19 @@
 .sos-footer{padding:20px 18px 30px;text-align:center;color:#8f897f;font-size:11px}
 .sos-footer a{color:#f0c35a}
 @media(max-width:380px){.sos-types{grid-template-columns:repeat(2,1fr)}.sos-row{grid-template-columns:1fr}.sos-call-grid b{font-size:22px}}
+
+/* Status permintaan aktif */
+.sos-live{margin-top:14px;padding:16px;border-radius:14px;border:1.5px solid rgba(63,207,122,.55);background:rgba(46,160,90,.13)}
+.sos-live[hidden]{display:none}
+.sos-live-head{display:flex;align-items:center;gap:10px}
+.sos-live-head b{font-size:16px}
+.sos-live-dot{width:12px;height:12px;border-radius:50%;background:#3fcf7a;box-shadow:0 0 0 0 rgba(63,207,122,.7);animation:sosLive 1.6s infinite}
+@keyframes sosLive{70%{box-shadow:0 0 0 10px rgba(63,207,122,0)}100%{box-shadow:0 0 0 0 rgba(63,207,122,0)}}
+.sos-live p{margin:8px 0 4px;font-size:15px;font-weight:700;color:#fff}
+.sos-live small{display:block;color:#bfe9cf;font-size:12px}
+.sos-live.is-coming{border-color:#f0c35a;background:rgba(240,195,90,.14)}
+.sos-live.is-coming .sos-live-dot{background:#f0c35a}
+.sos-live.is-ended{border-color:rgba(255,255,255,.2);background:rgba(255,255,255,.05)}
+.sos-live.is-ended .sos-live-dot{background:#8f897f;animation:none}
+.sos-safe{margin-top:12px;width:100%;min-height:46px;border-radius:10px;border:0;background:#f4f1ea;color:#141110;font-weight:900;font-size:14px;cursor:pointer}
+.sos-safe[hidden]{display:none}

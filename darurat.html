@@ -53,6 +53,7 @@
           <label>Nama<input id="sos-name" name="name" type="text" maxlength="60" autocomplete="name" placeholder="Nama Anda"></label>
           <label>No. anggota <small>(opsional)</small><input id="sos-number" name="number" type="text" maxlength="40" autocomplete="off" placeholder="GMPI-SDA-…"></label>
         </div>
+        <label>No. HP / WhatsApp <small>(agar Tim Siaga bisa menelepon)</small><input id="sos-phone" name="phone" type="tel" inputmode="tel" maxlength="20" autocomplete="tel" placeholder="08xx xxxx xxxx"></label>
         <label>Keterangan / patokan <small>(opsional)</small><textarea id="sos-note" name="note" maxlength="240" rows="2" placeholder="Contoh: depan Indomaret Jl. Raya Waru, motor ditabrak, butuh ambulans"></textarea></label>
       </fieldset>
 
@@ -61,6 +62,13 @@
         <button type="button" class="sos-alt" id="sos-send-group">Kirim ke grup WA / saudara lain</button>
         <button type="button" class="sos-copy" id="sos-copy">Salin pesan</button>
         <p class="sos-msg" id="sos-msg" role="status"></p>
+      </div>
+
+      <div class="sos-live" id="sos-live" hidden aria-live="polite">
+        <div class="sos-live-head"><span class="sos-live-dot" aria-hidden="true"></span><b id="sos-live-title">Tercatat untuk Tim Siaga</b></div>
+        <p id="sos-live-desc">Menunggu Tim Siaga menanggapi…</p>
+        <small id="sos-live-loc">Lokasi Anda diperbarui otomatis selama halaman ini terbuka.</small>
+        <button type="button" class="sos-safe" id="sos-safe">✓ Saya sudah aman — akhiri</button>
       </div>
     </form>
 
@@ -86,7 +94,7 @@
       </details>
       <details>
         <summary>🔒 Soal lokasi & privasi</summary>
-        <p>Lokasi hanya dibaca saat halaman ini terbuka dan hanya terkirim bila Anda sendiri menekan tombol kirim di WhatsApp. Website tidak menyimpan lokasi Anda. Gunakan hanya untuk keadaan darurat sungguhan.</p>
+        <p>Lokasi hanya dibaca saat halaman ini terbuka. Saat Anda menekan tombol kirim, nama, no. HP, masalah, dan lokasi Anda dicatat untuk <b>Tim Siaga GMPI DPD Sidoarjo</b> agar bantuan cepat datang, dan <b>dihapus otomatis setelah 7 hari</b>. Selama permintaan masih aktif, lokasi diperbarui otomatis hanya ketika halaman ini terbuka; tekan “Saya sudah aman” untuk mengakhiri. Gunakan hanya untuk keadaan darurat sungguhan.</p>
       </details>
     </section>
   </main>
