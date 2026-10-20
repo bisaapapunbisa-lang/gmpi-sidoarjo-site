@@ -57,3 +57,10 @@
 - [ ] Tentukan siapa **Penyetuju Kartu** (mis. Ketua DPD dan/atau Sekretaris DPD).
 - [ ] Tentukan siapa **Petugas Registrasi** (penginput kartu) — harus orang berbeda dari penyetuju.
 - [ ] Jalankan SQL 0008, undang email penyetuju, beri peran di Admin → Hak akses.
+
+## H. Tombol Darurat (SOS) anggota
+- [ ] Tentukan **nomor WA piket siaga** (selalu aktif, dipegang bergiliran) → isi di Admin → tab Darurat.
+- [ ] Buat grup WA **Siaga GMPI** (per DPC bila perlu) untuk pesan darurat.
+- [ ] Sebarkan alamat **/darurat** ke anggota; minta dipasang di layar HP.
+- [ ] Sepakati aturan: hanya untuk darurat sungguhan; siapa yang wajib merespons.
+- [ ] (Tahap berikut) Panel Tim Siaga dengan peta Google Maps & peta sebaran anggota per kecamatan.

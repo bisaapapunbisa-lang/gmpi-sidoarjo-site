@@ -132,6 +132,7 @@
     const tabs = [];
     if (canEditContent()) tabs.push(['content', 'Isi situs']);
     if (canEditContent()) tabs.push(['shop', 'Toko']);
+    if (canEditContent()) tabs.push(['sos', 'Darurat']);
     if (canManageNews()) tabs.push(['news', 'Berita']);
     if (canSeeReports()) tabs.push(['reports', 'Aduan LBH']);
     if (canSeeMembers()) tabs.push(['members', 'Pendaftaran anggota']);
@@ -155,6 +156,7 @@
     workspace.replaceChildren(make('div', 'table-empty', 'Memuat…'));
     if (key === 'content' && canEditContent()) return renderContentEditor();
     if (key === 'shop' && canEditContent()) return renderShop();
+    if (key === 'sos' && canEditContent()) return renderSos();
     if (key === 'news' && canManageNews()) return renderNews();
     if (key === 'reports' && canSeeReports()) return renderReports();
     if (key === 'members' && canSeeMembers()) return renderMembers();
@@ -235,6 +237,44 @@
       const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
       return blob;
     } finally { URL.revokeObjectURL(url); }
+  }
+
+  // ---- Tombol darurat anggota: nomor piket siaga ----
+  async function renderSos() {
+    const { data: rows, error } = await client.from('site_content').select('key,value').in('key', ['sos_whatsapp', 'shop_whatsapp']);
+    if (error) return showWorkspaceError('Pengaturan darurat belum bisa dibuka. Muat ulang halaman.');
+    const vals = new Map((rows || []).map(r => [r.key, r.value?.text || '']));
+    const ready = vals.has('sos_whatsapp');
+    const heading = make('div', 'workspace-heading');
+    const hb = make('div');
+    hb.append(make('h3', '', 'Tombol Darurat (SOS)'), make('p', '', 'Anggota menekan tombol SOS di website → memilih masalah → WhatsApp terbuka dengan pesan berisi lokasi persis (link Google Maps). Pesan dikirim ke nomor piket di bawah atau ke grup WA pilihan anggota. Website tidak menyimpan lokasi anggota.'));
+    heading.append(hb);
+    const box = make('form', 'content-form shop-settings');
+    if (!ready) box.append(make('div', 'admin-message is-error', 'Jalankan migrasi 202610200009_sos_piket.sql di Supabase SQL Editor agar nomor piket bisa disimpan. Sementara ini tombol darurat memakai nomor WhatsApp toko.'));
+    const inp = input('sos-whatsapp', 'text', { placeholder: '6281234567890', maxLength: 20 });
+    inp.value = vals.get('sos_whatsapp') || '';
+    const fallback = vals.get('shop_whatsapp') || '';
+    box.append(field('Nomor WhatsApp piket siaga', inp, `Format 62…, contoh 6281234567890. Pilih nomor yang selalu aktif dan dipegang piket bergiliran. Bila dikosongkan, dipakai nomor toko${fallback ? ` (${fallback})` : ''}.`));
+    const save = make('button', 'admin-button admin-button-red', 'Simpan nomor piket');
+    save.type = 'submit'; save.disabled = !ready;
+    const open = make('a', 'admin-link-button', 'Buka halaman darurat ↗');
+    open.href = 'darurat.html'; open.target = '_blank'; open.rel = 'noopener';
+    const row = make('div', 'card-buttons'); row.append(save, open);
+    box.append(row);
+    box.addEventListener('submit', async event => {
+      event.preventDefault();
+      let wa = inp.value.replace(/\D/g, '');
+      if (wa.startsWith('0')) wa = '62' + wa.slice(1);
+      if (wa && !/^62\d{8,13}$/.test(wa)) { setMessage('Nomor WhatsApp tidak valid. Contoh: 6281234567890.', 'error'); return; }
+      inp.value = wa;
+      save.disabled = true;
+      const { error: e } = await client.from('site_content').upsert({ key: 'sos_whatsapp', value: { text: wa }, updated_at: new Date().toISOString() }, { onConflict: 'key' });
+      save.disabled = false;
+      setMessage(e ? 'Nomor piket tidak tersimpan. Pastikan migrasi 0009 sudah dijalankan.' : (wa ? 'Nomor piket siaga tersimpan. Tombol darurat langsung memakai nomor ini.' : 'Nomor piket dikosongkan — tombol darurat memakai nomor toko.'), e ? 'error' : 'ok');
+    });
+    const tips = make('div', 'admin-message');
+    tips.append(make('b', '', 'Saran pemakaian: '), make('span', '', 'bagikan alamat website/darurat ke grup WA anggota dan minta setiap anggota memasangnya di layar HP (menu ⋮ → Tambahkan ke layar utama). Buat juga grup WA “Siaga GMPI” per DPC agar pesan darurat cepat sampai ke saudara terdekat.'));
+    workspace.replaceChildren(heading, box, tips);
   }
 
   async function renderShop() {

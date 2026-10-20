@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#b5121a">
+  <meta name="description" content="Tombol darurat anggota GMPI DPD Sidoarjo: kirim lokasi persis lewat WhatsApp agar saudara terdekat segera menolong.">
+  <title>Darurat — GMPI DPD Sidoarjo</title>
+  <link rel="manifest" href="darurat.webmanifest">
+  <link rel="icon" href="assets/icons/sos-192.png">
+  <link rel="apple-touch-icon" href="assets/icons/sos-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="GMPI Darurat">
+  <link rel="stylesheet" href="sos.css">
+</head>
+<body class="sos-page">
+  <header class="sos-header">
+    <a class="sos-brand" href="index.html"><img src="assets/logo-gmpi-sidoarjo-crop.webp" alt=""><span><strong>GMPI</strong><small>DPD SIDOARJO</small></span></a>
+    <span class="sos-tag">SIAGA SAUDARA</span>
+  </header>
+
+  <main class="sos-main">
+    <div class="sos-kicker"><span></span> TOMBOL DARURAT ANGGOTA</div>
+    <h1>Butuh bantuan? <em>Saudara datang.</em></h1>
+    <p class="sos-lead">Pilih masalahnya, lalu tekan tombol merah. WhatsApp terbuka dengan pesan berisi <b>lokasi persis Anda di Google Maps</b>, siap dikirim ke piket siaga atau grup anggota.</p>
+
+    <form class="sos-form" id="sos-form" novalidate>
+      <fieldset class="sos-step">
+        <legend><b>1</b> Apa yang terjadi?</legend>
+        <div class="sos-types" role="radiogroup">
+          <label><input type="radio" name="type" value="Kecelakaan" required><span><i>🚑</i>Kecelakaan</span></label>
+          <label><input type="radio" name="type" value="Ancaman / keributan"><span><i>⚠️</i>Ancaman / keributan</span></label>
+          <label><input type="radio" name="type" value="Sakit / darurat medis"><span><i>❤️‍🩹</i>Sakit / medis</span></label>
+          <label><input type="radio" name="type" value="Kendaraan mogok"><span><i>🛵</i>Kendaraan mogok</span></label>
+          <label><input type="radio" name="type" value="Bencana / banjir / kebakaran"><span><i>🌊</i>Bencana</span></label>
+          <label><input type="radio" name="type" value="Masalah lain"><span><i>🆘</i>Lainnya</span></label>
+        </div>
+      </fieldset>
+
+      <fieldset class="sos-step">
+        <legend><b>2</b> Lokasi Anda</legend>
+        <div class="sos-loc is-wait" id="sos-loc" aria-live="polite">
+          <span class="sos-loc-dot" aria-hidden="true"></span>
+          <div><b id="sos-loc-title">Mengambil lokasi…</b><small id="sos-loc-desc">Izinkan akses lokasi bila HP meminta.</small></div>
+          <a id="sos-loc-map" class="sos-loc-map" target="_blank" rel="noopener" hidden>Lihat di peta ↗</a>
+        </div>
+        <button type="button" class="sos-retry" id="sos-retry" hidden>Coba ambil lokasi lagi</button>
+      </fieldset>
+
+      <fieldset class="sos-step">
+        <legend><b>3</b> Data singkat <small>(diingat di HP ini)</small></legend>
+        <div class="sos-row">
+          <label>Nama<input id="sos-name" name="name" type="text" maxlength="60" autocomplete="name" placeholder="Nama Anda"></label>
+          <label>No. anggota <small>(opsional)</small><input id="sos-number" name="number" type="text" maxlength="40" autocomplete="off" placeholder="GMPI-SDA-…"></label>
+        </div>
+        <label>Keterangan / patokan <small>(opsional)</small><textarea id="sos-note" name="note" maxlength="240" rows="2" placeholder="Contoh: depan Indomaret Jl. Raya Waru, motor ditabrak, butuh ambulans"></textarea></label>
+      </fieldset>
+
+      <div class="sos-actions">
+        <button type="button" class="sos-send" id="sos-send-piket"><span class="sos-send-ring" aria-hidden="true"></span><b>KIRIM KE PIKET SIAGA</b><small>lewat WhatsApp</small></button>
+        <button type="button" class="sos-alt" id="sos-send-group">Kirim ke grup WA / saudara lain</button>
+        <button type="button" class="sos-copy" id="sos-copy">Salin pesan</button>
+        <p class="sos-msg" id="sos-msg" role="status"></p>
+      </div>
+    </form>
+
+    <section class="sos-calls" aria-label="Nomor darurat resmi">
+      <h2>Nyawa terancam? Telepon juga nomor resmi:</h2>
+      <div class="sos-call-grid">
+        <a href="tel:112"><b>112</b><span>Darurat umum</span></a>
+        <a href="tel:110"><b>110</b><span>Polisi</span></a>
+        <a href="tel:119"><b>119</b><span>Ambulans</span></a>
+        <a href="tel:113"><b>113</b><span>Pemadam</span></a>
+      </div>
+    </section>
+
+    <section class="sos-tips">
+      <details open>
+        <summary>📍 Setelah terkirim: bagikan lokasi <b>terkini</b></summary>
+        <p>Agar saudara yang menuju lokasi bisa mengikuti pergerakan Anda: buka chat WhatsApp yang sama → tekan <b>📎 / +</b> → <b>Lokasi</b> → <b>Bagikan lokasi terkini</b> → pilih <b>1 jam</b>.</p>
+      </details>
+      <details>
+        <summary>📲 Pasang tombol ini di layar HP</summary>
+        <p><b>Android (Chrome):</b> tekan menu <b>⋮</b> → <b>Tambahkan ke layar utama</b> / <b>Instal aplikasi</b>.<br><b>iPhone (Safari):</b> tekan <b>Bagikan</b> → <b>Tambah ke Layar Utama</b>.</p>
+        <button type="button" class="sos-install" id="sos-install" hidden>Pasang di HP sekarang</button>
+      </details>
+      <details>
+        <summary>🔒 Soal lokasi & privasi</summary>
+        <p>Lokasi hanya dibaca saat halaman ini terbuka dan hanya terkirim bila Anda sendiri menekan tombol kirim di WhatsApp. Website tidak menyimpan lokasi Anda. Gunakan hanya untuk keadaan darurat sungguhan.</p>
+      </details>
+    </section>
+  </main>
+
+  <footer class="sos-footer">GMPI DPD Sidoarjo · Setia Bersaudara Sampai Urat Nadi · <a href="index.html">Kembali ke situs</a></footer>
+
+  <script src="supabase-config.js"></script>
+  <script src="sos.js"></script>
+</body>
+</html>
