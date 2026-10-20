@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Logo Serikat Buruh GMPI">
+<title>Logo Serikat Buruh GMPI</title>
+<style>.spin{transform-origin:100px 100px;animation:spin 40s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+.ring{font:700 12.5px Impact,'Arial Narrow',Arial,sans-serif;letter-spacing:2.6px;fill:#f3dfa6}</style>
+<defs>
+<radialGradient id="bg" cx="50%" cy="38%" r="70%"><stop offset="0" stop-color="#2a2925"/><stop offset="1" stop-color="#0d0d0c"/></radialGradient>
+<radialGradient id="core" cx="50%" cy="35%" r="72%"><stop offset="0" stop-color="#a22a28"/><stop offset="1" stop-color="#2a0f0f"/></radialGradient>
+<linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7dc8e"/><stop offset=".5" stop-color="#d4a640"/><stop offset="1" stop-color="#9c7322"/></linearGradient>
+<path id="top" d="M 22 100 A 78 78 0 0 1 178 100"/>
+<path id="bot" d="M 15 100 A 85 85 0 0 0 185 100"/>
+</defs>
+<circle cx="100" cy="100" r="98" fill="url(#bg)"/>
+<g class="spin"><circle cx="100" cy="100" r="95" fill="none" stroke="url(#gold)" stroke-width="2.2" stroke-dasharray="1.2 5.6" stroke-linecap="round"/>
+<path d="M100.00,0.50L101.12,3.46L104.28,3.61L101.81,5.59L102.65,8.64L100.00,6.90L97.35,8.64L98.19,5.59L95.72,3.61L98.88,3.46Z" fill="#dd615d"/><path d="M100.00,190.50L101.12,193.46L104.28,193.61L101.81,195.59L102.65,198.64L100.00,196.90L97.35,198.64L98.19,195.59L95.72,193.61L98.88,193.46Z" fill="#dd615d"/></g>
+<circle cx="100" cy="100" r="90" fill="none" stroke="url(#gold)" stroke-width="1.4"/>
+<text class="ring" text-anchor="middle" style="letter-spacing:1.4px"><textPath href="#top" startOffset="50%">SERIKAT BURUH GMPI</textPath></text>
+<text class="ring" text-anchor="middle" dominant-baseline="hanging" style="font-size:11px;letter-spacing:3px"><textPath href="#bot" startOffset="50%">★ DPD SIDOARJO ★</textPath></text>
+<path d="M12.00,95.00L13.23,98.30L16.76,98.45L14.00,100.65L14.94,104.05L12.00,102.10L9.06,104.05L10.00,100.65L7.24,98.45L10.77,98.30Z" fill="url(#gold)"/><path d="M188.00,95.00L189.23,98.30L192.76,98.45L190.00,100.65L190.94,104.05L188.00,102.10L185.06,104.05L186.00,100.65L183.24,98.45L186.77,98.30Z" fill="url(#gold)"/>
+<circle cx="100" cy="100" r="66" fill="url(#core)" stroke="url(#gold)" stroke-width="3"/>
+<circle cx="100" cy="100" r="60" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="1"/>
+<path d="M141.80,95.86L149.90,96.86L149.90,103.14L141.80,104.14L139.45,114.40L146.32,118.82L143.60,124.48L135.86,121.86L129.30,130.10L133.57,137.06L128.66,140.97L122.82,135.26L113.34,139.83L114.16,147.95L108.04,149.35L105.26,141.67L94.74,141.67L91.96,149.35L85.84,147.95L86.66,139.83L77.18,135.26L71.34,140.97L66.43,137.06L70.70,130.10L64.14,121.86L56.40,124.48L53.68,118.82L60.55,114.40L58.20,104.14L50.10,103.14L50.10,96.86L58.20,95.86L60.55,85.60L53.68,81.18L56.40,75.52L64.14,78.14L70.70,69.90L66.43,62.94L71.34,59.03L77.18,64.74L86.66,60.17L85.84,52.05L91.96,50.65L94.74,58.33L105.26,58.33L108.04,50.65L114.16,52.05L113.34,60.17L122.82,64.74L128.66,59.03L133.57,62.94L129.30,69.90L135.86,78.14L143.60,75.52L146.32,81.18L139.45,85.60Z" fill="url(#gold)"/><circle cx="100" cy="100" r="36" fill="#5c1413"/>
+<path d="M70 110 Q70 76 100 74 Q130 76 130 110 Z" fill="#fbf7ec"/>
+<path d="M95 75 Q100 72 105 75 L105 104 L95 104 Z" fill="#d9d2c0"/>
+<path d="M62 110 H138 Q138 118 130 118 H70 Q62 118 62 110 Z" fill="#fbf7ec"/>
+<path d="M66 128 H134" stroke="url(#gold)" stroke-width="3" stroke-linecap="round"/>
+<text x="100" y="146" text-anchor="middle" style="font:700 13px Impact,'Arial Narrow',Arial,sans-serif;letter-spacing:4px" fill="#f3dfa6">SB</text>
+</svg>

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Logo LBH GMPI DPD Sidoarjo">
+<title>Logo LBH GMPI DPD Sidoarjo</title>
+<style>.spin{transform-origin:100px 100px;animation:spin 40s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+.ring{font:700 12.5px Impact,'Arial Narrow',Arial,sans-serif;letter-spacing:2.6px;fill:#f3dfa6}</style>
+<defs>
+<radialGradient id="bg" cx="50%" cy="38%" r="70%"><stop offset="0" stop-color="#2a2925"/><stop offset="1" stop-color="#0d0d0c"/></radialGradient>
+<radialGradient id="core" cx="50%" cy="35%" r="72%"><stop offset="0" stop-color="#e51c24"/><stop offset="1" stop-color="#5a0c10"/></radialGradient>
+<linearGradient id="gold" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f7dc8e"/><stop offset=".5" stop-color="#d4a640"/><stop offset="1" stop-color="#9c7322"/></linearGradient>
+<path id="top" d="M 22 100 A 78 78 0 0 1 178 100"/>
+<path id="bot" d="M 15 100 A 85 85 0 0 0 185 100"/>
+</defs>
+<circle cx="100" cy="100" r="98" fill="url(#bg)"/>
+<g class="spin"><circle cx="100" cy="100" r="95" fill="none" stroke="url(#gold)" stroke-width="2.2" stroke-dasharray="1.2 5.6" stroke-linecap="round"/>
+<path d="M100.00,0.50L101.12,3.46L104.28,3.61L101.81,5.59L102.65,8.64L100.00,6.90L97.35,8.64L98.19,5.59L95.72,3.61L98.88,3.46Z" fill="#e51c24"/><path d="M100.00,190.50L101.12,193.46L104.28,193.61L101.81,195.59L102.65,198.64L100.00,196.90L97.35,198.64L98.19,195.59L95.72,193.61L98.88,193.46Z" fill="#e51c24"/></g>
+<circle cx="100" cy="100" r="90" fill="none" stroke="url(#gold)" stroke-width="1.4"/>
+<text class="ring" text-anchor="middle" style="letter-spacing:2.6px"><textPath href="#top" startOffset="50%">LBH GMPI</textPath></text>
+<text class="ring" text-anchor="middle" dominant-baseline="hanging" style="font-size:11px;letter-spacing:3px"><textPath href="#bot" startOffset="50%">★ DPD SIDOARJO ★</textPath></text>
+<path d="M12.00,95.00L13.23,98.30L16.76,98.45L14.00,100.65L14.94,104.05L12.00,102.10L9.06,104.05L10.00,100.65L7.24,98.45L10.77,98.30Z" fill="url(#gold)"/><path d="M188.00,95.00L189.23,98.30L192.76,98.45L190.00,100.65L190.94,104.05L188.00,102.10L185.06,104.05L186.00,100.65L183.24,98.45L186.77,98.30Z" fill="url(#gold)"/>
+<circle cx="100" cy="100" r="66" fill="url(#core)" stroke="url(#gold)" stroke-width="3"/>
+<circle cx="100" cy="100" r="60" fill="none" stroke="rgba(255,255,255,.18)" stroke-width="1"/>
+<g fill="none" stroke="#fbf7ec" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+<path d="M100 62 V128"/><path d="M72 74 H128"/><path d="M84 136 H116"/><path d="M92 128 H108"/>
+<path d="M72 74 L60 102 M72 74 L84 102"/><path d="M128 74 L116 102 M128 74 L140 102"/></g>
+<path d="M56 102 H88 A16 10 0 0 1 56 102 Z" fill="url(#gold)"/><path d="M112 102 H144 A16 10 0 0 1 112 102 Z" fill="url(#gold)"/>
+<circle cx="100" cy="60" r="5.5" fill="url(#gold)"/>
+<path d="M100.00,139.00L101.76,143.57L106.66,143.84L102.85,146.93L104.11,151.66L100.00,149.00L95.89,151.66L97.15,146.93L93.34,143.84L98.24,143.57Z" fill="url(#gold)"/>
+</svg>
