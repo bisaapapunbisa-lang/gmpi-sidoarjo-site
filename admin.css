@@ -177,3 +177,12 @@
 .siaga-row-main .siaga-kind{font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .siaga-row-side{display:grid;justify-items:end;gap:3px;font-size:11px;color:#6d6961;white-space:nowrap}
 @media(max-width:700px){.siaga-detail-top{grid-template-columns:1fr}.siaga-gmap{height:240px;order:-1}.siaga-map{height:260px}.workspace-heading:has(.siaga-bell){flex-direction:column}.siaga-note-form{grid-template-columns:1fr}}
+/* Sebaran (admin) */
+.sebaran-admin{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(260px,1fr);gap:22px;align-items:start}
+.sebaran-admin-form{display:grid;gap:10px}
+.sebaran-admin .admin-table{min-width:0}
+.sebaran-admin .admin-table input{padding:8px 10px;max-width:150px}
+.sebaran-admin-out{font-weight:800;white-space:nowrap}
+.sebaran-admin-preview{position:sticky;top:16px;background:#121211;padding:14px;display:grid;gap:10px}
+.sebaran-admin-preview>b{color:#e0b855;font-size:10px;letter-spacing:1.5px;text-transform:uppercase}
+@media(max-width:860px){.sebaran-admin{grid-template-columns:1fr}.sebaran-admin-preview{position:static;order:-1}}
