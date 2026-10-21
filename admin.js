@@ -1830,7 +1830,7 @@
       row.append(statusCell);
       body.append(row);
     });
-    if (!data?.length) body.append(emptyRow(6, 'Belum ada pendaftaran. Formulir publik masih nonaktif.'));
+    if (!data?.length) body.append(emptyRow(6, 'Belum ada pendaftar. Saat ada yang mengisi formulir di situs (#gabung), datanya tampil di sini.'));
     workspace.replaceChildren(heading, wrap, make('p', 'privacy-mini', 'Dokumen KTP berada di bucket privat. Tautan dokumen berlaku singkat; jangan unduh atau teruskan tanpa dasar tugas.'));
   }
 
