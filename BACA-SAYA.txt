@@ -1,18 +1,14 @@
-PAKET GABUNGAN (unggah keempat-empat berkas + Commit changes satu kali):
+PAKET FINAL GABUNGAN (unggah SATU KALI = semua perubahan hari ini):
 
-1. ADUAN LBH AKTIF
-   - script.js   : lbhEmail = gmpinusantara@gmail.com (baris 5;
-                   ada komentar "GANTI EMAIL TUJUAN ADUAN DI SINI").
-                   Subjek otomatis diawali [ADUAN] agar mudah difilter Gmail.
-   - index.html  : catatan di bawah form aduan menunjukkan tujuannya.
-   - admin.html  : status penerimaan kini menyebut Aduan AKTIF.
-   - admin.js    : teks "formulir nonaktif" di tab Aduan diganti.
+Di dalam ZIP ini:
+- index.html  (3 perubahan: kolom tanggal lahir jadi 3 pilihan, pilar jadi 6
+               + kartu Tagana & Pemberdayaan Ekonomi, catatan aduan aktif)
+- script.js   (sinkron tanggal lahir + email aduan ke gmpinusantara@gmail.com,
+               baris 5 ada komentar "GANTI EMAIL TUJUAN ADUAN DI SINI")
+- admin.html, admin.js (tulisan status aduan jadi AKTIF)
+- assets/divisi/tagana.webp & assets/divisi/ekonomi.webp (2 emblem pilar baru)
 
-2. PERBAIKAN KOLOM TANGGAL LAHIR (keluhan: kolom tanggal tidak bisa diedit)
-   - Dulu: kolom kalender bawaan browser (type=date) — banyak yang kesulitan.
-   - Sekarang: 3 pilihan gampang = Tanggal | Bulan | Tahun.
-   - Otomatis menolak tanggal mustahil (misal 31 Februari).
-   - Sudah diuji di HP-mock: 29 Feb 2000 terkirim, 31 Feb 2001 ditolak.
-
-Coba setelah diunggah: isi form #gabung s/d "Tanggal lahir" — akan tampil tiga pilihannya,
-dan form #posko: pengaduan sampai sebagai draf email ke gmpinusantara@gmail.com.
+CARA Unggah di GitHub (akar repo):
+Add file → Upload files → seret 4 berkas + FOLDER assets yang ada di ZIP ini
+(struktur foldernya dijaga, GitHub menambahkan 2 gambar ke folder yang sudah ada)
+→ Commit changes.
