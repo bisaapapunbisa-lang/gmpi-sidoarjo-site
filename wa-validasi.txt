@@ -8,7 +8,7 @@ Data resmi anggota mulai dicatat melalui situs resmi. Mohon LUANGKAN WAKTU ±5 M
 *2. Buka tautan resmi ini:*
 https://gmpi-sidoarjo-site.vercel.app/#gabung
 
-*3. Isi data* sesuai KTP (nama, NIK 16 digit, tempat/tanggal lahir, WhatsApp, kecamatan, alamat, minat bidang), unggah foto KTP & pas foto, lalu kirim.
+*3. Isi data* sesuai KTP (nama, NIK 16 digit, tempat/tanggal lahir, WhatsApp, minat bidang), lalu ALAMAT TINGGAL PILIH: kecamatan → desa/kelurahan → RT/RW → kode pos terisi otomatis. Kalau tinggal di luar Sidoarjo pilih "Di luar Kab. Sidoarjo" lalu tulis kota/kabupatennya. Unggah foto KTP & pas foto, lalu kirim.
 *4. Tunggu verifikasi pengurus* — Kartu Tanda Anggota (KTA) digital menyusul.
 
 CATATAN PENTING:

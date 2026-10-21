@@ -1775,7 +1775,7 @@
     titleBlock.append(make('h3', '', 'Pendaftaran anggota'));
     titleBlock.append(make('p', '', 'Modul ini hanya tersedia untuk peran Petugas Registrasi. NIK ditampilkan tersamar; buka hanya saat benar-benar diperlukan untuk verifikasi.'));
     heading.append(titleBlock);
-    const { data, error } = await client.from('member_registrations').select('id,created_at,full_name,nik,phone,district,division,status,ktp_object_key,profile_object_key').order('created_at', { ascending: false }).limit(100);
+    const { data, error } = await client.from('member_registrations').select('id,created_at,full_name,nik,phone,district,jabatan,address,division,status,ktp_object_key,profile_object_key').order('created_at', { ascending: false }).limit(100);
     if (error) return showWorkspaceError('Data anggota tidak dapat dibuka. Pastikan akun memiliki peran Petugas Registrasi.');
     const { wrap, body } = makeTable(['Tanggal', 'Nama / NIK', 'Kontak / kecamatan', 'Bidang', 'Dokumen', 'Status']);
     (data || []).forEach(member => {
@@ -1793,8 +1793,20 @@
         reveal.dataset.showing = String(!showing);
       });
       nameCell.append(maskedNik, make('br'), reveal);
+      if (member.jabatan) {
+        const jab = make('div', 'status-pill', `Pengurus: ${member.jabatan}`);
+        jab.style.marginTop = '4px';
+        nameCell.append(jab);
+      }
       row.append(nameCell);
-      row.append(make('td', '', `${member.phone} · ${member.district}`));
+      const kontakCell = make('td');
+      kontakCell.append(make('div', '', `${member.phone} · ${member.district}`));
+      if (member.address) {
+        const ad = make('div', '', member.address);
+        ad.style.cssText = 'font-size:10px;color:#706a5f;margin-top:4px';
+        kontakCell.append(ad);
+      }
+      row.append(kontakCell);
       row.append(make('td', '', member.division));
       const documents = make('td');
       addDocumentButton(documents, 'KTP', member.ktp_object_key);

@@ -116,6 +116,64 @@
     });
   });
 
+  // Wilayah berjenjang: kecamatan → desa/kelurahan → kode pos (data resmi Kemendagri 2025).
+  const distSel = document.querySelector('#join-district');
+  const kelSel = document.querySelector('#join-kelurahan');
+  const posSel = document.querySelector('#join-pos');
+  const blokSda = document.querySelector('#domisili-sda');
+  const blokLuar = document.querySelector('#domisili-luar');
+  const WILAYAH = window.WILAYAH_SDA || {};
+
+  function isiKelurahan() {
+    const daftar = WILAYAH[distSel.value] || [];
+    kelSel.innerHTML = '';
+    const awal = document.createElement('option');
+    awal.value = '';
+    awal.textContent = daftar.length ? '— Pilih kelurahan/desa —' : 'Pilih kecamatan terlebih dulu';
+    kelSel.append(awal);
+    daftar.forEach(([nm, kp]) => {
+      const o = document.createElement('option');
+      o.value = nm; o.textContent = nm; o.dataset.pos = kp;
+      kelSel.append(o);
+    });
+    kelSel.disabled = !daftar.length;
+    posSel.innerHTML = '<option value="">Pilih desa terlebih dulu</option>';
+    posSel.disabled = true;
+  }
+  function isiKodePos() {
+    const kp = kelSel.selectedOptions && kelSel.selectedOptions[0] ? kelSel.selectedOptions[0].dataset.pos : '';
+    posSel.innerHTML = '';
+    if (kp) {
+      const o = document.createElement('option');
+      o.value = kp; o.textContent = kp; o.selected = true;
+      posSel.append(o);
+      posSel.disabled = false;
+    } else {
+      posSel.innerHTML = '<option value="">Pilih desa terlebih dulu</option>';
+      posSel.disabled = true;
+    }
+  }
+  distSel.addEventListener('change', isiKelurahan);
+  kelSel.addEventListener('change', isiKodePos);
+  ['#join-rt', '#join-rw'].forEach(id => {
+    document.querySelector(id).addEventListener('input', e => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 3); });
+  });
+
+  function domisiliLuar() {
+    return (joinForm.querySelector('[name="domisili"]:checked') || {}).value === 'luar';
+  }
+  function sinkDomisili() {
+    const luar = domisiliLuar();
+    blokSda.hidden = luar;
+    blokLuar.hidden = !luar;
+    ['#join-district', '#join-kelurahan', '#join-rt', '#join-rw', '#join-pos'].forEach(id => {
+      document.querySelector(id).required = !luar;
+    });
+    document.querySelector('#join-kota-luar').required = luar;
+  }
+  joinForm.querySelectorAll('[name="domisili"]').forEach(r => r.addEventListener('change', sinkDomisili));
+  sinkDomisili();
+
   joinForm.addEventListener('submit', async event => {
     event.preventDefault();
     const joinCfg = window.GMPI_SUPABASE_CONFIG || {};
@@ -128,6 +186,10 @@
     const btnText = btn.innerHTML;
     const val = name => { const el = joinForm.querySelector(`[name="${name}"]`); return el ? String(el.value || '').trim() : ''; };
     const say = text => { joinStatus.textContent = text; };
+    const luar = domisiliLuar();
+    if (!luar && !val('kelurahan')) { say('Pilih kelurahan/desa terlebih dulu.'); kelSel.focus(); return; }
+    if (!luar && !val('kode_pos')) { say('Kode pos belum terisi — pilih kelurahan/desa dulu.'); return; }
+    if (luar && val('kota_luar').length < 2) { say('Isi kota/kabupaten domisili Anda.'); document.querySelector('#join-kota-luar').focus(); return; }
     const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); }));
     async function unggah(file, label) {
       const ext = file.type === 'image/png' ? 'png' : 'jpg';
@@ -148,14 +210,24 @@
       const ktpKey = await unggah(ktpFile, 'Foto KTP');
       const profilKey = await unggah(profilFile, 'Pas foto');
       say('Mengirim pendaftaran…');
+      const kirim = {
+        p_full_name: val('name'), p_nik: val('nik'), p_birth_place: val('birthplace'), p_birth_date: val('birthdate'),
+        p_gender: val('gender'), p_phone: val('contact'),
+        p_district: luar ? 'Di luar Kab. Sidoarjo' : val('district'),
+        p_address_street: val('address'),
+        p_kelurahan: luar ? null : val('kelurahan'),
+        p_rt: luar ? null : val('rt'),
+        p_rw: luar ? null : val('rw'),
+        p_kode_pos: luar ? null : val('kode_pos'),
+        p_kota_luar: luar ? val('kota_luar') : null,
+        p_division: val('division'),
+        p_jabatan: val('jabatan') || null,
+        p_ktp_key: ktpKey, p_profile_key: profilKey
+      };
       const res = await fetch(`${apiRoot}/rest/v1/rpc/submit_member_registration`, {
         method: 'POST',
         headers: { apikey: joinCfg.publishableKey, Authorization: `Bearer ${joinCfg.publishableKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          p_full_name: val('name'), p_nik: val('nik'), p_birth_place: val('birthplace'), p_birth_date: val('birthdate'),
-          p_gender: val('gender'), p_phone: val('contact'), p_district: val('district'), p_address: val('address'),
-          p_division: val('division'), p_ktp_key: ktpKey, p_profile_key: profilKey
-        })
+        body: JSON.stringify(kirim)
       });
       if (!res.ok) {
         let pesan = 'Pendaftaran gagal terkirim.';
@@ -164,6 +236,8 @@
       }
       joinForm.reset();
       fileLimits.forEach(({ status }) => { status.textContent = 'Belum ada file dipilih'; });
+      isiKelurahan();
+      sinkDomisili();
       say('PENDAFTARAN TERKIRIM. Terima kasih! Data Anda masuk antrean verifikasi pengurus DPD GMPI Sidoarjo. Pengurus akan menghubungi lewat WhatsApp bila data sudah diverifikasi atau perlu dilengkapi.');
       joinForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     } catch (e) {

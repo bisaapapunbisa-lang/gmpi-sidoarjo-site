@@ -3,3 +3,4 @@
 @media(max-width:1050px){.join-section{grid-template-columns:minmax(235px,.8fr) minmax(410px,1.2fr);gap:22px}.join-emblem{display:none}}
 @media(max-width:760px){.join-section{grid-template-columns:1fr;gap:24px}.join-copy{padding-top:0}.join-security{max-width:100%}.join-form-wrap.registration-wrap{grid-column:auto;padding:22px 18px}}
 @media(max-width:430px){.upload-grid{grid-template-columns:1fr}.registration-heading{align-items:flex-start;flex-direction:column;gap:6px}.gender-field{flex-wrap:wrap;gap:10px}.gender-field legend{width:100%;margin:0 0 1px}}
+.join-form-wrap .form-row-3{grid-template-columns:1fr 1fr 1fr}@media(max-width:430px){.join-form-wrap .form-row-3{grid-template-columns:1fr;gap:0}}
