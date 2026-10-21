@@ -1,0 +1,4 @@
+PEMBARUAN KONTAK SEKRETARIAT + TULISAN ADMIN (unggah 3 berkas ke repo GitHub, Commit changes):
+- index.html   → footer situs kini memuat alamat, Telp/WA +62 812-3591-1689, email DPD.
+- admin.js     → (1) label lama "formulir nonaktif" di tab Pendaftaran diganti; (2) tabel menampilkan jabatan+alamat; (3) kepala tabel Kehadiran dirapikan.
+- admin.html   → catatan "Status penerimaan formulir" diperbaiki: Pendaftaran AKTIF, Aduan menunggu alamat email LBH.
