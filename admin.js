@@ -1663,9 +1663,7 @@
         }
         tbody.append(tr);
       });
-      table.appendChild(headRow.parentElement || make('thead'));
-      table.prepend(make('thead').appendChild(headRow).parentElement);
-      table.append(tbody);
+      table.append(thead); table.append(tbody);
       wrap.append(table);
       listBox.replaceChildren(wrap);
     }

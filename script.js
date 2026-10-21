@@ -116,9 +116,62 @@
     });
   });
 
-  joinForm.addEventListener('submit', event => {
+  joinForm.addEventListener('submit', async event => {
     event.preventDefault();
-    joinStatus.textContent = 'Pendaftaran belum dikirim. Ini hanya prototipe: data pribadi dan file tidak diunggah maupun disimpan. DPD perlu mengaktifkan sistem registrasi aman dan menerbitkan pemberitahuan privasi terlebih dahulu.';
+    const joinCfg = window.GMPI_SUPABASE_CONFIG || {};
+    const apiRoot = (joinCfg.url || '').replace(/\/$/, '');
+    if (!apiRoot || !joinCfg.publishableKey) {
+      joinStatus.textContent = 'Pendaftaran daring sedang tidak aktif. Silakan hubungi pengurus DPD GMPI Sidoarjo.';
+      return;
+    }
+    const btn = joinForm.querySelector('button[type="submit"]');
+    const btnText = btn.innerHTML;
+    const val = name => { const el = joinForm.querySelector(`[name="${name}"]`); return el ? String(el.value || '').trim() : ''; };
+    const say = text => { joinStatus.textContent = text; };
+    const uuid = () => (crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => { const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); }));
+    async function unggah(file, label) {
+      const ext = file.type === 'image/png' ? 'png' : 'jpg';
+      const kunci = `reg/${uuid()}.${ext}`;
+      const res = await fetch(`${apiRoot}/storage/v1/object/member-documents/${kunci}`, {
+        method: 'POST',
+        headers: { apikey: joinCfg.publishableKey, Authorization: `Bearer ${joinCfg.publishableKey}`, 'Content-Type': file.type, 'x-upsert': 'false', 'cache-control': 'no-cache' },
+        body: file
+      });
+      if (!res.ok) throw new Error(`${label} gagal diunggah. Periksa koneksi lalu coba lagi.`);
+      return kunci;
+    }
+    try {
+      const ktpFile = document.querySelector('#join-ktp').files[0];
+      const profilFile = document.querySelector('#join-profile').files[0];
+      btn.disabled = true;
+      say('Mengunggah foto dokumen… mohon tunggu, jangan tutup halaman.');
+      const ktpKey = await unggah(ktpFile, 'Foto KTP');
+      const profilKey = await unggah(profilFile, 'Pas foto');
+      say('Mengirim pendaftaran…');
+      const res = await fetch(`${apiRoot}/rest/v1/rpc/submit_member_registration`, {
+        method: 'POST',
+        headers: { apikey: joinCfg.publishableKey, Authorization: `Bearer ${joinCfg.publishableKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          p_full_name: val('name'), p_nik: val('nik'), p_birth_place: val('birthplace'), p_birth_date: val('birthdate'),
+          p_gender: val('gender'), p_phone: val('contact'), p_district: val('district'), p_address: val('address'),
+          p_division: val('division'), p_ktp_key: ktpKey, p_profile_key: profilKey
+        })
+      });
+      if (!res.ok) {
+        let pesan = 'Pendaftaran gagal terkirim.';
+        try { const j = await res.json(); if (j && j.message) pesan = j.message.replace(/^.*?: /, ''); } catch (e) { /* abaikan */ }
+        throw new Error(pesan);
+      }
+      joinForm.reset();
+      fileLimits.forEach(({ status }) => { status.textContent = 'Belum ada file dipilih'; });
+      say('PENDAFTARAN TERKIRIM. Terima kasih! Data Anda masuk antrean verifikasi pengurus DPD GMPI Sidoarjo. Pengurus akan menghubungi lewat WhatsApp bila data sudah diverifikasi atau perlu dilengkapi.');
+      joinForm.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } catch (e) {
+      say(e && e.message ? e.message : 'Pendaftaran gagal. Periksa isian dan koneksi, lalu coba lagi.');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = btnText;
+    }
   });
 
   // Public CMS fields are read-only for visitors; Supabase RLS controls all writes.
