@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#151513">
+  <meta name="description" content="Konfirmasi kehadiran rapat DPD GMPI Sidoarjo. Pilih hadir atau tidak hadir beserta alasannya — jawaban langsung tercatat di pengurus.">
+  <title>Konfirmasi Kehadiran — GMPI DPD Sidoarjo</title>
+  <link rel="icon" href="assets/logo-gmpi-sidoarjo-crop.webp">
+  <style>
+    :root{--gold:#E0B855;--gold2:#C69B3B;--red:#E51C24;--ink:#f6ead0;--muted:#cfc4a6}
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0}
+    body{min-height:100vh;font-family:Arial,Helvetica,sans-serif;color:var(--ink);
+      background:
+      radial-gradient(900px 600px at 50% -160px,rgba(179,18,26,.42),transparent 60%),
+      radial-gradient(800px 600px at 50% 115%,rgba(198,155,59,.16),transparent 60%),
+      linear-gradient(180deg,#100b0b,#191011 55%,#0c0808)}
+    .brand{display:flex;align-items:center;gap:12px;max-width:560px;margin:0 auto;padding:18px 20px 6px;text-decoration:none;color:#fff}
+    .brand img{width:44px;height:auto}
+    .brand b{font-size:18px;letter-spacing:2px;display:block}
+    .brand small{font-size:10px;letter-spacing:3px;color:var(--gold)}
+    main{max-width:560px;margin:0 auto;padding:14px 20px 34px}
+    .card{position:relative;border:3px solid var(--gold);background:rgba(0,0,0,.38);padding:30px 22px 26px;margin-top:12px}
+    .card:before{content:"";position:absolute;inset:6px;border:1px solid rgba(224,184,85,.45);pointer-events:none}
+    .kicker{text-align:center;font-size:11px;font-weight:800;letter-spacing:4px;color:var(--gold)}
+    h1{text-align:center;font-size:29px;line-height:1.2;margin:10px 0 2px;color:#fff}
+    .sub{text-align:center;color:var(--muted);font-size:13px;line-height:1.55;margin:6px 0 0}
+    .ev{margin:18px 0 4px;border:1px solid rgba(224,184,85,.3);background:rgba(0,0,0,.3)}
+    .ev div{padding:11px 14px;border-bottom:1px solid rgba(224,184,85,.16);font-size:14.5px;line-height:1.5}
+    .ev div:last-child{border-bottom:0}
+    .ev b{display:block;font-size:10px;letter-spacing:2.4px;color:var(--gold);margin-bottom:3px}
+    .counts{display:flex;gap:8px;margin:16px 0 4px}
+    .counts div{flex:1;text-align:center;border:1px solid rgba(224,184,85,.3);background:rgba(0,0,0,.3);padding:10px 4px}
+    .counts b{display:block;font-size:22px;color:#fff}
+    .counts span{font-size:9px;letter-spacing:1.6px;color:var(--muted)}
+    .counts .ok b{color:#8fd18a}
+    .counts .no b{color:#ff8f8f}
+    .formtitle{margin:20px 0 8px;font-size:12px;font-weight:900;letter-spacing:2.4px;color:var(--gold);text-align:center}
+    label.nama-l{display:block;font-size:11px;font-weight:800;letter-spacing:1.2px;color:var(--muted);margin:14px 0 6px}
+    input[type=text],select,textarea{width:100%;padding:13px 13px;font-size:16px;background:#0e0b0b;border:1px solid #5c532f;color:#fff;border-radius:0;outline:none;font-family:inherit}
+    input[type=text]:focus,select:focus,textarea:focus{border-color:var(--gold)}
+    .pilih{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:4px 0 6px}
+    .pilih label{position:relative}
+    .pilih input{position:absolute;opacity:0;inset:0}
+    .pilih span{display:flex;flex-direction:column;align-items:center;gap:5px;padding:14px 4px;border:1px solid #5c532f;background:rgba(0,0,0,.35);font-size:11.5px;font-weight:800;letter-spacing:.6px;cursor:pointer;color:var(--muted);text-align:center}
+    .pilih i{font-style:normal;font-size:19px}
+    .pilih input:checked+span{border-color:var(--gold);color:#fff;background:rgba(198,155,59,.14)}
+    .pilih .a input:checked+span{border-color:#8fd18a;background:rgba(80,160,70,.16)}
+    .pilih .b input:checked+span{border-color:#ff8f8f;background:rgba(220,60,60,.15)}
+    #alasan-wrap{margin-top:10px}
+    textarea{min-height:74px;resize:vertical}
+    .btn{display:block;width:100%;margin-top:16px;padding:16px;border:0;background:linear-gradient(180deg,#f6d665,#c69b3b 60%,#a86f08);color:#17150a;font-size:15px;font-weight:900;letter-spacing:2px;cursor:pointer}
+    .btn:hover{filter:brightness(1.06)}
+    .btn:disabled{opacity:.55;cursor:wait}
+    .msg{margin:14px 0 0;font-size:12.5px;line-height:1.6;padding:12px 13px;border-left:3px solid var(--gold2);background:rgba(198,155,59,.1);color:#f0e4c0}
+    .msg.err{border-color:#b52429;background:rgba(220,60,60,.12);color:#ffb9b9}
+    .ok-panel{display:none;margin-top:20px;border:1px solid rgba(143,209,138,.5);background:rgba(80,160,70,.13);padding:20px;text-align:center}
+    .ok-panel h2{margin:0 0 8px;font-size:20px;color:#bfe8ba}
+    .ok-panel p{font-size:13px;line-height:1.7;color:#e6f1e4;margin:6px 0}
+    .linkbtn{display:inline-block;margin-top:12px;background:none;border:1px solid var(--gold);color:var(--gold);padding:11px 18px;font-size:12px;font-weight:800;letter-spacing:1.4px;cursor:pointer}
+    .foot{text-align:center;font-size:10.5px;line-height:1.7;color:#8d863f;color:#9c9270;margin:22px auto 0;max-width:460px}
+    .foot b{color:var(--gold)}
+    footer{text-align:center;padding:14px;font-size:10px;letter-spacing:2.6px;color:#7a744f}
+    footer a{color:#9c9270;text-decoration:none;border-bottom:1px dotted #9c9270}
+    @media(max-width:420px){h1{font-size:25px}.pilih span{font-size:10.5px}}
+  </style>
+</head>
+<body>
+  <a class="brand" href="index.html"><img src="assets/logo-gmpi-sidoarjo-crop.webp" alt="Logo GMPI"><span><b>GMPI</b><small>DPD SIDOARJO</small></span></a>
+  <main>
+    <div class="card">
+      <div class="kicker">UNDANGAN RAPAT</div>
+      <h1 id="ev-nama">Rapat DPD GMPI Sidoarjo</h1>
+      <p class="sub">Kepada Yth. Bapak/Ibu Pengurus &amp; Anggota.<br>Mohon konfirmasi kehadiran di bawah ini.</p>
+
+      <div class="ev">
+        <div><b>HARI · TANGGAL</b><span id="ev-tgl">—</span></div>
+        <div><b>WAKTU</b><span id="ev-wkt">—</span></div>
+        <div><b>TEMPAT</b><span id="ev-tempat">—</span></div>
+        <div><b>AGENDA</b><span id="ev-agenda">—</span></div>
+      </div>
+
+      <div class="counts" id="counts" hidden>
+        <div class="ok"><b id="c-hadir">0</b><span>HADIR</span></div>
+        <div class="no"><b id="c-tidak">0</b><span>TIDAK</span></div>
+        <div><b id="c-belum">0</b><span>BELUM PASTI</span></div>
+      </div>
+
+      <form id="rsvp-form" novalidate hidden>
+        <div class="formtitle">FORMULIR KONFIRMASI</div>
+        <label class="nama-l" for="f-nama">NAMA LENGKAP (wajib)</label>
+        <input type="text" id="f-nama" maxlength="60" autocomplete="name" placeholder="Tulis nama lengkap Anda" required>
+
+        <label class="nama-l">KEHADIRAN (wajib)</label>
+        <div class="pilih">
+          <label class="a"><input type="radio" name="keh" value="hadir" checked><span><i>✓</i>HADIR</span></label>
+          <label class="b"><input type="radio" name="keh" value="tidak"><span><i>✗</i>TIDAK HADIR</span></label>
+          <label><input type="radio" name="keh" value="belum"><span><i>?</i>BELUM PASTI</span></label>
+        </div>
+
+        <div id="alasan-wrap" hidden>
+          <label class="nama-l" for="f-alasan">ALASAN TIDAK HADIR</label>
+          <select id="f-alasan">
+            <option value="">— Pilih alasan —</option>
+            <option>Pekerjaan / dinas</option>
+            <option>Urusan keluarga</option>
+            <option>Sakit / kesehatan</option>
+            <option>Sedang di luar kota</option>
+            <option value="__lain">Lainnya…</option>
+          </select>
+          <textarea id="f-alasan-lain" placeholder="Tulis alasannya…" maxlength="140" hidden></textarea>
+        </div>
+
+        <button class="btn" id="btn-kirim" type="submit">KIRIM KONFIRMASI</button>
+        <div class="msg" id="msg" hidden></div>
+      </form>
+
+      <div class="ok-panel" id="ok-panel">
+        <h2 id="ok-title">Terima kasih!</h2>
+        <p id="ok-text"></p>
+        <p>Kalau salah pilih, cukup kirim ulang dengan <b>nama yang sama</b> — jawaban terakhir yang dihitung.</p>
+        <button class="linkbtn" id="btn-lagi" type="button">Isi untuk orang lain</button>
+      </div>
+
+      <div class="msg err" id="cfg-warn" hidden>Konfirmasi kehadiran online belum aktif. Sementara ini silakan balas langsung di grup WhatsApp.</div>
+
+      <div class="foot">Nama dan jawaban Anda hanya terlihat oleh pengurus DPD GMPI Sidoarjo dan dihapus setelah acara selesai. Tidak ada data sensitif yang diminta.</div>
+    </div>
+  </main>
+  <footer>GMPI DPD SIDOARJO · SETIA BERSAUDARA SAMPAI URAT NADI · <a href="index.html">Kembali ke situs</a></footer>
+  <script src="supabase-config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="rsvp.js"></script>
+</body>
+</html>

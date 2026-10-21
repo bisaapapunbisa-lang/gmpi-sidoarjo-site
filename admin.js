@@ -51,6 +51,7 @@
   function canApproveCards() { return roles.includes('owner') || roles.includes('card_approver'); }
   function canEditSebaran() { return roles.includes('owner') || roles.includes('content_editor') || roles.includes('registrar'); }
   function canSeeSiaga() { return roles.includes('owner') || roles.includes('siaga'); }
+  function canSeeRsvp() { return roles.includes('owner') || roles.includes('content_editor') || roles.includes('registrar') || roles.includes('siaga'); }
   function myEmail() { return String(currentUser?.email || '').toLowerCase(); }
 
   if (!config.url || !config.publishableKey) {
@@ -141,6 +142,7 @@
     if (canEditContent()) tabs.push(['sos', 'Darurat']);
     if (canEditContent()) tabs.push(['struktur', 'Struktur']);
     if (canEditSebaran()) tabs.push(['sebaran', 'Sebaran']);
+    if (canSeeRsvp()) tabs.push(['rsvp', 'Kehadiran']);
     if (canManageNews()) tabs.push(['news', 'Berita']);
     if (canSeeReports()) tabs.push(['reports', 'Aduan LBH']);
     if (canSeeMembers()) tabs.push(['members', 'Pendaftaran anggota']);
@@ -170,6 +172,7 @@
     if (key === 'sos' && canEditContent()) return renderSos();
     if (key === 'struktur' && canEditContent()) return renderStruktur();
     if (key === 'sebaran' && canEditSebaran()) return renderSebaran();
+    if (key === 'rsvp' && canSeeRsvp()) return renderRsvp();
     if (key === 'news' && canManageNews()) return renderNews();
     if (key === 'reports' && canSeeReports()) return renderReports();
     if (key === 'members' && canSeeMembers()) return renderMembers();
@@ -1578,6 +1581,157 @@
     table.append(thead, make('tbody'));
     wrap.append(table);
     return { wrap, body: table.querySelector('tbody') };
+  }
+
+  // ================= KONFIRMASI KEHADIRAN (RSVP undangan digital) =================
+  async function renderRsvp() {
+    const heading = make('div', 'workspace-heading');
+    const hb = make('div');
+    hb.append(make('h3', '', 'Kehadiran Rapat'), make('p', '', 'Jawaban dari undangan digital. Bagikan tautan situs ini + /rsvp ke grup WA anggota. Nama yang sama hanya dihitung satu kali — jawaban terakhir yang dipakai.'));
+    const open = make('a', 'admin-link-button', 'Buka halaman undangan ↗');
+    open.href = 'rsvp.html';
+    open.target = '_blank';
+    open.rel = 'noopener';
+    heading.append(hb, open);
+
+    const { data: rows, error } = await client.from('rsvp').select('id,nama,kehadiran,alasan,created_at').order('created_at', { ascending: false }).limit(1000);
+    if (error) {
+      workspace.replaceChildren(heading, make('div', 'table-empty', 'Daftar kehadiran belum bisa dibuka. Minta Pemilik menjalankan migrasi 202610210015_rsvp_rapat.sql di Supabase SQL Editor, lalu muat ulang halaman ini.'));
+      return;
+    }
+    const list = rows || [];
+    const STATUS = { hadir: 'HADIR', tidak: 'TIDAK HADIR', belum: 'BELUM PASTI' };
+    const counts = { hadir: 0, tidak: 0, belum: 0 };
+    list.forEach(r => { if (counts[r.kehadiran] !== undefined) counts[r.kehadiran]++; });
+
+    const chips = make('div', 'role-list');
+    chips.append(
+      make('span', 'role-chip', `HADIR: ${counts.hadir}`),
+      make('span', 'role-chip', `TIDAK HADIR: ${counts.tidak}`),
+      make('span', 'role-chip', `BELUM PASTI: ${counts.belum}`),
+      make('span', 'role-chip', `TOTAL: ${list.length} orang`));
+    chips.style.margin = '6px 0 16px';
+
+    let filter = 'semua';
+    const listBox = make('div');
+    const PILL_STYLE = {
+      hadir: 'background:#dff0d8;color:#2f5d2a',
+      tidak: 'background:#f7e0e0;color:#8a1f1f',
+      belum: 'background:#efe7d2;color:#6b5a2a'
+    };
+
+    function renderList() {
+      const shown = list.filter(r => filter === 'semua' || r.kehadiran === filter);
+      if (!list.length) {
+        listBox.replaceChildren(make('div', 'table-empty', 'Belum ada jawaban masuk. Bagikan tautan undangan digital (rsvp) ke grup WA anggota.'));
+        return;
+      }
+      if (!shown.length) {
+        listBox.replaceChildren(make('div', 'table-empty', 'Tidak ada jawaban dengan status ini.'));
+        return;
+      }
+      const wrap = make('div', 'table-wrap');
+      const table = make('table', 'admin-table');
+      const thead = make('thead');
+      const headRow = make('tr');
+      ['Waktu', 'Nama', 'Kehadiran', 'Alasan', ...(isOwner() ? [''] : [])].forEach(t => headRow.append(make('th', '', t)));
+      thead.append(headRow);
+      const tbody = make('tbody');
+      shown.forEach(r => {
+        const tr = make('tr');
+        tr.append(make('td', '', sosTime(r.created_at)), make('td', '', r.nama));
+        const pill = make('span', 'status-pill', STATUS[r.kehadiran] || r.kehadiran);
+        pill.style.cssText = PILL_STYLE[r.kehadiran] || '';
+        const tdPill = make('td');
+        tdPill.append(pill);
+        tr.append(tdPill);
+        tr.append(make('td', '', r.alasan || '—'));
+        if (isOwner()) {
+          const td = make('td');
+          const del = make('button', 'admin-link-button', 'Hapus');
+          del.type = 'button';
+          del.addEventListener('click', async () => {
+            del.disabled = true;
+            const { error: e } = await client.from('rsvp').delete().eq('id', r.id);
+            if (e) { setMessage('Baris tidak terhapus. Muat ulang dan coba lagi.', 'error'); del.disabled = false; return; }
+            const i = list.indexOf(r); if (i >= 0) list.splice(i, 1);
+            counts[r.kehadiran] = Math.max(0, counts[r.kehadiran] - 1);
+            refreshChips(); renderList();
+          });
+          td.append(del);
+          tr.append(td);
+        }
+        tbody.append(tr);
+      });
+      table.appendChild(headRow.parentElement || make('thead'));
+      table.prepend(make('thead').appendChild(headRow).parentElement);
+      table.append(tbody);
+      wrap.append(table);
+      listBox.replaceChildren(wrap);
+    }
+    function refreshChips() {
+      chips.replaceChildren(
+        make('span', 'role-chip', `HADIR: ${counts.hadir}`),
+        make('span', 'role-chip', `TIDAK HADIR: ${counts.tidak}`),
+        make('span', 'role-chip', `BELUM PASTI: ${counts.belum}`),
+        make('span', 'role-chip', `TOTAL: ${list.length} orang`));
+    }
+
+    const bar = make('div', 'card-buttons');
+    const FILTERS = [['semua', 'Semua'], ['hadir', 'Hadir'], ['tidak', 'Tidak'], ['belum', 'Belum pasti']];
+    const filterBtns = [];
+    FILTERS.forEach(([key, label]) => {
+      const b = make('button', 'admin-button admin-button-outline', label);
+      b.type = 'button';
+      b.addEventListener('click', () => {
+        filter = key;
+        filterBtns.forEach(([k, x]) => { x.style.cssText = k === filter ? 'background:#171715;color:#fff' : ''; });
+        renderList();
+      });
+      filterBtns.push([key, b]);
+      bar.append(b);
+    });
+    filterBtns[0][1].style.cssText = 'background:#171715;color:#fff';
+    const reload = make('button', 'admin-button admin-button-outline', 'Muat ulang');
+    reload.type = 'button';
+    reload.addEventListener('click', () => renderRsvp());
+    bar.append(reload);
+    const csv = make('button', 'admin-button admin-button-gold', 'Unduh daftar (CSV)');
+    csv.type = 'button';
+    csv.addEventListener('click', () => {
+      const esc = v => '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"';
+      const head = 'Waktu;Nama;Kehadiran;Alasan';
+      const body = list.map(r => [sosTime(r.created_at), r.nama, STATUS[r.kehadiran] || r.kehadiran, r.alasan || ''].map(esc).join(';'));
+      const blob = new Blob(['﻿' + head + '\n' + body.join('\n')], { type: 'text/csv;charset=utf-8' });
+      const a = make('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'kehadiran-rapat-gmpi.csv';
+      document.body.append(a);
+      a.click();
+      a.remove();
+    });
+    bar.append(csv);
+    if (isOwner()) {
+      const reset = make('button', 'admin-button admin-button-red', 'Kosongkan daftar (acara baru)');
+      reset.type = 'button';
+      reset.style.marginTop = '0';
+      reset.addEventListener('click', async () => {
+        if (!window.confirm('Kosongkan seluruh daftar kehadiran? Pakai ini saat mengumumkan acara berikutnya. Tindakan tidak bisa dibatalkan.')) return;
+        reset.disabled = true;
+        const { error: e } = await client.rpc('reset_rsvp');
+        reset.disabled = false;
+        if (e) { setMessage('Daftar gagal dikosongkan. Muat ulang dan coba lagi.', 'error'); return; }
+        setMessage('Daftar kehadiran dikosongkan. Acara berikutnya bisa dimulai.');
+        renderRsvp();
+      });
+      bar.append(reset);
+    }
+    bar.style.flexWrap = 'wrap';
+    bar.style.margin = '0 0 14px';
+
+    const note = make('div', 'privacy-mini', 'Kolom yang terlihat: waktu jawab, nama, status, alasan. Pengunjung situs hanya melihat rekap angka (tanpa nama). Hanya Pemilik yang dapat menghapus baris atau mengosongkan daftar.');
+    renderList();
+    workspace.replaceChildren(heading, chips, bar, listBox, note);
   }
 
   async function renderReports() {
