@@ -1765,7 +1765,7 @@
       row.append(statusCell);
       body.append(row);
     });
-    if (!data?.length) body.append(emptyRow(5, 'Belum ada aduan. Formulir publik masih nonaktif.'));
+    if (!data?.length) body.append(emptyRow(5, 'Belum ada aduan masuk. Formulir aduan publik sudah aktif di bagian #posko situs.'));
     workspace.replaceChildren(heading, wrap, make('p', 'privacy-mini', 'Hindari menyalin rincian laporan ke perangkat atau kanal pribadi.'));
   }
 

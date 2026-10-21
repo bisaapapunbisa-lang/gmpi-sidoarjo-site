@@ -2,7 +2,7 @@
   // Set these to the verified organizational inboxes before publishing.
   // Mailto opens the visitor's email app; it does not submit silently.
   const SITE_CONFIG = {
-    lbhEmail: ''
+    lbhEmail: 'gmpinusantara@gmail.com' // GANTI EMAIL TUJUAN ADUAN DI SINI (satu baris ini saja)
   };
 
   const menuButton = document.querySelector('.menu-toggle');
@@ -73,7 +73,7 @@
       return;
     }
     const data = new FormData(reportForm);
-    const mail = buildMailto(SITE_CONFIG.lbhEmail, `Pengaduan warga GMPI — ${data.get('area')}`, [
+    const mail = buildMailto(SITE_CONFIG.lbhEmail, `[ADUAN] ${data.get('type')} — ${data.get('area')}`, [
       ['Nama', data.get('name')], ['Kontak', data.get('contact')], ['Kecamatan', data.get('area')],
       ['Topik', data.get('type')], ['Ringkasan', data.get('message')]
     ]);

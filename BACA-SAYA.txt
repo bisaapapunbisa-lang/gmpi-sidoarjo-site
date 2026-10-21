@@ -1,4 +1,10 @@
-PEMBARUAN KONTAK SEKRETARIAT + TULISAN ADMIN (unggah 3 berkas ke repo GitHub, Commit changes):
-- index.html   → footer situs kini memuat alamat, Telp/WA +62 812-3591-1689, email DPD.
-- admin.js     → (1) label lama "formulir nonaktif" di tab Pendaftaran diganti; (2) tabel menampilkan jabatan+alamat; (3) kepala tabel Kehadiran dirapikan.
-- admin.html   → catatan "Status penerimaan formulir" diperbaiki: Pendaftaran AKTIF, Aduan menunggu alamat email LBH.
+ADUAN LBH AKTIF — unggah 4 berkas ini ke repo GitHub (Commit changes):
+- index.html  : catatan kecil di bawah form aduan kini menyebut alamat tujiun email.
+- script.js   : lbhEmail = gmpinusantara@gmail.com (baris 5, ada komentar GANTI EMAIL DI SINI).
+                Subjek laporan otomatis diawali [ADUAN] supaya gampang difilter di Gmail.
+- admin.html  : penjelasan status penerimaan diperbarui (Aduan AKTIF).
+- admin.js    : teks "formulir nonaktif" di daftar Aduan diperbarui.
+
+Coba setelah ter-deploy: isi formulir di #posko situs → aplikasi email terbuka
+tertuju gmpinusantara@gmail.com dengan subjek [ADUAN] — tekan Kirim.
+Ganti email kapan pun: edit baris 5 script.js → Commit, atau minta saya.
