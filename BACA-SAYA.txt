@@ -1,14 +1,13 @@
-PAKET FINAL GABUNGAN (unggah SATU KALI = semua perubahan hari ini):
+PAKET FINAL GABUNGAN (satu kali unggah = semua perubahan hari ini):
 
-Di dalam ZIP ini:
-- index.html  (3 perubahan: kolom tanggal lahir jadi 3 pilihan, pilar jadi 6
-               + kartu Tagana & Pemberdayaan Ekonomi, catatan aduan aktif)
-- script.js   (sinkron tanggal lahir + email aduan ke gmpinusantara@gmail.com,
-               baris 5 ada komentar "GANTI EMAIL TUJUAN ADUAN DI SINI")
-- admin.html, admin.js (tulisan status aduan jadi AKTIF)
-- assets/divisi/tagana.webp & assets/divisi/ekonomi.webp (2 emblem pilar baru)
+Isi ZIP (unggah SEMUA dengan struktur folder tetap, di akar repo GitHub):
+- index.html   → tanggal lahir = 3 pilihan (Tgl/Bulan/Tahun), pilar jadi 6,
+                 catatan aduan aktif
+- script.js    → sinkron tanggal lahir + aduan ke gmpinusantara@gmail.com
+                 (baris 5: komentar "GANTI EMAIL TUJUAN ADUAN DI SINI"),
+                 subjek laporan diawali [ADUAN]
+- styles.css   → grid Pilar diubah 4-kolom jadi 3-kolom (a 3 atas 3 bawah)
+- admin.html admin.js → tulisan status aduan jadi AKTIF
+- assets/divisi/tagana.webp & assets/divisi/ekonomi.webp → 2 emblem pilar baru
 
-CARA Unggah di GitHub (akar repo):
-Add file → Upload files → seret 4 berkas + FOLDER assets yang ada di ZIP ini
-(struktur foldernya dijaga, GitHub menambahkan 2 gambar ke folder yang sudah ada)
-→ Commit changes.
+Cara: Add file → Upload files → seret 4 berkas + folder assets → Commit changes.
