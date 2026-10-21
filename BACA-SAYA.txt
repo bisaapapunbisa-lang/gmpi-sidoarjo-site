@@ -1,13 +1,20 @@
-PAKET FINAL GABUNGAN (satu kali unggah = semua perubahan hari ini):
+PAKET GABUNGAN — unggah SEMUA berkas & folder ke repo GitHub (Commit changes),
+LALU jalankan SQL-nya (langkah 2).
 
-Isi ZIP (unggah SEMUA dengan struktur folder tetap, di akar repo GitHub):
-- index.html   → tanggal lahir = 3 pilihan (Tgl/Bulan/Tahun), pilar jadi 6,
-                 catatan aduan aktif
-- script.js    → sinkron tanggal lahir + aduan ke gmpinusantara@gmail.com
-                 (baris 5: komentar "GANTI EMAIL TUJUAN ADUAN DI SINI"),
-                 subjek laporan diawali [ADUAN]
-- styles.css   → grid Pilar diubah 4-kolom jadi 3-kolom (a 3 atas 3 bawah)
-- admin.html admin.js → tulisan status aduan jadi AKTIF
-- assets/divisi/tagana.webp & assets/divisi/ekonomi.webp → 2 emblem pilar baru
+== LANGKAH 1 — UNGGAH (akar repo): ==
+index.html, script.js, styles.css, admin.html, admin.js, struktur.js,
+folder assets (isi 2 emblem pilar baru: tagana.webp & ekonomi.webp)
 
-Cara: Add file → Upload files → seret 4 berkas + folder assets → Commit changes.
+Perubahan yang ikut:
+√ Tanggal lahir formulir = 3 pilihan (Tgl/Bulan/Tahun) — mengatasi "tak bisa diedit"
+√ Aduan LBH AKTIF ke gmpinusantara@gmail.com (subjek [ADUAN])
+√ Pilar jadi 6 (Tagana + Pemberdayaan Ekonomi), grid a 3 atas 3 bawah
+√ Bagan struktur: Wakil Ketua hanya 1; tanpa Wakil Sekretaris/Bendahara
+
+== LANGKAH 2 — JALANKAN SQL (wajib subcategory hilangnya jabatan wakil): ==
+Supabase Dashboard → SQL Editor → New query →
+salin SEMUA isi berkas "sql-hapus-jabatan-wakil.txt" → RUN.
+(Hapus jabatannya di situs tanpa SQL ini tidak terlihat, karena bagan diambil
+dari database — berkas ini memotong 9 jabatan: Wakil Ketua II/III,
+Wakil Sekretaris I–III, Wakil Bendahara I–III, dan mengganti "Wakil Ketua I"
+jadi "Wakil Ketua".)

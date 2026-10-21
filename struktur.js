@@ -4,11 +4,9 @@
     ['penasihat', 'Dewan Penasihat'], ['penasihat', 'Dewan Penasihat'], ['penasihat', 'Dewan Penasihat'],
     ['pembina', 'Dewan Pembina'], ['pembina', 'Dewan Pembina'], ['pembina', 'Dewan Pembina'],
     ['ketua', 'Ketua DPD'],
-    ['wakil_ketua', 'Wakil Ketua I'], ['wakil_ketua', 'Wakil Ketua II'], ['wakil_ketua', 'Wakil Ketua III'],
+    ['wakil_ketua', 'Wakil Ketua'],
     ['sekretaris', 'Sekretaris'],
-    ['wakil_sekretaris', 'Wakil Sekretaris I'], ['wakil_sekretaris', 'Wakil Sekretaris II'], ['wakil_sekretaris', 'Wakil Sekretaris III'],
-    ['bendahara', 'Bendahara'],
-    ['wakil_bendahara', 'Wakil Bendahara I'], ['wakil_bendahara', 'Wakil Bendahara II'], ['wakil_bendahara', 'Wakil Bendahara III']
+    ['bendahara', 'Bendahara']
   ].map(([section, jabatan], i) => ({ section, jabatan, department: null, person_name: null, photo_path: null, sort_order: i }));
 
   const el = (tag, cls, text) => {
