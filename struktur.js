@@ -57,7 +57,7 @@
     chart.append(top, el('div', 'org-link'));
 
     const wk = el('div', 'org-level org-group');
-    wk.append(el('h4', 'org-title', 'Wakil Ketua'), people(by('wakil_ketua'), photoUrl));
+    wk.append(el('h4', 'org-title', 'Wakil Ketua'), people(by('wakil_ketua'), photoUrl, 'md'));
     chart.append(wk, el('div', 'org-link'));
 
     const branches = el('div', 'org-branches');
