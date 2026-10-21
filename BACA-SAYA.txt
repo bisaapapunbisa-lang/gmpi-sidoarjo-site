@@ -1,10 +1,18 @@
-ADUAN LBH AKTIF — unggah 4 berkas ini ke repo GitHub (Commit changes):
-- index.html  : catatan kecil di bawah form aduan kini menyebut alamat tujiun email.
-- script.js   : lbhEmail = gmpinusantara@gmail.com (baris 5, ada komentar GANTI EMAIL DI SINI).
-                Subjek laporan otomatis diawali [ADUAN] supaya gampang difilter di Gmail.
-- admin.html  : penjelasan status penerimaan diperbarui (Aduan AKTIF).
-- admin.js    : teks "formulir nonaktif" di daftar Aduan diperbarui.
+PAKET GABUNGAN (unggah keempat-empat berkas + Commit changes satu kali):
 
-Coba setelah ter-deploy: isi formulir di #posko situs → aplikasi email terbuka
-tertuju gmpinusantara@gmail.com dengan subjek [ADUAN] — tekan Kirim.
-Ganti email kapan pun: edit baris 5 script.js → Commit, atau minta saya.
+1. ADUAN LBH AKTIF
+   - script.js   : lbhEmail = gmpinusantara@gmail.com (baris 5;
+                   ada komentar "GANTI EMAIL TUJUAN ADUAN DI SINI").
+                   Subjek otomatis diawali [ADUAN] agar mudah difilter Gmail.
+   - index.html  : catatan di bawah form aduan menunjukkan tujuannya.
+   - admin.html  : status penerimaan kini menyebut Aduan AKTIF.
+   - admin.js    : teks "formulir nonaktif" di tab Aduan diganti.
+
+2. PERBAIKAN KOLOM TANGGAL LAHIR (keluhan: kolom tanggal tidak bisa diedit)
+   - Dulu: kolom kalender bawaan browser (type=date) — banyak yang kesulitan.
+   - Sekarang: 3 pilihan gampang = Tanggal | Bulan | Tahun.
+   - Otomatis menolak tanggal mustahil (misal 31 Februari).
+   - Sudah diuji di HP-mock: 29 Feb 2000 terkirim, 31 Feb 2001 ditolak.
+
+Coba setelah diunggah: isi form #gabung s/d "Tanggal lahir" — akan tampil tiga pilihannya,
+dan form #posko: pengaduan sampai sebagai draf email ke gmpinusantara@gmail.com.

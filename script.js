@@ -87,8 +87,22 @@
   nikInput.addEventListener('input', () => {
     nikInput.value = nikInput.value.replace(/\D/g, '').slice(0, 16);
   });
-  const birthDate = document.querySelector('#join-birthdate');
-  birthDate.max = new Date().toISOString().slice(0, 10);
+  const bdDay = document.querySelector('#join-bday');
+  const bdMonth = document.querySelector('#join-bmonth');
+  const bdYear = document.querySelector('#join-byear');
+  const bdHidden = document.querySelector('#join-birthdate');
+  for (let d = 1; d <= 31; d++) bdDay.add(new Option(String(d), String(d)));
+  const nowY = new Date().getFullYear();
+  for (let y = nowY - 15; y >= nowY - 90; y--) bdYear.add(new Option(String(y), String(y)));
+  const syncBirthdate = () => {
+    const d = parseInt(bdDay.value, 10), m = bdMonth.value, y = parseInt(bdYear.value, 10);
+    bdHidden.value = (bdDay.value && m && y) ? `${y}-${m}-${String(d).padStart(2, '0')}` : '';
+    if (!bdHidden.value) return;
+    const dt = new Date(bdHidden.value + 'T00:00:00Z');
+    const valid = dt.getUTCFullYear() === y && dt.getUTCMonth() + 1 === parseInt(m, 10) && dt.getUTCDate() === d;
+    bdDay.setCustomValidity(valid ? '' : 'Pilih tanggal yang benar (bulan ini tidak punya tanggal tersebut).');
+  };
+  [bdDay, bdMonth, bdYear].forEach(sel => sel.addEventListener('change', syncBirthdate));
 
   const fileLimits = [
     { input: document.querySelector('#join-ktp'), status: document.querySelector('#ktp-status') },
