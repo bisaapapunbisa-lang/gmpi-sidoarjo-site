@@ -1,18 +1,18 @@
-KOLOM JABATAN PENGURUS DI TAB PENDAFTARAN (1 berkas: admin.js)
+TAMBAH "KETUA HARIAN" (di antara Sekretaris dan Bendahara) — 2 LANGKAH:
 
-Yang berubah:
-1. Tab "Pendaftaran anggota" kini punya kolom JABATAN PENGURUS berisi pilihan
-   (dropdown) sesuai AD/ART — menggantikan label "Pengurus: ..." yang lama.
-   Pilih jabatan → tersimpan otomatis. "Anggota biasa" mengosongkan jabatan.
-2. Jabatan TUNGGAL yang sudah dipegang seseorang (Ketua DPD, Wakil Ketua DPD,
-   Sekretaris DPD, Bendahara DPD, serta Ketua/Sekretaris/Bendahara DPC per kecamatan)
-   OTOMATIS HILANG dari daftar pilihan — tidak bisa dipilih dua kali.
-   Sumber pengecekan: pendaftaran (selain yang ditolak) + kartu menunggu/aktif.
-   Jabatan kursi-banyak (Anggota, Pengurus Departemen, Dewan Penasihat, dll.) selalu tampil.
-3. Isian lama yang tidak baku (mis. "KETUA" atau "O") tetap terlihat berlabel
-   "Tidak baku: ..." supaya bisa Anda rapikan dengan sekali pilih.
-4. Dropdown jabatan di formulir penerbitan kartu (tab Kartu anggota) juga ikut
-   menyaring jabatan yang sudah terisi, konsisten dengan tab Pendaftaran.
+LANGKAH 1 — Supabase (wajib SEKALI):
+SQL Editor → New query → tempel seluruh isi SQL-KETUA-HARIAN.txt → RUN.
+(Menambah 1 baris kursi Ketua Harian. Aman dijalankan ulang.)
 
-Tidak ada SQL/perubahan database — cukup timpa admin.js lama di GitHub (Commit
-changes), tunggu ±1 menit, lalu buka ulang panel admin (Ctrl+F5).
+LANGKAH 2 — GitHub:
+Unggah 3 berkas ini ke akar repo (timpa yang lama), Commit changes:
+struktur.js · struktur.css · admin.js
+(Folder supabase/ hanya arsip riwayat — boleh ikut diunggah, tidak wajib.)
+
+SETELAH ITU:
+- Bagan beranda: kotak KETUA HARIAN muncul di tengah, di antara SEKRETARIAT
+  dan KEBENDAHARAAN (sudah diuji: posisi pas tengah, garis konektor rapi).
+- Admin → tab Struktur: grup "Ketua Harian" siap diisi nama + foto → Simpan.
+  Selama nama kosong tampil "Segera diisi".
+- Pilihan jabatan "Ketua Harian DPD" otomatis ada di dropdown Pendaftaran &
+  Kartu — dan ikut sistem anti-dobel (hanya bisa dipegang satu orang).

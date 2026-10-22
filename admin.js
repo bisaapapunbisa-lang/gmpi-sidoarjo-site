@@ -632,7 +632,7 @@
   async function renderStruktur() {
     const heading = make('div', 'workspace-heading');
     const hb = make('div');
-    hb.append(make('h3', '', 'Struktur organisasi DPD'), make('p', '', 'Isi nama dan foto pengurus. Bagan langsung tampil di beranda (bagian "Struktur organisasi"). Susunan mengikuti AD/ART Pasal 9: Dewan Penasihat & Pembina, Ketua, satu Wakil Ketua, Sekretaris, Bendahara (tanpa wakil), dan Departemen. Kosongkan nama bila belum ditetapkan — tampil "Segera diisi".'));
+    hb.append(make('h3', '', 'Struktur organisasi DPD'), make('p', '', 'Isi nama dan foto pengurus. Bagan langsung tampil di beranda (bagian "Struktur organisasi"). Susunan mengikuti AD/ART Pasal 9: Dewan Penasihat & Pembina, Ketua, satu Wakil Ketua, Sekretaris, Ketua Harian, Bendahara (tanpa wakil), dan Departemen. Kosongkan nama bila belum ditetapkan — tampil "Segera diisi".'));
     heading.append(hb);
     const { data, error } = await client.from('org_structure').select('id,section,jabatan,department,person_name,photo_path,sort_order').order('sort_order', { ascending: true });
     if (error) {
@@ -644,7 +644,7 @@
     const photoUrl = path => client.storage.from('site-assets').getPublicUrl(path).data.publicUrl;
     const SECTIONS = [
       ['penasihat', 'Dewan Penasihat'], ['pembina', 'Dewan Pembina'], ['ketua', 'Ketua'], ['wakil_ketua', 'Wakil Ketua'],
-      ['sekretaris', 'Sekretaris'], ['bendahara', 'Bendahara'],
+      ['sekretaris', 'Sekretaris'], ['ketua_harian', 'Ketua Harian'], ['bendahara', 'Bendahara'],
       ['departemen', 'Departemen (dipimpin Wakil Ketua Departemen)']
     ];
     const layout = make('div', 'org-admin');
@@ -1943,7 +1943,7 @@
   const DISTRICTS = ['Sidoarjo','Buduran','Gedangan','Waru','Sukodono','Taman','Krian','Balongbendo','Tarik','Prambon','Krembung','Porong','Jabon','Tanggulangin','Candi','Tulangan','Wonoayu','Sedati'];
   const JABATAN_GROUPS = [
     ['Dewan DPD', ['Dewan Penasihat DPD', 'Dewan Pembina DPD']],
-    ['Pengurus harian DPD', ['Ketua DPD', 'Wakil Ketua DPD', 'Sekretaris DPD', 'Bendahara DPD']],
+    ['Pengurus harian DPD', ['Ketua DPD', 'Wakil Ketua DPD', 'Sekretaris DPD', 'Ketua Harian DPD', 'Bendahara DPD']],
     ['Departemen DPD', ['Wakil Ketua Departemen DPD', 'Pengurus Departemen DPD']],
     ['DPC (kecamatan)', ['Ketua DPC', 'Sekretaris DPC', 'Bendahara DPC', 'Ketua Bidang DPC', 'Pengurus DPC']],
     ['Ranting (desa)', ['Korja Ranting', 'Wakil Korja Ranting', 'Sekretaris Ranting']],
