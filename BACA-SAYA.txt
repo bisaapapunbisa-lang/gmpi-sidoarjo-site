@@ -1,20 +1,18 @@
-PAKET GABUNGAN — unggah SEMUA berkas & folder ke repo GitHub (Commit changes),
-LALU jalankan SQL-nya (langkah 2).
+KOLOM JABATAN PENGURUS DI TAB PENDAFTARAN (1 berkas: admin.js)
 
-== LANGKAH 1 — UNGGAH (akar repo): ==
-index.html, script.js, styles.css, admin.html, admin.js, struktur.js,
-folder assets (isi 2 emblem pilar baru: tagana.webp & ekonomi.webp)
+Yang berubah:
+1. Tab "Pendaftaran anggota" kini punya kolom JABATAN PENGURUS berisi pilihan
+   (dropdown) sesuai AD/ART — menggantikan label "Pengurus: ..." yang lama.
+   Pilih jabatan → tersimpan otomatis. "Anggota biasa" mengosongkan jabatan.
+2. Jabatan TUNGGAL yang sudah dipegang seseorang (Ketua DPD, Wakil Ketua DPD,
+   Sekretaris DPD, Bendahara DPD, serta Ketua/Sekretaris/Bendahara DPC per kecamatan)
+   OTOMATIS HILANG dari daftar pilihan — tidak bisa dipilih dua kali.
+   Sumber pengecekan: pendaftaran (selain yang ditolak) + kartu menunggu/aktif.
+   Jabatan kursi-banyak (Anggota, Pengurus Departemen, Dewan Penasihat, dll.) selalu tampil.
+3. Isian lama yang tidak baku (mis. "KETUA" atau "O") tetap terlihat berlabel
+   "Tidak baku: ..." supaya bisa Anda rapikan dengan sekali pilih.
+4. Dropdown jabatan di formulir penerbitan kartu (tab Kartu anggota) juga ikut
+   menyaring jabatan yang sudah terisi, konsisten dengan tab Pendaftaran.
 
-Perubahan yang ikut:
-√ Tanggal lahir formulir = 3 pilihan (Tgl/Bulan/Tahun) — mengatasi "tak bisa diedit"
-√ Aduan LBH AKTIF ke gmpinusantara@gmail.com (subjek [ADUAN])
-√ Pilar jadi 6 (Tagana + Pemberdayaan Ekonomi), grid a 3 atas 3 bawah
-√ Bagan struktur: Wakil Ketua hanya 1; tanpa Wakil Sekretaris/Bendahara
-
-== LANGKAH 2 — JALANKAN SQL (wajib subcategory hilangnya jabatan wakil): ==
-Supabase Dashboard → SQL Editor → New query →
-salin SEMUA isi berkas "sql-hapus-jabatan-wakil.txt" → RUN.
-(Hapus jabatannya di situs tanpa SQL ini tidak terlihat, karena bagan diambil
-dari database — berkas ini memotong 9 jabatan: Wakil Ketua II/III,
-Wakil Sekretaris I–III, Wakil Bendahara I–III, dan mengganti "Wakil Ketua I"
-jadi "Wakil Ketua".)
+Tidak ada SQL/perubahan database — cukup timpa admin.js lama di GitHub (Commit
+changes), tunggu ±1 menit, lalu buka ulang panel admin (Ctrl+F5).

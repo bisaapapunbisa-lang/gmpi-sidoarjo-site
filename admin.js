@@ -644,7 +644,7 @@
     const photoUrl = path => client.storage.from('site-assets').getPublicUrl(path).data.publicUrl;
     const SECTIONS = [
       ['penasihat', 'Dewan Penasihat'], ['pembina', 'Dewan Pembina'], ['ketua', 'Ketua'], ['wakil_ketua', 'Wakil Ketua'],
-      ['sekretaris', 'Sekretaris'], ['bendahara', 'Bendahara'], ['wakil_sekretaris', 'Wakil Sekretaris'], ['wakil_bendahara', 'Wakil Bendahara'],
+      ['sekretaris', 'Sekretaris'], ['bendahara', 'Bendahara'],
       ['departemen', 'Departemen (dipimpin Wakil Ketua Departemen)']
     ];
     const layout = make('div', 'org-admin');
@@ -1773,11 +1773,14 @@
     const heading = make('div', 'workspace-heading');
     const titleBlock = make('div');
     titleBlock.append(make('h3', '', 'Pendaftaran anggota'));
-    titleBlock.append(make('p', '', 'Modul ini hanya tersedia untuk peran Petugas Registrasi. NIK ditampilkan tersamar; buka hanya saat benar-benar diperlukan untuk verifikasi.'));
+    titleBlock.append(make('p', '', 'Modul ini hanya tersedia untuk peran Petugas Registrasi. NIK ditampilkan tersamar; buka hanya saat benar-benar diperlukan untuk verifikasi. Jabatan pengurus dipilih di kolomnya — jabatan tunggal yang sudah terisi (mis. Ketua DPD) otomatis tidak tampil di daftar pilihan.'));
     heading.append(titleBlock);
     const { data, error } = await client.from('member_registrations').select('id,created_at,full_name,nik,phone,district,jabatan,address,division,status,ktp_object_key,profile_object_key').order('created_at', { ascending: false }).limit(100);
     if (error) return showWorkspaceError('Data anggota tidak dapat dibuka. Pastikan akun memiliki peran Petugas Registrasi.');
-    const { wrap, body } = makeTable(['Tanggal', 'Nama / NIK', 'Kontak / kecamatan', 'Bidang', 'Dokumen', 'Status']);
+    // Judul jabatan tunggal yang sudah terisi (pendaftaran selain-ditolak + kartu menunggu/aktif) agar tidak bisa dipilih dua kali.
+    const { data: takenCards } = await client.from('member_cards').select('jabatan,status').eq('is_sample', false).in('status', ['aktif', 'menunggu']).limit(500);
+    const jabatanTaken = jabatanTakenSet(data, takenCards);
+    const { wrap, body } = makeTable(['Tanggal', 'Nama / NIK', 'Kontak / kecamatan', 'Bidang', 'Jabatan pengurus', 'Dokumen', 'Status']);
     (data || []).forEach(member => {
       const row = make('tr');
       row.append(make('td', '', new Date(member.created_at).toLocaleDateString('id-ID')));
@@ -1793,11 +1796,6 @@
         reveal.dataset.showing = String(!showing);
       });
       nameCell.append(maskedNik, make('br'), reveal);
-      if (member.jabatan) {
-        const jab = make('div', 'status-pill', `Pengurus: ${member.jabatan}`);
-        jab.style.marginTop = '4px';
-        nameCell.append(jab);
-      }
       row.append(nameCell);
       const kontakCell = make('td');
       kontakCell.append(make('div', '', `${member.phone} · ${member.district}`));
@@ -1808,6 +1806,23 @@
       }
       row.append(kontakCell);
       row.append(make('td', '', member.division));
+      const jabatanCell = make('td');
+      const jabSel = make('select');
+      jabSel.className = 'member-jabatan-pick';
+      jabSel.setAttribute('aria-label', `Jabatan pengurus ${member.full_name}`);
+      fillJabatanOptions(jabSel, jabatanTaken, member.district, member.jabatan, '— Anggota biasa (tanpa jabatan) —');
+      jabSel.addEventListener('change', async () => {
+        const previous = member.jabatan || '';
+        const written = jabSel.value ? jabatanWritten(jabSel.value, member.district) : null;
+        jabSel.disabled = true;
+        const { error: jabErr } = await client.from('member_registrations').update({ jabatan: written }).eq('id', member.id);
+        jabSel.disabled = false;
+        if (jabErr) { jabSel.value = previous; setMessage('Jabatan tidak berhasil disimpan.', 'error'); return; }
+        setMessage(written ? `Jabatan “${written}” diberikan kepada ${member.full_name}.` : `Jabatan ${member.full_name} dikosongkan.`, 'ok');
+        await renderMembers();
+      });
+      jabatanCell.append(jabSel);
+      row.append(jabatanCell);
       const documents = make('td');
       addDocumentButton(documents, 'KTP', member.ktp_object_key);
       addDocumentButton(documents, 'Profil', member.profile_object_key);
@@ -1830,7 +1845,7 @@
       row.append(statusCell);
       body.append(row);
     });
-    if (!data?.length) body.append(emptyRow(6, 'Belum ada pendaftar. Saat ada yang mengisi formulir di situs (#gabung), datanya tampil di sini.'));
+    if (!data?.length) body.append(emptyRow(7, 'Belum ada pendaftar. Saat ada yang mengisi formulir di situs (#gabung), datanya tampil di sini.'));
     workspace.replaceChildren(heading, wrap, make('p', 'privacy-mini', 'Dokumen KTP berada di bucket privat. Tautan dokumen berlaku singkat; jangan unduh atau teruskan tanpa dasar tugas.'));
   }
 
@@ -1936,6 +1951,54 @@
     ['Keanggotaan', ['Anggota', 'Warga GMPI']]
   ];
   const JABATAN_SUGGESTIONS = JABATAN_GROUPS.flatMap(([, items]) => items);
+  // Jabatan yang boleh dipegang banyak orang sekaligus — tidak pernah disembunyikan dari daftar.
+  const JABATAN_MULTI_SEAT = new Set([
+    'Dewan Penasihat DPD', 'Dewan Pembina DPD',
+    'Wakil Ketua Departemen DPD', 'Pengurus Departemen DPD',
+    'Ketua Bidang DPC', 'Pengurus DPC',
+    'Korja Ranting', 'Wakil Korja Ranting', 'Sekretaris Ranting',
+    'LBH GMPI', 'Squad Militansi', 'MPI Sidoarjo', 'SB GMPI', 'Tagana',
+    'Anggota', 'Warga GMPI'
+  ]);
+  const JABATAN_UNIQUE = JABATAN_SUGGESTIONS.filter(j => !JABATAN_MULTI_SEAT.has(j));
+  const normJabatan = s => String(s || '').replace(/\s+/g, ' ').trim().toLowerCase();
+  // Judul tertulis tergolong jabatan tunggal? Tepat sama, atau varian dengan tambahan nama (mis. "Ketua DPC Candi").
+  function jabatanUniqueTitle(v) {
+    const n = normJabatan(v);
+    if (!n) return '';
+    return JABATAN_UNIQUE.filter(j => n === normJabatan(j) || n.startsWith(normJabatan(j) + ' ')).sort((a, b) => b.length - a.length)[0] || '';
+  }
+  // Kumpulan judul jabatan tunggal yang sudah terisi: dari pendaftaran (selain ditolak) + kartu menunggu/aktif.
+  function jabatanTakenSet(registrations, cardList) {
+    const taken = new Set();
+    (registrations || []).forEach(r => { if (r && r.status !== 'ditolak' && jabatanUniqueTitle(r.jabatan)) taken.add(normJabatan(r.jabatan)); });
+    (cardList || []).forEach(c => { if (c && (c.status === 'aktif' || c.status === 'menunggu') && jabatanUniqueTitle(c.jabatan)) taken.add(normJabatan(c.jabatan)); });
+    return taken;
+  }
+  // Judul tertulis: judul DPC/Ranting otomatis ditambah nama kecamatan (persis seperti formulir kartu).
+  const jabatanWritten = (j, district) => (/(DPC|Ranting)$/.test(j) && district ? `${j} ${district}` : j);
+  // Isi <select> dengan daftar jabatan; judul tunggal yang sudah terisi (dan bukan miliknya sendiri) disembunyikan.
+  function fillJabatanOptions(sel, taken, district, ownValue, placeholder) {
+    const own = normJabatan(ownValue);
+    let ownListed = !ownValue;
+    sel.replaceChildren(new Option(placeholder, ''));
+    JABATAN_GROUPS.forEach(([label, items]) => {
+      const g = document.createElement('optgroup');
+      g.label = label;
+      let used = 0;
+      items.forEach(j => {
+        const written = jabatanWritten(j, district);
+        if (jabatanUniqueTitle(written) && taken.has(normJabatan(written)) && normJabatan(written) !== own) return;
+        const opt = new Option(j === written ? j : `${j} · ${district}`, j);
+        if (normJabatan(written) === own) { opt.selected = true; ownListed = true; }
+        g.append(opt);
+        used += 1;
+      });
+      if (used) sel.append(g);
+    });
+    if (!ownListed) sel.append(Object.assign(new Option(`Tidak baku: “${ownValue}”`, ownValue), { selected: true }));
+    return sel;
+  }
   const CARD_STATUS_LABELS = { menunggu: 'Menunggu persetujuan', ditolak: 'Ditolak', aktif: 'Aktif', nonaktif: 'Nonaktif', dicabut: 'Dicabut' };
   const CARD_COLS_BASE = 'id,card_token,member_number,full_name,district,jabatan,status,issued_at,valid_until';
   const CARD_COLS = CARD_COLS_BASE + ',submitted_by,approved_by,approved_at,review_note';
@@ -2046,8 +2109,13 @@
     const jabatanIn = input('card-jabatan', 'text', { required: true, maxLength: 60, value: 'Anggota' });
     const list = make('select'); list.id = 'card-jabatan-pick'; list.className = 'card-jabatan-pick';
     list.setAttribute('aria-label', 'Pilih jabatan');
-    list.append(new Option('— Pilih jabatan dari daftar —', ''));
-    JABATAN_GROUPS.forEach(([label, items]) => { const g = document.createElement('optgroup'); g.label = label; items.forEach(j => g.append(new Option(j, j))); list.append(g); });
+    // Judul jabatan tunggal yang sudah terisi disembunyikan dari daftar (sumber: pendaftaran + kartu).
+    let regRows = [];
+    ({ data: regRows } = await client.from('member_registrations').select('jabatan,status').neq('status', 'ditolak').limit(500));
+    regRows = regRows || [];
+    const refillJabatanPick = () => fillJabatanOptions(list, jabatanTakenSet(regRows, cards), districtIn.value, jabatanIn.value, '— Pilih jabatan dari daftar —');
+    refillJabatanPick();
+    districtIn.addEventListener('change', refillJabatanPick);
     const syncPick = () => { const v = jabatanIn.value.trim(); const hit = JABATAN_SUGGESTIONS.filter(j => v === j || v.startsWith(j + ' ')).sort((a, b) => b.length - a.length)[0]; list.value = hit || ''; };
     list.addEventListener('change', () => { if (!list.value) return; let v = list.value; if (/(DPC|Ranting)$/.test(v) && districtIn.value) v = `${v} ${districtIn.value}`; jabatanIn.value = v; jabatanIn.dispatchEvent(new Event('input')); });
     jabatanIn.addEventListener('input', syncPick);
@@ -2279,6 +2347,7 @@
       editing = result.data;
       cards = [editing, ...cards.filter(c => c.id !== editing.id)];
       renderList();
+      refillJabatanPick();
       setMode();
       if (editing.status === 'menunggu') setMessage(wasNew ? 'Kartu tersimpan dan MENUNGGU PERSETUJUAN. QR belum berlaku; kartu bisa diunduh setelah disetujui Penyetuju Kartu.' : 'Perubahan tersimpan. Kartu menunggu persetujuan ulang dari Penyetuju Kartu.');
       else setMessage(wasNew ? 'Kartu terbit dan QR sudah aktif. Unduh sisi depan dan belakang (PNG) untuk dicetak.' : 'Perubahan kartu tersimpan. QR tetap sama, jadi kartu lama yang sudah dicetak tetap bisa diverifikasi.');
@@ -2327,6 +2396,7 @@
       Object.assign(card, upd);
       if (editing?.id === card.id) { editing = card; setMode(); }
       renderList();
+      refillJabatanPick();
       setMessage(status === 'aktif' ? `Kartu ${card.member_number} DISETUJUI. QR sudah berlaku dan kartu bisa diunduh untuk dicetak.` : `Kartu ${card.member_number} ditolak.`);
     }
     function renderPending() {
@@ -2384,6 +2454,7 @@
           if (editing?.id === card.id) { editing.status = card.status; setMode(); }
           setMessage(`Status kartu ${card.member_number} menjadi ${CARD_STATUS_LABELS[card.status]}.`);
           renderList();
+          refillJabatanPick();
         });
         statusCell.append(select);
         row.append(statusCell);
