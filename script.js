@@ -2,7 +2,7 @@
   // Set these to the verified organizational inboxes before publishing.
   // Mailto opens the visitor's email app; it does not submit silently.
   const SITE_CONFIG = {
-    lbhEmail: 'gmpinusantara@gmail.com' // GANTI EMAIL TUJUAN ADUAN DI SINI (satu baris ini saja)
+    lbhEmail: 'gmpisda@gmail.com' // GANTI EMAIL TUJUAN ADUAN DI SINI (satu baris ini saja)
   };
 
   const menuButton = document.querySelector('.menu-toggle');

@@ -1,19 +1,32 @@
-PEMILIK BISA MENGUBAH NOMOR ANGGOTA KARTU (1 berkas: admin.js — TANPA SQL)
+PENYEMPURNAAN JELANG DOMAIN (14 berkas + 2 gambar di folder assets/)
 
 CARA PASANG:
-1. Unggah admin.js ke GitHub (timpa) → Commit changes → tunggu ±1 menit.
+1. Unggah SEMUA berkas ke GitHub persis susunannya:
+   - 12 berkas HTML/JS  → akar repo
+   - assets/og-share.jpg & assets/favicon.png → folder assets/
+   (yang belum terunggah sebelumnya ikut terunggah — tak masalah)
+2. Commit changes → tunggu ±1–2 menit.
 
-CARA PAKAI (khusus akun Pemilik):
-1. Admin → Pendaftaran anggota → Kartu anggota.
-2. Klik "Buka & unduh" pada kartu yang nomornya keliru.
-3. Kolom "Nomor anggota" kini bisa diketik (milik Anda saja —
-   petugas lain tetap terkunci). Ketik nomor baru → Simpan.
-4. Kartu otomatis kembali "Menunggu persetujuan", lalu karena Anda
-   Pemilik tinggal klik Setujui — QR langsung menampilkan nomor baru.
+YANG BERUBAH:
+✓ Pratonton WhatsApp/Telegram: beranda, berita, darurat, rsvp kini
+  memunculkan spanduk resmi (logo + judul) saat link dibagikan.
+✓ Favicon: logo GMPI di tab browser semua halaman.
+✓ Acara RSVP lama dimatikan: halaman tamu menampilkan "Acara Berikutnya
+  Segera Diumumkan" (nanti ganti ACARA.ada = true di rsvp.js saat ada jadwal).
+✓ Kotak "RUANG VIDEO AKSI" di hero & bagian "Lensa Kegiatan" disembunyikan
+  sampai video/foto asli siap. (Mengaktifkan lagi: hapus kata `hidden` di 5
+  titik dalam index.html — nanti bisa minta saya saja.)
+✓ Email publik → gmpisda@gmail.com (footer, formulir Aduan, panel admin).
+✓ Halaman alat internal (papan-print*, papan-text, LIHAT*, admin, verifikasi)
+  diberi "noindex" supaya tidak muncul di Google; judul papan alat dilengkapi.
+✓ Deskripsi mesin pencari dilengkapi di verifikasi.
 
-PERLINDUNGAN OTOMATIS (dari database, sudah ada — tanpa SQL baru):
-- Nomor kembar ditolak: "Nomor anggota sudah dipakai kartu lain."
-- Format dijaga: huruf besar, angka, titik, garis miring, strip (3–40 karakter).
-- Setiap perubahan nomor me-reset persetujuan, sehingga kartu lama hasil
-  cetak tidak bisa mengaku dengan nomor baru lewat QR.
-- Riwayat pencatat (submitted_by) ikut diperbarui.
+CATATAN NANTI: begitu domain baru menempel, beri tahu saya — alamat
+og:image (saat ini gmpi-sidoarjo-site.vercel.app) akan saya ganti ke
+alamat domain resmi dalam satu paket kecil. Alamat lama tetap berfungsi,
+jadi tidak ada yang rusak sementara menunggu.
+
+YANG MASIH MENUNGGU DARI ANDA:
+- Isi nama+foto pengurus struktur (termasuk OKK: Departemen → ＋ Tambah).
+- Foto kegiatan (untuk membuka kembali Lensa Kegiatan) & video aksi.
+- 1–2 produk pertama untuk halaman Perlengkapan.

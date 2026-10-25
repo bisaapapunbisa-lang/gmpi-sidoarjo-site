@@ -4,11 +4,12 @@
 // UNTUK ACARA BERIKUTNYA: cukup ganti 5 baris di bawah ini, lalu
 // minta Pemilik mengosongkan daftar di Admin → tab "Kehadiran".
 const ACARA = {
-  nama: 'Rapat DPD GMPI Sidoarjo',
-  tanggal: 'Rabu, 21 Oktober 2026',
-  waktu: 'Pukul 18.30 WIB — selesai',
-  tempat: 'Graha Bougenville Kav. 22–23, Kel. Kemiri, Kec. Sidoarjo, Kab. Sidoarjo',
-  agenda: 'Rapat Koordinasi & Konsolidasi Internal'
+  ada: false, // ← ubah ke true lalu isi tanggal/waktu/tempat/agenda begitu acara baru dijadwalkan (minta Pemilik mengosongkan daftar di tab Kehadiran)
+  nama: 'Acara Berikutnya Segera Diumumkan',
+  tanggal: '—',
+  waktu: '—',
+  tempat: '—',
+  agenda: '—'
 };
 // ================================================================
 (() => {
@@ -30,6 +31,11 @@ const ACARA = {
   $('ev-wkt').textContent = ACARA.waktu;
   $('ev-tempat').textContent = ACARA.tempat;
   $('ev-agenda').textContent = ACARA.agenda;
+
+  if (!ACARA.ada) {
+    if (msg) { msg.hidden = false; msg.textContent = 'Belum ada acara yang dijadwalkan. Halaman ini otomatis aktif kembali begitu rapat atau acara baru diumumkan pengurus.'; }
+    return;
+  }
 
   let client = null;
   const ready = Boolean(config.url && config.publishableKey && window.supabase && typeof window.supabase.createClient === 'function');

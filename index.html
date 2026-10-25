@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#111110">
   <meta name="description" content="GMPI DPD Sidoarjo — Setia Bersaudara Sampai Urat Nadi. Aksi lokal, layanan warga, dan ruang aspirasi.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="GMPI DPD Sidoarjo">
+  <meta property="og:title" content="GMPI DPD Sidoarjo — Setia Bersaudara Sampai Urat Nadi">
+  <meta property="og:description" content="GMPI DPD Sidoarjo — Setia Bersaudara Sampai Urat Nadi. Aksi lokal, layanan warga, dan ruang aspirasi.">
+  <meta property="og:image" content="https://gmpi-sidoarjo-site.vercel.app/assets/og-share.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" type="image/png" href="/assets/favicon.png">
   <title>GMPI DPD Sidoarjo — Setia Bersaudara Sampai Urat Nadi</title>
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="registration.css">
@@ -30,7 +37,7 @@
       <a href="#beranda" class="nav-link active">Beranda</a>
       <a href="#pilar" class="nav-link">Pilar Pergerakan</a>
       <a href="#posko" class="nav-link">Posko Digital</a>
-      <a href="#lensa" class="nav-link">Lensa Kegiatan</a>
+      <a href="#lensa" class="nav-link" hidden>Lensa Kegiatan</a>
       <a href="#berita" class="nav-link">Berita</a>
       <a href="#perlengkapan" class="nav-link">Perlengkapan</a>
       <a href="#gabung" class="nav-join">Gabung Barisan <span>↗</span></a>
@@ -43,7 +50,7 @@
         <div class="media-camo"></div>
         <video class="hero-video" muted autoplay loop playsinline preload="none" aria-hidden="true"></video>
         <div class="video-tint"></div>
-        <div class="video-placeholder"><span class="play-mark">▶</span><span>RUANG VIDEO AKSI<br><b>DPD SIDOARJO</b></span></div>
+        <div class="video-placeholder" hidden><span class="play-mark">▶</span><span>RUANG VIDEO AKSI<br><b>DPD SIDOARJO</b></span></div>
         <div class="scanline"></div>
       </div>
       <div class="hero-content">
@@ -72,7 +79,7 @@
         <article class="pillar-card pillar-lbh"><div class="pillar-top"><span>01 / LAYANAN HUKUM</span><span class="pillar-symbol">§</span></div><div class="pillar-icon pillar-emblem"><img src="assets/divisi/lbh.webp" alt="Logo LBH GMPI" width="150" height="150" loading="lazy" decoding="async"></div><h3>LBH GMPI<br><em>DPD Sidoarjo</em></h3><p>Pendampingan hukum gratis bagi masyarakat yang membutuhkan, dengan perhatian pada warga yang rentan dan kurang mampu.</p><a href="#posko" class="pillar-link">Sampaikan persoalan <span>↗</span></a></article>
         <article class="pillar-card pillar-mpi"><div class="pillar-top"><span>02 / PEMBERDAYAAN</span><span class="pillar-symbol">✳</span></div><div class="pillar-icon pillar-emblem"><img src="assets/divisi/mpi.webp" alt="Logo Militansi Perempuan Indonesia (MPI)" width="150" height="150" loading="lazy" decoding="async"></div><h3>Militansi Perempuan<br><em>Indonesia · MPI</em></h3><p>Ruang pergerakan sosial, solidaritas, dan pemberdayaan perempuan di tengah masyarakat Sidoarjo.</p><a href="#gabung" class="pillar-link">Kenali gerakan <span>↗</span></a></article>
         <article class="pillar-card pillar-buruh"><div class="pillar-top"><span>03 / HAK PEKERJA</span><span class="pillar-symbol">✦</span></div><div class="pillar-icon pillar-emblem"><img src="assets/divisi/buruh.webp" alt="Logo Serikat Buruh GMPI" width="150" height="150" loading="lazy" decoding="async"></div><h3>Serikat Buruh<br><em>SB GMPI</em></h3><p>Mengawal aspirasi dan hak buruh, petani, dan nelayan—dari kawasan industri hingga sawah dan tambak Sidoarjo.</p><a href="#posko" class="pillar-link">Sampaikan aspirasi <span>↗</span></a></article>
-        <article class="pillar-card pillar-brigade"><div class="pillar-top"><span>04 / PENGAMANAN &amp; SOLIDARITAS</span><span class="pillar-symbol">★</span></div><div class="pillar-icon pillar-emblem"><img src="assets/divisi/squad.webp" alt="Logo Squad Militansi GMPI" width="150" height="150" loading="lazy" decoding="async"></div><h3>Squad<br><em>Militansi</em></h3><p>Garda pengamanan internal kegiatan dan solidaritas antaranggota, siap turun dalam aksi kemanusiaan dan tanggap bencana.</p><a href="#lensa" class="pillar-link">Lihat kegiatan <span>↗</span></a></article>
+        <article class="pillar-card pillar-brigade"><div class="pillar-top"><span>04 / PENGAMANAN &amp; SOLIDARITAS</span><span class="pillar-symbol">★</span></div><div class="pillar-icon pillar-emblem"><img src="assets/divisi/squad.webp" alt="Logo Squad Militansi GMPI" width="150" height="150" loading="lazy" decoding="async"></div><h3>Squad<br><em>Militansi</em></h3><p>Garda pengamanan internal kegiatan dan solidaritas antaranggota, siap turun dalam aksi kemanusiaan dan tanggap bencana.</p><a href="#lensa" class="pillar-link" hidden>Lihat kegiatan <span>↗</span></a></article>
         <article class="pillar-card pillar-tagana"><div class="pillar-top"><span>05 / KESIAPSIAGAAN BENCANA</span><span class="pillar-symbol">✚</span></div><div class="pillar-icon pillar-emblem"><img src="assets/divisi/tagana.webp" alt="Logo Tagana GMPI Sidoarjo" width="150" height="150" loading="lazy" decoding="async"></div><h3>Tagana<br><em>Tanggap Bencana</em></h3><p>Badan kesiapsiagaan bencana DPD: evakuasi, dapur umum dan logistik, serta pemulihan pasca bencana untuk warga Sidoarjo.</p><a href="#posko" class="pillar-link">Sampaikan kedaruratan <span>↗</span></a></article>
         <article class="pillar-card pillar-ekonomi"><div class="pillar-top"><span>06 / EKONOMI &amp; SOSIAL DESA</span><span class="pillar-symbol">✿</span></div><div class="pillar-icon pillar-emblem"><img src="assets/divisi/ekonomi.webp" alt="Logo Pemberdayaan Ekonomi &amp; Sosial GMPI Sidoarjo" width="150" height="150" loading="lazy" decoding="async"></div><h3>Pemberdayaan Ekonomi<br><em>&amp; Sosial Masyarakat Desa</em></h3><p>Penguatan ekonomi rakyat: usaha mikro, koperasi, dan pendampingan sosial desa-desa di Sidoarjo.</p><a href="#gabung" class="pillar-link">Kenali gerakan <span>↗</span></a></article>
       </div>
@@ -98,11 +105,11 @@
           <button class="button button-red button-wide" type="submit">Kirim pengaduan ke LBH <span>↗</span></button>
           <p class="form-status" id="report-status" role="status" aria-live="polite"></p>
         </form>
-        <p class="form-footnote">Selesai mengisi, aplikasi email di perangkat Anda akan terbuka—tinjau lalu tekan Kirim. Laporan masuk ke <b>gmpinusantara@gmail.com</b> dengan subjek [ADUAN].</p>
+        <p class="form-footnote">Selesai mengisi, aplikasi email di perangkat Anda akan terbuka—tinjau lalu tekan Kirim. Laporan masuk ke <b>gmpisda@gmail.com</b> dengan subjek [ADUAN].</p>
       </div>
     </section>
 
-    <section class="section gallery-section" id="lensa">
+    <section class="section gallery-section" id="lensa" hidden>
       <div class="section-head gallery-head">
         <div><div class="eyebrow"><span class="eyebrow-line"></span> LIPUTAN AKSI LOKAL</div><h2>Lensa <em>Kegiatan.</em></h2></div>
         <div class="gallery-right"><p class="section-intro">Cerita lapangan dari DPC kecamatan, Ranting, dan relawan GMPI di seluruh Sidoarjo—aksi sosial, koordinasi, dan pengawalan aspirasi.</p><div class="gallery-filters" role="group" aria-label="Filter dokumentasi"><button class="filter-button selected" data-filter="semua">Semua</button><button class="filter-button" data-filter="sosial">Aksi sosial</button><button class="filter-button" data-filter="koordinasi">Koordinasi</button><button class="filter-button" data-filter="warga">Suara warga</button></div></div>
@@ -280,8 +287,8 @@
   <footer class="site-footer">
     <a class="brand footer-brand" href="#top"><img data-site-logo src="assets/logo-gmpi-sidoarjo-crop.webp" alt=""><span class="brand-text"><strong>GMPI</strong><small>DPD SIDOARJO</small></span></a>
     <p>Gerakan Militansi Pejuang Indonesia<br><span data-cms-key="footer_slogan">Setia Bersaudara Sampai Urat Nadi</span></p>
-    <p><span>Perum, Jl. Graha Bougenville Kav. Depag No.31, Kemiri, Kec. Sidoarjo, Kab. Sidoarjo 61234<br>Telp/WA +62 812-3591-1689 &middot; gmpinusantara@gmail.com</span></p>
-    <div class="footer-links"><a href="#pilar">Pilar Pergerakan</a><a href="#posko">Posko Digital</a><a href="#lensa">Lensa Kegiatan</a><a href="berita.html">Berita</a><a href="#perlengkapan">Perlengkapan</a><a href="#struktur">Struktur Organisasi</a><a href="#legalitas">Legalitas</a><a href="verifikasi.html">Verifikasi Kartu</a><a href="darurat.html">Darurat / SOS</a><a class="footer-admin" href="admin.html" aria-label="Masuk ke panel Admin GMPI">Admin ↗</a></div>
+    <p><span>Perum, Jl. Graha Bougenville Kav. Depag No.31, Kemiri, Kec. Sidoarjo, Kab. Sidoarjo 61234<br>Telp/WA +62 812-3591-1689 &middot; gmpisda@gmail.com</span></p>
+    <div class="footer-links"><a href="#pilar">Pilar Pergerakan</a><a href="#posko">Posko Digital</a><a href="#lensa" hidden>Lensa Kegiatan</a><a href="berita.html">Berita</a><a href="#perlengkapan">Perlengkapan</a><a href="#struktur">Struktur Organisasi</a><a href="#legalitas">Legalitas</a><a href="verifikasi.html">Verifikasi Kartu</a><a href="darurat.html">Darurat / SOS</a><a class="footer-admin" href="admin.html" aria-label="Masuk ke panel Admin GMPI">Admin ↗</a></div>
     <small class="copyright">© <span id="year"></span> GMPI DPD Sidoarjo<br>Berbadan hukum · AHU-0010942.AH.01.07.TAHUN 2021</small>
   </footer>
 
