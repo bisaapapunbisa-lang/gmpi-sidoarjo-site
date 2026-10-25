@@ -1,18 +1,17 @@
-TAMBAH BAGIAN HUMAS — 2 LANGKAH:
+PEMILIK BOLEH MENYETUJUI SEMUA KARTU (termasuk buatan sendiri) — 2 LANGKAH:
 
 LANGKAH 1 — Supabase (wajib SEKALI):
-SQL Editor → kosongkan editor → tempel seluruh isi sql-bagian-humas.txt → Run.
-(Menambah 1 kursi "Kepala Humas" pada sort 65, antara Ketua Harian dan Bendahara.
-Aman dijalankan ulang. Hasil cek: 12 baris.)
+SQL Editor → kosongkan editor → tempel seluruh isi
+sql-pemilik-boleh-setujui-sendiri.txt → Run.
+(Mengubah penjaga database: Pemilik bebas menyetujui kartu apa pun;
+petugas lain tetap dilarang menyetujui kartu buatan sendiri. Aman dijalankan ulang.)
 
 LANGKAH 2 — GitHub:
-Unggah 3 berkas ke akar repo (timpa lama), Commit changes:
-struktur.js · struktur.css · admin.js
+Unggah admin.js ke akar repo (timpa) → Commit changes.
 
-SETELAH ITU:
-- Bagan beranda: kotak HUMAS tampil sebagai cabang ke-3
-  (Sekretariat · Ketua Harian · HUMAS · Kebendaharaan), garis emas tetap rapi.
-- Admin → tab Struktur: grup "Humas" siap diisi nama + foto → Simpan struktur.
-  Selama nama kosong tampil "Segera diisi".
-- Dropdown jabatan KTA/Pendaftaran otomatis punya "Kepala Humas DPD"
-  dan ikut sistem anti-dobel (hanya satu pemegang).
+HASIL:
+- Login sebagai Pemilik → di tab Kartu anggota, SEMUA kartu berstatus
+  "Menunggu persetujuan" menampilkan tombol Setujui/Tolak — termasuk yang
+  Anda buat sendiri (mis. kartu 0013). Langsung bisa disahkan & diunduh.
+- Petugas Registrasi/Penyetuju kartu non-Pemilik tetap tidak bisa
+  menyetujui kartu buatannya sendiri (pengawasan tetap jalan).

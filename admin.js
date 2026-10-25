@@ -2400,7 +2400,7 @@
     function renderPending() {
       if (!approvalReady) { pendingBox.replaceChildren(); return; }
       const waiting = cards.filter(c => c.status === 'menunggu');
-      const mine = waiting.filter(c => approver && c.submitted_by !== me);
+      const mine = waiting.filter(c => approver && (c.submitted_by !== me || isOwner()));
       if (!waiting.length) { pendingBox.replaceChildren(); pendingBox.hidden = true; return; }
       pendingBox.hidden = false;
       const text = approver
@@ -2439,7 +2439,7 @@
         const select = make('select');
         const allowed = !approvalReady ? Object.keys(CARD_STATUS_LABELS).filter(k => !['menunggu', 'ditolak'].includes(k))
           : card.status === 'aktif' ? ['aktif', 'nonaktif', 'dicabut']
-          : ['nonaktif', 'dicabut', ...(approver && card.submitted_by !== me ? ['aktif'] : [])];
+          : ['nonaktif', 'dicabut', ...(approver && (card.submitted_by !== me || isOwner()) ? ['aktif'] : [])];
         allowed.forEach(value => { const o = new Option(CARD_STATUS_LABELS[value], value); o.selected = card.status === value; select.append(o); });
         if (card.status === 'aktif' && card.approved_by && card.approved_by !== 'sebelum-fitur-persetujuan') statusCell.title = `Disetujui ${card.approved_by}`;
         select.addEventListener('change', async () => {
@@ -2462,7 +2462,7 @@
         openBtn.type = 'button';
         openBtn.addEventListener('click', () => openCard(card));
         if (approvalReady && card.status === 'menunggu' && approver) {
-          if (card.submitted_by === me) actions.append(make('small', 'card-note', 'Perlu penyetuju lain'));
+          if (card.submitted_by === me && !isOwner()) actions.append(make('small', 'card-note', 'Perlu penyetuju lain'));
           else {
             const okBtn = make('button', 'admin-button admin-button-red card-approve', 'Setujui');
             okBtn.type = 'button';
