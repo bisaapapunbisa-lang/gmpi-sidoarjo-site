@@ -1945,7 +1945,6 @@
     ['Dewan DPD', ['Dewan Penasihat DPD', 'Dewan Pembina DPD']],
     ['Pengurus harian DPD', ['Ketua DPD', 'Wakil Ketua DPD', 'Sekretaris DPD', 'Ketua Harian DPD', 'Kepala Humas DPD', 'Bendahara DPD']],
     ['Departemen DPD', ['Wakil Ketua Departemen DPD', 'Pengurus Departemen DPD']],
-    ['DPC (kecamatan)', ['Ketua DPC', 'Sekretaris DPC', 'Bendahara DPC', 'Ketua Bidang DPC', 'Pengurus DPC']],
     ['Ranting (desa)', ['Korja Ranting', 'Wakil Korja Ranting', 'Sekretaris Ranting']],
     ['Organisasi otonom', ['LBH GMPI', 'Squad Militansi', 'MPI Sidoarjo', 'SB GMPI', 'Tagana']],
     ['Keanggotaan', ['Anggota', 'Warga GMPI']]
@@ -1955,7 +1954,6 @@
   const JABATAN_MULTI_SEAT = new Set([
     'Dewan Penasihat DPD', 'Dewan Pembina DPD',
     'Wakil Ketua Departemen DPD', 'Pengurus Departemen DPD',
-    'Ketua Bidang DPC', 'Pengurus DPC',
     'Korja Ranting', 'Wakil Korja Ranting', 'Sekretaris Ranting',
     'LBH GMPI', 'Squad Militansi', 'MPI Sidoarjo', 'SB GMPI', 'Tagana',
     'Anggota', 'Warga GMPI'
@@ -2172,7 +2170,7 @@
     newBtn.type = 'button';
     const btnRow = make('div', 'card-buttons'); btnRow.append(saveBtn, downloadBtn, downloadBackBtn, newBtn);
 
-    formEl.append(statusLine, field('Nama lengkap', nameIn), rowA, field('Jabatan', list, 'Pilih dari daftar sesuai AD/ART. Untuk DPC/Ranting, nama kecamatan ikut ditambahkan otomatis.'), field('Jabatan tertulis di kartu', jabatanIn, 'Boleh diketik/diubah manual, mis. "Ketua DPC Candi" atau "Wakil Ketua Departemen Hukum".'), rowB,
+    formEl.append(statusLine, field('Nama lengkap', nameIn), rowA, field('Jabatan', list, 'Pilih dari daftar sesuai AD/ART. Untuk jabatan Ranting, nama kecamatan ikut ditambahkan otomatis.'), field('Jabatan tertulis di kartu', jabatanIn, 'Boleh diketik/diubah manual, mis. "Korja Ranting Buduran" atau "Wakil Ketua Departemen Hukum".'), rowB,
       field('Foto anggota (pas foto 4×6, latar biru)', photoIn, 'Foto hanya dipakai di perangkat ini untuk membuat gambar kartu — tidak diunggah atau disimpan di server. Simpan file kartu (PNG) hasil unduhan.'),
       photoTools, backTools, btnRow);
 
