@@ -1,32 +1,21 @@
-PENYEMPURNAAN JELANG DOMAIN (14 berkas + 2 gambar di folder assets/)
+LOGO RESTORASI DI HALAMAN UTAMA (3 berkas di folder assets/ + 1 file untuk panel)
 
-CARA PASANG:
-1. Unggah SEMUA berkas ke GitHub persis susunannya:
-   - 12 berkas HTML/JS  → akar repo
-   - assets/og-share.jpg & assets/favicon.png → folder assets/
-   (yang belum terunggah sebelumnya ikut terunggah — tak masalah)
-2. Commit changes → tunggu ±1–2 menit.
+LANGKAH 1 — UNGGAH KE PANEL ADMIN (wajib, jalur utama):
+Situs membaca logo dari pengaturan pusat bila pernah disetel, jadi ini jalur
+yang pasti berlaku:
+1. Login admin → bagian "Logo situs" (pengaturan logo).
+2. Unggah file  logo-gmpi-restorasi-1000.png  sebagai logo baru lalu
+   jadikan logo situs.
+3. Beranda / header / footer / halaman berita otomatis berganti.
 
-YANG BERUBAH:
-✓ Pratonton WhatsApp/Telegram: beranda, berita, darurat, rsvp kini
-  memunculkan spanduk resmi (logo + judul) saat link dibagikan.
-✓ Favicon: logo GMPI di tab browser semua halaman.
-✓ Acara RSVP lama dimatikan: halaman tamu menampilkan "Acara Berikutnya
-  Segera Diumumkan" (nanti ganti ACARA.ada = true di rsvp.js saat ada jadwal).
-✓ Kotak "RUANG VIDEO AKSI" di hero & bagian "Lensa Kegiatan" disembunyikan
-  sampai video/foto asli siap. (Mengaktifkan lagi: hapus kata `hidden` di 5
-  titik dalam index.html — nanti bisa minta saya saja.)
-✓ Email publik → gmpisda@gmail.com (footer, formulir Aduan, panel admin).
-✓ Halaman alat internal (papan-print*, papan-text, LIHAT*, admin, verifikasi)
-  diberi "noindex" supaya tidak muncul di Google; judul papan alat dilengkapi.
-✓ Deskripsi mesin pencari dilengkapi di verifikasi.
+LANGKAH 2 — UNGGAH KE GITHUB (cadangan + ikon tab + pratonton WA):
+Unggah ketiga berkas di folder assets/ menimpa yang lama:
+- assets/logo-gmpi-sidoarjo-crop.webp  → cadangan logo di 6 titik situs
+- assets/favicon.png                   → ikon tab browser (logo baru)
+- assets/og-share.jpg                  → spanduk pratonton WA (logo baru)
+Commit, tunggu ±1 menit.
 
-CATATAN NANTI: begitu domain baru menempel, beri tahu saya — alamat
-og:image (saat ini gmpi-sidoarjo-site.vercel.app) akan saya ganti ke
-alamat domain resmi dalam satu paket kecil. Alamat lama tetap berfungsi,
-jadi tidak ada yang rusak sementara menunggu.
-
-YANG MASIH MENUNGGU DARI ANDA:
-- Isi nama+foto pengurus struktur (termasuk OKK: Departemen → ＋ Tambah).
-- Foto kegiatan (untuk membuka kembali Lensa Kegiatan) & video aksi.
-- 1–2 produk pertama untuk halaman Perlengkapan.
+CATATAN:
+- Logo lama tidak terhapus — masih tersimpan di riwayat GitHub & penyimpanan;
+  kapan pun Anda bisa kembali mengaktifkannya lewat panel.
+- Lambang di hero tampil sesuai pratinjau: perisai menempel pas di bingkai.
