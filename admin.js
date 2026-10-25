@@ -2278,7 +2278,7 @@
         downloadBackBtn.disabled = true;
         verifyLink.hidden = true;
       }
-      numberIn.readOnly = Boolean(editing);
+      numberIn.readOnly = Boolean(editing) && !isOwner();
       reservedPick.hidden = Boolean(editing) || !isOwner();
       redraw();
     }
@@ -2340,15 +2340,22 @@
       if (payload.full_name.length < 2) { setMessage('Isi nama lengkap anggota.', 'error'); return; }
       if (!payload.district) { setMessage('Pilih kecamatan.', 'error'); return; }
       if (payload.valid_until < payload.issued_at) { setMessage('Tanggal berlaku harus setelah tanggal terbit.', 'error'); return; }
+      if (editing && approvalReady && isOwner()) {
+        const newNumber = numberIn.value.trim().toUpperCase();
+        if (newNumber !== editing.member_number) {
+          if (!/^[A-Z0-9][A-Z0-9./-]{2,39}$/.test(newNumber)) { setMessage('Nomor anggota hanya boleh huruf besar, angka, titik, garis miring, atau strip (3–40 karakter).', 'error'); return; }
+          payload.member_number = newNumber;
+        }
+      }
       if (editing && approvalReady && editing.status !== 'menunggu') {
-        const changed = payload.full_name !== editing.full_name || payload.district !== editing.district || payload.jabatan !== editing.jabatan || payload.issued_at !== editing.issued_at || payload.valid_until !== editing.valid_until;
+        const changed = payload.full_name !== editing.full_name || payload.district !== editing.district || payload.jabatan !== editing.jabatan || payload.issued_at !== editing.issued_at || payload.valid_until !== editing.valid_until || Boolean(payload.member_number);
         if (!changed && editing.status !== 'ditolak') { setMessage('Tidak ada perubahan data kartu.'); return; }
         if (editing.status === 'aktif' && !window.confirm('Kartu ini sudah disetujui. Jika datanya diubah, kartu kembali MENUNGGU PERSETUJUAN dan hasil pindai QR berstatus “belum disetujui” sampai disetujui ulang. Lanjutkan?')) return;
       }
       saveBtn.disabled = true;
       let result;
       if (editing) {
-        const unchangedRejected = editing.status === 'ditolak' && payload.full_name === editing.full_name && payload.district === editing.district && payload.jabatan === editing.jabatan && payload.issued_at === editing.issued_at && payload.valid_until === editing.valid_until;
+        const unchangedRejected = editing.status === 'ditolak' && payload.full_name === editing.full_name && payload.district === editing.district && payload.jabatan === editing.jabatan && payload.issued_at === editing.issued_at && payload.valid_until === editing.valid_until && !payload.member_number;
         result = await client.from('member_cards').update(unchangedRejected ? { status: 'menunggu' } : payload).eq('id', editing.id)
           .select(cols).single();
       } else {

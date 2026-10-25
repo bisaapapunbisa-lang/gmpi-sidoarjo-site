@@ -1,18 +1,19 @@
-TANDA TANGAN KETUA OTOMATIS DI BELAKANG SEMUA KARTU (2 berkas: member-card.js + admin.js)
+PEMILIK BISA MENGUBAH NOMOR ANGGOTA KARTU (1 berkas: admin.js — TANPA SQL)
 
-CARA PASANG (sekaliseumur situs):
-1. Unggah 2 berkas ini ke GitHub (timpa) → Commit changes → tunggu ±1 menit.
-2. Login admin (Pemilik) → tab Pendaftaran anggota → Kartu anggota →
-   buka "Pengaturan sisi belakang (penanda tangan)".
-3. Di bagian "Tanda tangan Ketua — bawaan pusat (khusus Pemilik)":
-   pilih file PNG/WebP tanda tangan (LATAR TRANSPARAN, maks 2 MB) →
-   klik "Unggah sebagai tanda tangan bawaan semua kartu".
-4. Selesai. Semua kartu yang diunduh setelahnya (depan+belakang) otomatis
-   bertanda tangan di atas nama penanda tangan — berlaku di HP/laptop mana pun.
+CARA PASANG:
+1. Unggah admin.js ke GitHub (timpa) → Commit changes → tunggu ±1 menit.
 
-CATATAN:
-- Kartu contoh di beranda TIDAK menampilkan tanda tangan (tetap bersih).
-- Tanda tangan lokal per perangkat (kolom lama) tetap bisa dipakai dan
-  didahulukan bila diisi.
-- Kalau file tanda tangan berlatar putih (bukan transparan), hasilnya akan
-  tampak kotak putih — bersihkan dulu jadi transparan, atau minta dibersihkan.
+CARA PAKAI (khusus akun Pemilik):
+1. Admin → Pendaftaran anggota → Kartu anggota.
+2. Klik "Buka & unduh" pada kartu yang nomornya keliru.
+3. Kolom "Nomor anggota" kini bisa diketik (milik Anda saja —
+   petugas lain tetap terkunci). Ketik nomor baru → Simpan.
+4. Kartu otomatis kembali "Menunggu persetujuan", lalu karena Anda
+   Pemilik tinggal klik Setujui — QR langsung menampilkan nomor baru.
+
+PERLINDUNGAN OTOMATIS (dari database, sudah ada — tanpa SQL baru):
+- Nomor kembar ditolak: "Nomor anggota sudah dipakai kartu lain."
+- Format dijaga: huruf besar, angka, titik, garis miring, strip (3–40 karakter).
+- Setiap perubahan nomor me-reset persetujuan, sehingga kartu lama hasil
+  cetak tidak bisa mengaku dengan nomor baru lewat QR.
+- Riwayat pencatat (submitted_by) ikut diperbarui.
