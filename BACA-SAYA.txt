@@ -1,18 +1,18 @@
-TAMBAH "KETUA HARIAN" (di antara Sekretaris dan Bendahara) — 2 LANGKAH:
+TAMBAH BAGIAN HUMAS — 2 LANGKAH:
 
 LANGKAH 1 — Supabase (wajib SEKALI):
-SQL Editor → New query → tempel seluruh isi SQL-KETUA-HARIAN.txt → RUN.
-(Menambah 1 baris kursi Ketua Harian. Aman dijalankan ulang.)
+SQL Editor → kosongkan editor → tempel seluruh isi sql-bagian-humas.txt → Run.
+(Menambah 1 kursi "Kepala Humas" pada sort 65, antara Ketua Harian dan Bendahara.
+Aman dijalankan ulang. Hasil cek: 12 baris.)
 
 LANGKAH 2 — GitHub:
-Unggah 3 berkas ini ke akar repo (timpa yang lama), Commit changes:
+Unggah 3 berkas ke akar repo (timpa lama), Commit changes:
 struktur.js · struktur.css · admin.js
-(Folder supabase/ hanya arsip riwayat — boleh ikut diunggah, tidak wajib.)
 
 SETELAH ITU:
-- Bagan beranda: kotak KETUA HARIAN muncul di tengah, di antara SEKRETARIAT
-  dan KEBENDAHARAAN (sudah diuji: posisi pas tengah, garis konektor rapi).
-- Admin → tab Struktur: grup "Ketua Harian" siap diisi nama + foto → Simpan.
+- Bagan beranda: kotak HUMAS tampil sebagai cabang ke-3
+  (Sekretariat · Ketua Harian · HUMAS · Kebendaharaan), garis emas tetap rapi.
+- Admin → tab Struktur: grup "Humas" siap diisi nama + foto → Simpan struktur.
   Selama nama kosong tampil "Segera diisi".
-- Pilihan jabatan "Ketua Harian DPD" otomatis ada di dropdown Pendaftaran &
-  Kartu — dan ikut sistem anti-dobel (hanya bisa dipegang satu orang).
+- Dropdown jabatan KTA/Pendaftaran otomatis punya "Kepala Humas DPD"
+  dan ikut sistem anti-dobel (hanya satu pemegang).
