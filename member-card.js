@@ -482,6 +482,45 @@
     'Jika menemukan kartu ini, mohon serahkan kepada pengurus GMPI DPD Sidoarjo.'
   ];
 
+  // Stempel basah digital DPD Sidoarjo — digambar murni di kanvas (tanpa berkas gambar, ejaan dijamin).
+  function drawSeal(ctx, cx, cy, R) {
+    const ink = 'rgba(189,18,25,.9)';
+    function star(r, x, y) {
+      ctx.save(); ctx.translate(x, y); ctx.beginPath();
+      for (let i = 0; i < 10; i++) {
+        const a = -Math.PI / 2 + i * Math.PI / 5; const rr = (i % 2) ? r * 0.42 : r;
+        const px = Math.cos(a) * rr, py = Math.sin(a) * rr;
+        if (i) ctx.lineTo(px, py); else ctx.moveTo(px, py);
+      }
+      ctx.closePath(); ctx.fill(); ctx.restore();
+    }
+    function arcText(text, r, a1d, a2d, flip, font) {
+      ctx.save(); ctx.font = font;
+      const n = text.length;
+      for (let i = 0; i < n; i++) {
+        const a = (a1d + (a2d - a1d) * (n === 1 ? 0.5 : i / (n - 1))) * Math.PI / 180;
+        ctx.save();
+        ctx.translate(Math.cos(a) * r, Math.sin(a) * r);
+        ctx.rotate(a + (flip ? -Math.PI / 2 : Math.PI / 2));
+        ctx.fillText(text[i], 0, 0);
+        ctx.restore();
+      }
+      ctx.restore();
+    }
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.strokeStyle = ink; ctx.fillStyle = ink;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.lineWidth = R * 0.045; ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.stroke();
+    ctx.lineWidth = R * 0.02; ctx.beginPath(); ctx.arc(0, 0, R * 0.785, 0, Math.PI * 2); ctx.stroke();
+    arcText('GERAKAN MILITANSI PEJUANG INDONESIA', R * 0.895, -165, -15, false, `800 ${R * 0.115}px ${F.body}`);
+    arcText('DPD SIDOARJO', R * 0.895, 155, 25, true, `900 ${R * 0.13}px ${F.body}`);
+    star(R * 0.058, -R * 0.885, 0); star(R * 0.058, R * 0.885, 0);
+    ctx.lineWidth = R * 0.018; ctx.beginPath(); ctx.arc(0, 0, R * 0.66, 0, Math.PI * 2); ctx.stroke();
+    star(R * 0.5, 0, 0);
+    ctx.restore();
+  }
+
   function drawBack(canvas, data = {}) {
     canvas.width = W * SCALE;
     canvas.height = H * SCALE;
@@ -598,15 +637,7 @@
 
     // ---------- Tanda tangan & cap ----------
     const sy = Math.max(y + 40, 660);
-    ctx.save();
-    ctx.setLineDash([5, 6]);
-    ctx.strokeStyle = 'rgba(215,172,76,.45)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath(); ctx.arc(150, sy + 92, 72, 0, Math.PI * 2); ctx.stroke();
-    ctx.restore();
-    ctx.fillStyle = 'rgba(215,172,76,.55)';
-    ctx.font = `800 9px ${F.body}`;
-    spaced(ctx, 'CAP DPD', 150, sy + 96, 2.5, 'center');
+    drawSeal(ctx, 156, sy + 92, 78);
 
     const cx = 440;
     ctx.textAlign = 'center';

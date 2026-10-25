@@ -1,21 +1,29 @@
-LOGO RESTORASI DI HALAMAN UTAMA (3 berkas di folder assets/ + 1 file untuk panel)
+STEMPEL BASAH DPD + INDIKATOR TANDA TANGAN (2 berkas: member-card.js + admin.js)
 
-LANGKAH 1 — UNGGAH KE PANEL ADMIN (wajib, jalur utama):
-Situs membaca logo dari pengaturan pusat bila pernah disetel, jadi ini jalur
-yang pasti berlaku:
-1. Login admin → bagian "Logo situs" (pengaturan logo).
-2. Unggah file  logo-gmpi-restorasi-1000.png  sebagai logo baru lalu
-   jadikan logo situs.
-3. Beranda / header / footer / halaman berita otomatis berganti.
+ISI PERUBAHAN:
+1. Lingkaran putus-putus "CAP DPD" dihapus — digantikan STEMPEL BASAH merah
+   sungguhan di kiri bawah nama: dua cincin, tulisan melengkung
+   "GERAKAN MILITANSI PEJUANG INDONESIA" (atas) & "DPD SIDOARJO" (bawah),
+   satu bintang besar di tengah. Digambar langsung di kanvas — ejaan dijamin,
+   tanpa berkas tambahan, ikut di SEMUA unduhan kartu lama & baru.
+2. Di "Pengaturan sisi belakang" kini ada KALIMAT STATUS:
+   - "✔ TERPASANG"  = tanda tangan Ketua sudah diunggah & hidup.
+   - "⚠ BELUM terunggah" = itulah sebabnya sisi belakang masih kosong —
+     unggah ttd-ketua-transparan.png (hasil bersih foto kemarin) lewat
+     tombol "Unggah sebagai tanda tangan bawaan semua kartu".
 
-LANGKAH 2 — UNGGAH KE GITHUB (cadangan + ikon tab + pratonton WA):
-Unggah ketiga berkas di folder assets/ menimpa yang lama:
-- assets/logo-gmpi-sidoarjo-crop.webp  → cadangan logo di 6 titik situs
-- assets/favicon.png                   → ikon tab browser (logo baru)
-- assets/og-share.jpg                  → spanduk pratonton WA (logo baru)
-Commit, tunggu ±1 menit.
+CARA PASANG:
+1. Unggah member-card.js + admin.js ke GitHub (timpa) → Commit → tunggu ±1 menit.
+2. Pakai akun Pemilik → Pendaftaran anggota → Kartu anggota → buka
+   "Pengaturan sisi belakang" → baca kalimat statusnya:
+   - Bila tertulis "⚠ BELUM terunggah" → pilih file ttd-ketua-transparan.png
+     (folder exports/ paket kemarin) → klik tombol unggah emas. Selesai —
+     semua kartu diunduh apa pun perangkatnya langsung bertanda tangan.
+   - Bila sudah "✔ TERPASANG" tapi preview belakang kosong → muat ulang
+     halaman dengan Ctrl+Shift+R (cache).
+3. Kartu contoh di beranda tetap bersih (tanda tangan & stempel hanya di
+   unduhan admin), sementara stempel tampil di SEMUA unduhan depan-belakang.
 
-CATATAN:
-- Logo lama tidak terhapus — masih tersimpan di riwayat GitHub & penyimpanan;
-  kapan pun Anda bisa kembali mengaktifkannya lewat panel.
-- Lambang di hero tampil sesuai pratinjau: perisai menempel pas di bingkai.
+CATATAN: admin.js paket ini kumulatif — sudah memuat Humas, tanpa DPC, Pemilik-
+berkuasa, panel tanda tangan, dan ubah nomor anggota. Berkas lama Anda tidak
+perlu dipasang berulang.

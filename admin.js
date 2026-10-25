@@ -2161,6 +2161,12 @@
       const centralIn = input('card-signature-central', 'file', { accept: 'image/png,image/webp' });
       const centralBtn = make('button', 'admin-button admin-button-outline', 'Unggah sebagai tanda tangan bawaan semua kartu');
       centralBtn.type = 'button';
+      const centralState = make('small', 'privacy-mini', 'Memeriksa tanda tangan bawaan…');
+      window.GMPICard.defaultSignatureReady().then(sig => {
+        centralState.textContent = sig
+          ? 'Tanda tangan bawaan: ✔ TERPASANG — semua unduhan kartu sudah memakainya (pratinjau belakang menampilkannya).'
+          : 'Tanda tangan bawaan: ⚠ BELUM terunggah — pilih file lalu klik tombol di bawah ini.';
+      }).catch(() => { centralState.textContent = 'Tanda tangan bawaan: tidak bisa diperiksa (jaringan).'; });
       centralBtn.addEventListener('click', async () => {
         const f = centralIn.files && centralIn.files[0];
         if (!f) { setMessage('Pilih dulu file tanda tangan (PNG/WebP latar transparan).', 'error'); return; }
@@ -2171,11 +2177,13 @@
         if (upErr) { setMessage('Tanda tangan gagal diunggah: ' + (upErr.message || 'coba lagi.'), 'error'); return; }
         window.GMPICard.clearDefaultSignature();
         await window.GMPICard.defaultSignatureReady();
+        centralState.textContent = 'Tanda tangan bawaan: ✔ baru saja terunggah — mulai berlaku di unduhan sekarang.';
         setSide('back');
         setMessage('Tanda tangan bawaan tersimpan. Semua kartu yang diunduh mulai sekarang otomatis memakainya.', 'ok');
       });
       backTools.append(
         field('Tanda tangan Ketua — bawaan pusat (khusus Pemilik)', centralIn, 'Simpan SEKALI di sini; berlaku untuk semua kartu yang diunduh setelahnya, di perangkat mana pun, tanpa pasang ulang.'),
+        centralState,
         centralBtn
       );
     }
