@@ -61,6 +61,27 @@
 
   function verifyUrl(token) { return VERIFY_BASE + String(token || '').toUpperCase(); }
 
+  // ---- Tanda tangan bawaan (pusat) — hanya dimuat atas permintaan Admin; halaman publik tidak ikut mengunduhnya. ----
+  let defaultSig;            // undefined = belum dicoba · null = tidak ada · Image = siap dipakai
+  let defaultSigPromise = null;
+  function defaultSignatureUrl() {
+    const cfg = window.GMPI_SUPABASE_CONFIG || {};
+    const root = (cfg.url || '').replace(/\/$/, '');
+    return root ? `${root}/storage/v1/object/public/site-assets/kartu/ttd-ketua.png` : '';
+  }
+  function defaultSignatureReady() {
+    if (!defaultSigPromise) {
+      defaultSigPromise = (async () => {
+        defaultSig = null;
+        const url = defaultSignatureUrl();
+        if (url) defaultSig = await loadImage(`${url}?v=${Math.floor(Date.now() / 60000)}`, true);
+        return defaultSig;
+      })();
+    }
+    return defaultSigPromise;
+  }
+  function clearDefaultSignature() { defaultSig = undefined; defaultSigPromise = null; }
+
   function formatDate(value) {
     const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value || ''));
     if (!m) return '—';
@@ -596,13 +617,14 @@
     ctx.fillStyle = C.white;
     ctx.font = `800 10.5px ${F.body}`;
     spaced(ctx, String(data.signerTitle || 'KETUA UMUM GMPI').toUpperCase(), cx, sy + 38, 1.4, 'center');
-    if (data.signature) {
+    const sigImage = data.signature || defaultSig || null; // tanda tangan lokal (per perangkat) menang; bila kosong pakai bawaan pusat
+    if (sigImage) {
       ctx.save();
       const sw = 200, sh = 80;
-      const iw = data.signature.naturalWidth || data.signature.width;
-      const ih = data.signature.naturalHeight || data.signature.height;
+      const iw = sigImage.naturalWidth || sigImage.width;
+      const ih = sigImage.naturalHeight || sigImage.height;
       const k = Math.min(sw / iw, sh / ih);
-      ctx.drawImage(data.signature, cx - iw * k / 2, sy + 52 + (sh - ih * k) / 2, iw * k, ih * k);
+      ctx.drawImage(sigImage, cx - iw * k / 2, sy + 52 + (sh - ih * k) / 2, iw * k, ih * k);
       ctx.restore();
     }
     ctx.strokeStyle = 'rgba(251,248,241,.55)'; ctx.lineWidth = 1;
@@ -649,5 +671,5 @@
     return canvas;
   }
 
-  window.GMPICard = { W, H, SCALE, VERIFY_BASE, ready, loadImage, verifyUrl, formatDate, draw, drawBack };
+  window.GMPICard = { W, H, SCALE, VERIFY_BASE, ready, loadImage, verifyUrl, formatDate, draw, drawBack, defaultSignatureReady, clearDefaultSignature };
 })();

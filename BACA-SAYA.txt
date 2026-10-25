@@ -1,17 +1,18 @@
-PEMILIK BOLEH MENYETUJUI SEMUA KARTU (termasuk buatan sendiri) — 2 LANGKAH:
+TANDA TANGAN KETUA OTOMATIS DI BELAKANG SEMUA KARTU (2 berkas: member-card.js + admin.js)
 
-LANGKAH 1 — Supabase (wajib SEKALI):
-SQL Editor → kosongkan editor → tempel seluruh isi
-sql-pemilik-boleh-setujui-sendiri.txt → Run.
-(Mengubah penjaga database: Pemilik bebas menyetujui kartu apa pun;
-petugas lain tetap dilarang menyetujui kartu buatan sendiri. Aman dijalankan ulang.)
+CARA PASANG (sekaliseumur situs):
+1. Unggah 2 berkas ini ke GitHub (timpa) → Commit changes → tunggu ±1 menit.
+2. Login admin (Pemilik) → tab Pendaftaran anggota → Kartu anggota →
+   buka "Pengaturan sisi belakang (penanda tangan)".
+3. Di bagian "Tanda tangan Ketua — bawaan pusat (khusus Pemilik)":
+   pilih file PNG/WebP tanda tangan (LATAR TRANSPARAN, maks 2 MB) →
+   klik "Unggah sebagai tanda tangan bawaan semua kartu".
+4. Selesai. Semua kartu yang diunduh setelahnya (depan+belakang) otomatis
+   bertanda tangan di atas nama penanda tangan — berlaku di HP/laptop mana pun.
 
-LANGKAH 2 — GitHub:
-Unggah admin.js ke akar repo (timpa) → Commit changes.
-
-HASIL:
-- Login sebagai Pemilik → di tab Kartu anggota, SEMUA kartu berstatus
-  "Menunggu persetujuan" menampilkan tombol Setujui/Tolak — termasuk yang
-  Anda buat sendiri (mis. kartu 0013). Langsung bisa disahkan & diunduh.
-- Petugas Registrasi/Penyetuju kartu non-Pemilik tetap tidak bisa
-  menyetujui kartu buatannya sendiri (pengawasan tetap jalan).
+CATATAN:
+- Kartu contoh di beranda TIDAK menampilkan tanda tangan (tetap bersih).
+- Tanda tangan lokal per perangkat (kolom lama) tetap bisa dipakai dan
+  didahulukan bila diisi.
+- Kalau file tanda tangan berlatar putih (bukan transparan), hasilnya akan
+  tampak kotak putih — bersihkan dulu jadi transparan, atau minta dibersihkan.
