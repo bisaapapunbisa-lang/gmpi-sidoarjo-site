@@ -1975,7 +1975,7 @@
         const editButton = make('button', 'admin-link-button member-action-button', 'Edit data…');
         editButton.type = 'button';
         editButton.title = 'Pemilik dapat mengubah seluruh data pendaftaran anggota.';
-        editButton.addEventListener('click', () => openOwnerMemberEditor(member));
+        editButton.addEventListener('click', () => openOwnerMemberEditor(member, cardsByRegistration.get(member.id) || []));
         actions.append(editButton, make('br'));
       }
       const deleteButton = make('button', 'admin-link-button is-danger member-action-button', 'Hapus duplikat…');
@@ -2059,7 +2059,7 @@
     });
   }
 
-  function openOwnerMemberEditor(member) {
+  function openOwnerMemberEditor(member, linkedCards = []) {
     if (!isOwner()) { setMessage('Form edit lengkap hanya untuk Pemilik situs.', 'error'); return; }
     const overlay = make('div', 'member-edit-overlay');
     overlay.setAttribute('role', 'presentation');
@@ -2123,6 +2123,58 @@
     addField('jabatan', 'Jabatan pengurus (kosongkan untuk anggota biasa)', 'text', { maxLength: 60 });
     addSelect('status', 'Status pendaftaran', MEMBER_STATUSES.map(value => [value.replaceAll('_',' '), value]));
     form.append(grid);
+    const numberSection = make('section', 'member-number-section');
+    numberSection.append(make('h4', '', 'Nomor anggota KTA'));
+    numberSection.append(make('p', 'privacy-mini', 'Nomor ini terhubung langsung ke KTA. Nomor yang sudah dipakai kartu lain otomatis ditolak; KTA aktif tetap aktif setelah nomor diperbarui.'));
+    const numberControls = new Map();
+    const cardStatusNames = { menunggu: 'menunggu persetujuan', aktif: 'aktif', ditolak: 'ditolak', nonaktif: 'nonaktif', dicabut: 'dicabut' };
+    linkedCards.forEach(card => {
+      const cardBox = make('div', 'member-number-card');
+      const numberLabel = make('label', 'member-edit-field');
+      numberLabel.append(make('span', '', `${card.full_name || member.full_name} · ${cardStatusNames[card.status] || card.status}`));
+      const numberInput = make('input');
+      numberInput.type = 'text'; numberInput.maxLength = 40; numberInput.required = true;
+      numberInput.pattern = '[A-Z0-9][A-Z0-9./-]{2,39}'; numberInput.autocomplete = 'off';
+      numberInput.value = card.member_number || '';
+      numberInput.setAttribute('aria-label', `Nomor KTA untuk ${card.full_name || member.full_name}`);
+      numberLabel.append(numberInput); cardBox.append(numberLabel); numberSection.append(cardBox);
+      numberControls.set(card.id, numberInput);
+    });
+    if (!linkedCards.length) {
+      numberSection.append(make('small', 'privacy-mini', 'Belum ada KTA tertaut. Nomor akan dibuat otomatis saat pendaftaran diizinkan.'));
+    }
+    const numberFeedback = make('small', 'member-number-feedback', linkedCards.length ? 'Nomor yang sudah dipakai kartu lain tidak dapat digunakan.' : '');
+    if (linkedCards.length) {
+      const saveNumbers = make('button', 'admin-button admin-button-outline', 'Simpan nomor KTA');
+      saveNumbers.type = 'button';
+      saveNumbers.addEventListener('click', async () => {
+        const updates = linkedCards.map(card => ({ card_id: card.id, member_number: numberControls.get(card.id).value.trim().toUpperCase() }))
+          .filter(update => update.member_number !== linkedCards.find(card => card.id === update.card_id)?.member_number);
+        if (!updates.length) { numberFeedback.textContent = 'Tidak ada perubahan nomor.'; return; }
+        if (updates.some(update => !/^[A-Z0-9][A-Z0-9./-]{2,39}$/.test(update.member_number))) {
+          numberFeedback.textContent = 'Format nomor tidak valid (3–40 karakter: huruf, angka, titik, garis miring, atau strip).';
+          return;
+        }
+        saveNumbers.disabled = true; saveNumbers.textContent = 'Menyimpan…';
+        const { data: numberResult, error: numberError } = await client.rpc('owner_update_member_card_numbers', {
+          p_registration_id: member.id,
+          p_updates: updates
+        });
+        saveNumbers.disabled = false; saveNumbers.textContent = 'Simpan nomor KTA';
+        if (numberError) {
+          numberFeedback.textContent = numberError.message || 'Nomor gagal disimpan.';
+          setMessage(`Nomor KTA gagal diubah: ${numberError.message || 'migration 027 belum diterapkan.'}`, 'error');
+          return;
+        }
+        linkedCards.forEach(card => { const update = updates.find(item => item.card_id === card.id); if (update) card.member_number = update.member_number; });
+        numberFeedback.textContent = numberResult?.changed_numbers?.length ? 'Nomor KTA berhasil diperbarui dan perubahan dicatat.' : 'Tidak ada perubahan nomor.';
+        setMessage('Nomor KTA berhasil diperbarui. Nomor yang digunakan kartu lain tidak dapat dipakai ulang.', 'ok');
+        await renderMembers();
+      });
+      numberSection.append(saveNumbers);
+    }
+    numberSection.append(numberFeedback);
+    form.append(numberSection);
     const buttons = make('div', 'member-edit-buttons');
     const cancel = make('button', 'admin-button admin-button-outline', 'Batal'); cancel.type = 'button';
     const save = make('button', 'admin-button admin-button-red', 'Simpan semua perubahan'); save.type = 'submit';

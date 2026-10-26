@@ -255,7 +255,13 @@
 .member-edit-field input:focus,.member-edit-field select:focus,.member-edit-field textarea:focus{outline:2px solid rgba(154,41,40,.22);border-color:#9a2928}
 .member-edit-field-wide{grid-column:1/-1}
 .member-edit-buttons{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
-@media(max-width:640px){.member-edit-dialog{padding:16px}.member-edit-grid{grid-template-columns:1fr}.member-edit-field-wide{grid-column:auto}.member-edit-dialog h3{font-size:22px}}
+.member-number-section{margin-top:18px;padding:14px;background:#f4f0e7;border:1px solid #d7d0c2}
+.member-number-section h4{margin:0 0 7px;font:17px/1.1 Impact,'Arial Narrow',sans-serif;text-transform:uppercase;color:#8f1f22}
+.member-number-section>p{margin:0 0 12px;line-height:1.5}
+.member-number-card{padding:10px 0;border-top:1px solid #d7d0c2}
+.member-number-feedback{display:block;margin-top:8px;color:#5b4b31;font-size:11px;line-height:1.5}
+.member-number-section>.admin-button{margin-top:12px}
+@media(max-width:640px){.member-edit-dialog{padding:16px}.member-edit-grid{grid-template-columns:1fr}.member-edit-field-wide{grid-column:auto}.member-edit-dialog h3{font-size:22px}.member-edit-buttons{flex-wrap:wrap}.member-number-section{padding:11px}}
 
 /* Registration-to-KTA relationship and verification status */
 .member-kta-cell{min-width:150px;max-width:220px}
