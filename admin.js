@@ -1775,8 +1775,8 @@
     titleBlock.append(make('h3', '', 'Pendaftaran anggota'));
     titleBlock.append(make('p', '', 'Modul ini tersedia untuk Pemilik situs dan Petugas Registrasi. NIK ditampilkan tersamar. Duplikat dapat dihapus permanen setelah ditandai Ditolak, dengan konfirmasi nama dan empat digit terakhir NIK.'));
     heading.append(titleBlock);
-    const { data, error } = await client.from('member_registrations').select('id,created_at,full_name,nik,phone,district,jabatan,address,division,status,ktp_object_key,profile_object_key').order('created_at', { ascending: false }).limit(100);
-    if (error) return showWorkspaceError('Data anggota tidak bisa dimuat. Pastikan akun memiliki peran Petugas Registrasi.');
+    const { data, error } = await client.from('member_registrations').select('id,created_at,full_name,nik,birth_place,birth_date,gender,phone,district,address,kelurahan,rt,rw,kode_pos,kota_luar,jabatan,division,status,ktp_object_key,profile_object_key').order('created_at', { ascending: false }).limit(100);
+    if (error) return showWorkspaceError('Data anggota tidak bisa dimuat. Pastikan akun memiliki role Pemilik (Owner) atau Petugas Registrasi dan migration akses pendaftaran sudah diterapkan.');
     const { data: pendingCleanup } = await client.from('member_registration_deletion_audit')
       .select('id,deleted_at,reason,ktp_object_key,profile_object_key')
       .eq('storage_cleanup_status', 'pending').order('deleted_at', { ascending: true }).limit(20);
@@ -1818,9 +1818,16 @@
         const previous = member.jabatan || '';
         const written = jabSel.value ? jabatanWritten(jabSel.value, member.district) : null;
         jabSel.disabled = true;
-        const { error: jabErr } = await client.from('member_registrations').update({ jabatan: written }).eq('id', member.id);
+        let jabErr = null;
+        if (isOwner()) {
+          const result = await client.rpc('owner_update_member_registration', { p_registration_id: member.id, p_values: { jabatan: written } });
+          jabErr = result.error;
+        } else {
+          const result = await client.from('member_registrations').update({ jabatan: written }).eq('id', member.id);
+          jabErr = result.error;
+        }
         jabSel.disabled = false;
-        if (jabErr) { jabSel.value = previous; setMessage('Jabatan tidak berhasil disimpan.', 'error'); return; }
+        if (jabErr) { jabSel.value = previous; setMessage(`Jabatan tidak berhasil disimpan: ${jabErr.message || 'izin database belum diterapkan.'}`, 'error'); return; }
         setMessage(written ? `Jabatan “${written}” diberikan kepada ${member.full_name}.` : `Jabatan ${member.full_name} dikosongkan.`, 'ok');
         await renderMembers();
       });
@@ -1840,15 +1847,29 @@
       });
       select.addEventListener('change', async () => {
         select.disabled = true;
-        const { error: updateError } = await client.from('member_registrations').update({ status: select.value }).eq('id', member.id);
+        let updateError = null;
+        if (isOwner()) {
+          const result = await client.rpc('owner_update_member_registration', { p_registration_id: member.id, p_values: { status: select.value } });
+          updateError = result.error;
+        } else {
+          const result = await client.from('member_registrations').update({ status: select.value }).eq('id', member.id);
+          updateError = result.error;
+        }
         select.disabled = false;
-        if (updateError) { setMessage('Status anggota tidak berhasil diperbarui.', 'error'); return; }
+        if (updateError) { setMessage(`Status anggota tidak berhasil diperbarui: ${updateError.message || 'izin database belum diterapkan.'}`, 'error'); return; }
         setMessage('Status anggota diperbarui. Muat ulang daftar bila ingin melakukan tindakan berikutnya.');
         await renderMembers();
       });
       statusCell.append(select);
       row.append(statusCell);
       const actions = make('td');
+      if (isOwner()) {
+        const editButton = make('button', 'admin-link-button', 'Edit data…');
+        editButton.type = 'button';
+        editButton.title = 'Pemilik dapat mengubah seluruh data pendaftaran anggota.';
+        editButton.addEventListener('click', () => openOwnerMemberEditor(member));
+        actions.append(editButton, make('br'));
+      }
       const deleteButton = make('button', 'admin-link-button is-danger', 'Hapus duplikat…');
       deleteButton.type = 'button';
       deleteButton.title = 'Permanen; hanya tersedia setelah status Ditolak.';
@@ -1865,6 +1886,102 @@
 
   function normalizeMemberConfirmation(value) {
     return String(value || '').normalize('NFC').trim().replace(/\s+/g, ' ').toLocaleLowerCase('id-ID');
+  }
+
+  function openOwnerMemberEditor(member) {
+    if (!isOwner()) { setMessage('Form edit lengkap hanya untuk Pemilik situs.', 'error'); return; }
+    const overlay = make('div', 'member-edit-overlay');
+    overlay.setAttribute('role', 'presentation');
+    const dialog = make('section', 'member-edit-dialog');
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    dialog.setAttribute('aria-labelledby', 'member-edit-title');
+    const title = make('h3', '', `Edit data pendaftaran — ${member.full_name}`);
+    title.id = 'member-edit-title';
+    const note = make('p', 'privacy-mini', 'Khusus Pemilik. Perubahan dicatat pada audit dengan daftar kolom saja (nilai NIK/alamat tidak disalin ke audit). Dokumen KTP dan foto profil tetap privat dan dikelola melalui tombol dokumen.');
+    const form = make('form', 'member-edit-form');
+    const grid = make('div', 'member-edit-grid');
+    const controls = {};
+    const addField = (key, labelText, type = 'text', attrs = {}) => {
+      const wrap = make('label', 'member-edit-field');
+      wrap.append(make('span', '', labelText));
+      const el = make('input');
+      el.name = key; el.type = type;
+      Object.entries(attrs).forEach(([name, value]) => { el[name] = value; });
+      el.value = member[key] == null ? '' : String(member[key]);
+      wrap.append(el); grid.append(wrap); controls[key] = el;
+      return wrap;
+    };
+    const addSelect = (key, labelText, values) => {
+      const wrap = make('label', 'member-edit-field');
+      wrap.append(make('span', '', labelText));
+      const el = make('select'); el.name = key;
+      values.forEach(([label, value]) => el.append(new Option(label, value)));
+      el.value = member[key] == null ? '' : String(member[key]);
+      wrap.append(el); grid.append(wrap); controls[key] = el;
+      return wrap;
+    };
+    addField('full_name', 'Nama lengkap', 'text', { required: true, maxLength: 160, autocomplete: 'off' });
+    addField('nik', 'NIK (16 digit)', 'text', { required: true, maxLength: 16, inputMode: 'numeric', pattern: '[0-9]{16}', autocomplete: 'off' });
+    addField('birth_place', 'Tempat lahir', 'text', { required: true, maxLength: 120 });
+    addField('birth_date', 'Tanggal lahir', 'date', { required: true });
+    addSelect('gender', 'Jenis kelamin', [['Laki-laki','Laki-laki'],['Perempuan','Perempuan']]);
+    addField('phone', 'Nomor kontak/WhatsApp', 'tel', { required: true, maxLength: 40, autocomplete: 'off' });
+    const districtChoices = [...DISTRICTS, 'Di luar Kab. Sidoarjo'].map(value => [value, value]);
+    addSelect('district', 'Kecamatan/domisili', districtChoices);
+    addField('kelurahan', 'Kelurahan/desa', 'text', { maxLength: 80 });
+    addField('rt', 'RT', 'text', { maxLength: 3, inputMode: 'numeric' });
+    addField('rw', 'RW', 'text', { maxLength: 3, inputMode: 'numeric' });
+    addField('kode_pos', 'Kode pos', 'text', { maxLength: 5, inputMode: 'numeric' });
+    addField('kota_luar', 'Kota/kabupaten luar Sidoarjo (bila berlaku)', 'text', { maxLength: 80 });
+    const addressWrap = make('label', 'member-edit-field member-edit-field-wide');
+    addressWrap.append(make('span', '', 'Alamat lengkap'));
+    const addressIn = make('textarea'); addressIn.name = 'address'; addressIn.required = true; addressIn.maxLength = 1000; addressIn.rows = 3;
+    addressIn.value = member.address || ''; addressWrap.append(addressIn); grid.append(addressWrap); controls.address = addressIn;
+    const divisions = [
+      'Lembaga Bantuan Hukum / Advokasi Hukum Rakyat',
+      'Squad Militansi — Pengamanan & Solidaritas',
+      'Militansi Perempuan Indonesia (MPI Sidoarjo)',
+      'Serikat Buruh, Tani & Nelayan (SB GMPI)',
+      'Tagana — Tanggap Bencana',
+      'Pemberdayaan Ekonomi & Sosial Masyarakat Desa'
+    ];
+    addSelect('division', 'Bidang', divisions.map(value => [value, value]));
+    addField('jabatan', 'Jabatan pengurus (kosongkan untuk anggota biasa)', 'text', { maxLength: 60 });
+    addSelect('status', 'Status pendaftaran', MEMBER_STATUSES.map(value => [value.replaceAll('_',' '), value]));
+    form.append(grid);
+    const buttons = make('div', 'member-edit-buttons');
+    const cancel = make('button', 'admin-button admin-button-outline', 'Batal'); cancel.type = 'button';
+    const save = make('button', 'admin-button admin-button-red', 'Simpan semua perubahan'); save.type = 'submit';
+    buttons.append(cancel, save); form.append(buttons);
+    dialog.append(title, note, form); overlay.append(dialog); document.body.append(overlay);
+    const close = () => overlay.remove();
+    cancel.addEventListener('click', close);
+    overlay.addEventListener('click', event => { if (event.target === overlay) close(); });
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      const values = {};
+      Object.entries(controls).forEach(([key, control]) => {
+        const value = control.value.trim();
+        const next = ['jabatan','kelurahan','rt','rw','kode_pos','kota_luar'].includes(key) ? (value || null) : value;
+        const old = member[key] == null ? null : String(member[key]);
+        if (String(next ?? '') !== String(old ?? '')) values[key] = next;
+      });
+      if (!Object.keys(values).length) { close(); setMessage('Tidak ada perubahan data.', 'warning'); return; }
+      save.disabled = true; cancel.disabled = true; save.textContent = 'Menyimpan…';
+      const { error: saveError } = await client.rpc('owner_update_member_registration', {
+        p_registration_id: member.id,
+        p_values: values
+      });
+      if (saveError) {
+        save.disabled = false; cancel.disabled = false; save.textContent = 'Simpan semua perubahan';
+        setMessage(`Data gagal disimpan: ${saveError.message || 'pastikan migration Owner edit sudah diterapkan.'}`, 'error');
+        return;
+      }
+      close();
+      setMessage('Seluruh perubahan data tersimpan. Audit perubahan sudah dicatat.', 'ok');
+      await renderMembers();
+    });
   }
 
   async function openMemberDeleteDialog(member) {

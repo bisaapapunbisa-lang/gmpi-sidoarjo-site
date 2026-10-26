@@ -241,3 +241,18 @@
 .member-delete-dialog .member-kta-override{display:flex;grid-template-columns:none;align-items:flex-start;gap:9px;padding:10px 12px;margin:0 0 12px;background:#fff4d8;border:1px solid #d9bd74;color:#513f1b;font-size:11px;line-height:1.5}
 .member-delete-dialog .member-kta-override input{width:auto;flex:none;margin:2px 0 0;accent-color:#9a2928}
 .member-delete-dialog .member-kta-override span{flex:1}
+
+/* Owner-only full edit form for member registration data */
+.member-edit-overlay{position:fixed;inset:0;z-index:10000;display:grid;place-items:center;padding:14px;background:rgba(12,12,12,.72)}
+.member-edit-dialog{width:min(860px,100%);max-height:calc(100vh - 28px);overflow:auto;background:#fffdf7;border:1px solid #c9c2b5;box-shadow:0 24px 70px rgba(0,0,0,.35);padding:22px}
+.member-edit-dialog h3{font:25px/1.08 Impact,'Arial Narrow',sans-serif;text-transform:uppercase;margin:0 0 10px;color:#8f1f22}
+.member-edit-form{margin-top:14px}
+.member-edit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px}
+.member-edit-field{display:grid;align-content:start;gap:5px;font-size:10px;font-weight:800;color:#37352f}
+.member-edit-field span{line-height:1.4}
+.member-edit-field input,.member-edit-field select,.member-edit-field textarea{width:100%;min-height:38px;border:1px solid #cbc5b8;border-radius:0;background:#fff;color:#171715;padding:9px 10px;font:12px Arial,sans-serif}
+.member-edit-field textarea{resize:vertical;min-height:68px}
+.member-edit-field input:focus,.member-edit-field select:focus,.member-edit-field textarea:focus{outline:2px solid rgba(154,41,40,.22);border-color:#9a2928}
+.member-edit-field-wide{grid-column:1/-1}
+.member-edit-buttons{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+@media(max-width:640px){.member-edit-dialog{padding:16px}.member-edit-grid{grid-template-columns:1fr}.member-edit-field-wide{grid-column:auto}.member-edit-dialog h3{font-size:22px}}
