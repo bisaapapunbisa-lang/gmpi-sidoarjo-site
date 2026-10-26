@@ -28,6 +28,7 @@
   let client = null;
   let currentUser = null;
   let roles = [];
+  let memberListView = 'perlu-diproses';
 
   function setMessage(text, type = 'ok') {
     globalMessage.textContent = text;
@@ -1775,7 +1776,7 @@
     titleBlock.append(make('h3', '', 'Pendaftaran anggota'));
     titleBlock.append(make('p', '', 'Modul ini tersedia untuk Pemilik situs dan Petugas Registrasi. Status pendaftaran dan status persetujuan KTA ditampilkan terpisah. NIK tersamar; KTA yang cocok otomatis ditautkan bila nama+kecamatan unik, atau dapat dihubungkan manual dari kolom Status KTA.'));
     heading.append(titleBlock);
-    const { data, error } = await client.from('member_registrations').select('id,created_at,full_name,nik,birth_place,birth_date,gender,phone,district,address,kelurahan,rt,rw,kode_pos,kota_luar,jabatan,division,status,ktp_object_key,profile_object_key').order('created_at', { ascending: false }).limit(100);
+    const { data, error } = await client.from('member_registrations').select('id,created_at,full_name,nik,birth_place,birth_date,gender,phone,district,address,kelurahan,rt,rw,kode_pos,kota_luar,jabatan,division,status,ktp_object_key,profile_object_key').order('created_at', { ascending: false }).limit(500);
     if (error) return showWorkspaceError('Data anggota tidak bisa dimuat. Pastikan akun memiliki role Pemilik (Owner) atau Petugas Registrasi dan migration akses pendaftaran sudah diterapkan.');
     const cardResult = await client.from('member_cards')
       .select('id,registration_id,member_number,full_name,district,status')
@@ -1795,9 +1796,31 @@
       .eq('storage_cleanup_status', 'pending').order('deleted_at', { ascending: true }).limit(20);
     // Judul jabatan tunggal yang sudah terisi agar tidak dapat dipilih dua kali.
     const { data: takenCards } = await client.from('member_cards').select('jabatan,status').eq('is_sample', false).in('status', ['aktif', 'menunggu']).limit(500);
-    const jabatanTaken = jabatanTakenSet(data, takenCards);
+    const allMembers = data || [];
+    const jabatanTaken = jabatanTakenSet(allMembers, takenCards);
+    const memberViews = [
+      { key: 'perlu-diproses', label: 'Perlu diproses', match: member => ['menunggu_verifikasi','ditinjau'].includes(member.status) },
+      { key: 'disetujui', label: 'Anggota disetujui', match: member => member.status === 'diterima' },
+      { key: 'ditolak', label: 'Ditolak / duplikat', match: member => member.status === 'ditolak' },
+      { key: 'semua', label: 'Semua pendaftar', match: () => true }
+    ];
+    if (!memberViews.some(view => view.key === memberListView)) memberListView = 'perlu-diproses';
+    const activeView = memberViews.find(view => view.key === memberListView);
+    const visibleMembers = allMembers.filter(activeView.match);
+    const viewTabs = make('div', 'member-list-tabs');
+    memberViews.forEach(view => {
+      const count = allMembers.filter(view.match).length;
+      const button = make('button', `member-list-tab${view.key === memberListView ? ' is-active' : ''}`, `${view.label} (${count})`);
+      button.type = 'button';
+      button.addEventListener('click', async () => { memberListView = view.key; await renderMembers(); });
+      viewTabs.append(button);
+    });
+    const viewHint = make('p', 'privacy-mini member-list-hint', memberListView === 'perlu-diproses'
+      ? 'Daftar ini hanya menampilkan pendaftar yang menunggu verifikasi atau sedang ditinjau. Setelah status Diterima, anggota berpindah ke tab Anggota disetujui.'
+      : (memberListView === 'disetujui' ? 'Daftar anggota yang pendaftarannya sudah disetujui. Status persetujuan KTA terlihat terpisah di kolom Status KTA.'
+        : (memberListView === 'ditolak' ? 'Daftar ditolak/duplikat. Penghapusan aman hanya tersedia dari daftar ini setelah status Ditolak.' : 'Semua pendaftar, termasuk yang menunggu, disetujui, dan ditolak.')));
     const { wrap, body } = makeTable(['Tanggal', 'Nama / NIK', 'Kontak / kecamatan', 'Bidang', 'Jabatan pengurus', 'Dokumen', 'Status pendaftaran', 'Status KTA', 'Aksi']);
-    (data || []).forEach(member => {
+    visibleMembers.forEach(member => {
       const row = make('tr');
       row.append(make('td', '', new Date(member.created_at).toLocaleDateString('id-ID')));
       const nameCell = make('td');
@@ -1870,7 +1893,8 @@
         }
         select.disabled = false;
         if (updateError) { setMessage(`Status anggota tidak berhasil diperbarui: ${updateError.message || 'izin database belum diterapkan.'}`, 'error'); return; }
-        setMessage('Status anggota diperbarui. Muat ulang daftar bila ingin melakukan tindakan berikutnya.');
+        if (memberListView !== 'semua') memberListView = select.value === 'diterima' ? 'disetujui' : (select.value === 'ditolak' ? 'ditolak' : 'perlu-diproses');
+        setMessage(select.value === 'diterima' ? 'Pendaftaran disetujui dan dipindahkan ke tab Anggota disetujui.' : 'Status anggota diperbarui.');
         await renderMembers();
       });
       statusCell.append(select);
@@ -1941,10 +1965,15 @@
       row.append(actions);
       body.append(row);
     });
-    if (!data?.length) body.append(emptyRow(9, 'Belum ada pendaftar. Saat ada yang mengisi formulir di situs (#gabung), datanya tampil di sini.'));
+    if (!visibleMembers.length) {
+      const emptyText = memberListView === 'perlu-diproses' ? 'Tidak ada pendaftar yang menunggu verifikasi.'
+        : (memberListView === 'disetujui' ? 'Belum ada anggota yang disetujui.'
+          : (memberListView === 'ditolak' ? 'Belum ada pendaftar berstatus Ditolak.' : 'Belum ada pendaftar.'));
+      body.append(emptyRow(9, emptyText));
+    }
     const cleanupBox = makePendingMemberCleanupBox(pendingCleanup || []);
     const privacyNote = make('p', 'privacy-mini', 'KTP dan foto profil berada di bucket privat member-documents. Penghapusan dicatat tanpa nama/NIK. Jika terhubung ke KTA, hanya Pemilik yang dapat melanjutkan dengan konfirmasi pelepasan tautan; KTA tetap aktif.');
-    workspace.replaceChildren(heading, ...(cleanupBox ? [cleanupBox] : []), wrap, privacyNote);
+    workspace.replaceChildren(heading, viewTabs, viewHint, ...(cleanupBox ? [cleanupBox] : []), wrap, privacyNote);
   }
 
   function normalizeMemberConfirmation(value) {
@@ -2539,7 +2568,16 @@
     const refillJabatanPick = () => fillJabatanOptions(list, jabatanTakenSet(regRows, cards), districtIn.value, jabatanIn.value, '— Pilih jabatan dari daftar —');
     refillJabatanPick();
     districtIn.addEventListener('change', refillJabatanPick);
-    const syncPick = () => { const v = jabatanIn.value.trim(); const hit = JABATAN_SUGGESTIONS.filter(j => v === j || v.startsWith(j + ' ')).sort((a, b) => b.length - a.length)[0]; list.value = hit || ''; };
+    const syncPick = () => {
+      const v = jabatanIn.value.trim();
+      const hit = JABATAN_SUGGESTIONS.filter(j => v === j || v.startsWith(j + ' ')).sort((a, b) => b.length - a.length)[0];
+      if (hit) { list.value = hit; return; }
+      // Custom department wording should not clear the generic role selector.
+      const lower = v.toLocaleLowerCase('id-ID');
+      const deptRole = lower.startsWith('wakil ketua departemen ') ? 'Wakil Ketua Departemen DPD'
+        : (lower.startsWith('pengurus departemen ') ? 'Pengurus Departemen DPD' : '');
+      if (deptRole && Array.from(list.options).some(option => option.value === deptRole)) list.value = deptRole;
+    };
     list.addEventListener('change', () => { if (!list.value) return; let v = list.value; if (/(DPC|Ranting)$/.test(v) && districtIn.value) v = `${v} ${districtIn.value}`; jabatanIn.value = v; jabatanIn.dispatchEvent(new Event('input')); });
     jabatanIn.addEventListener('input', syncPick);
     const issuedIn = input('card-issued', 'date', { required: true, value: today });
@@ -2632,7 +2670,7 @@
     photoField.append(photoSourceStatus);
     const formFields = [statusLine];
     if (canSeeMembers()) formFields.push(memberPickField);
-    formFields.push(field('Nama lengkap', nameIn), rowA, field('Jabatan', list, 'Pilih dari daftar sesuai AD/ART. Untuk jabatan Ranting, nama kecamatan ikut ditambahkan otomatis.'), field('Jabatan tertulis di kartu', jabatanIn, 'Boleh diketik/diubah manual, mis. "Korja Ranting Buduran" atau "Wakil Ketua Departemen Hukum".'), rowB,
+    formFields.push(field('Nama lengkap', nameIn), rowA, field('Jabatan', list, 'Pilih dari daftar sesuai AD/ART. Untuk jabatan Ranting, nama kecamatan ikut ditambahkan otomatis.'), field('Jabatan tertulis di kartu', jabatanIn, 'Ini tulisan yang dicetak pada KTA. Boleh menambahkan bidang, mis. “Wakil Ketua Departemen Pemberdayaan Ekonomi”. Pilihan kategori Jabatan di atas tetap dipertahankan.'), rowB,
       photoField, photoTools, backTools, btnRow);
     formEl.append(...formFields);
 
