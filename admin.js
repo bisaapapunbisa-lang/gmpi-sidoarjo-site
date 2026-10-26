@@ -1939,14 +1939,16 @@
     const addressIn = make('textarea'); addressIn.name = 'address'; addressIn.required = true; addressIn.maxLength = 1000; addressIn.rows = 3;
     addressIn.value = member.address || ''; addressWrap.append(addressIn); grid.append(addressWrap); controls.address = addressIn;
     const divisions = [
-      'Lembaga Bantuan Hukum / Advokasi Hukum Rakyat',
-      'Squad Militansi — Pengamanan & Solidaritas',
-      'Militansi Perempuan Indonesia (MPI Sidoarjo)',
-      'Serikat Buruh, Tani & Nelayan (SB GMPI)',
-      'Tagana — Tanggap Bencana',
-      'Pemberdayaan Ekonomi & Sosial Masyarakat Desa'
+      ['Lembaga Bantuan Hukum / Advokasi Hukum Rakyat', 'Lembaga Bantuan Hukum / Advokasi Hukum Rakyat'],
+      ['Squad Militansi — Pengamanan & Solidaritas', 'Squad Militansi — Pengamanan & Solidaritas'],
+      ['Militansi Perempuan Indonesia (MPI Sidoarjo)', 'Militansi Perempuan Indonesia (MPI Sidoarjo)'],
+      ['Serikat Buruh, Tani & Nelayan (SB GMPI)', 'Serikat Buruh, Tani & Nelayan (SB GMPI)'],
+      ['Tagana — Tanggap Bencana', 'Tagana — Tanggap Bencana'],
+      ['Pemberdayaan Ekonomi & Sosial Masyarakat Desa', 'Pemberdayaan Ekonomi & Sosial Masyarakat Desa'],
+      ['Seluruh bidang (Ketua DPD)', 'Seluruh bidang (Ketua DPD)']
     ];
-    addSelect('division', 'Bidang', divisions.map(value => [value, value]));
+    const divisionField = addSelect('division', 'Bidang', divisions);
+    divisionField.append(make('small', 'privacy-mini', 'Untuk Ketua DPD yang membawahi semua divisi, pilih “Seluruh bidang (Ketua DPD)”.'));
     addField('jabatan', 'Jabatan pengurus (kosongkan untuk anggota biasa)', 'text', { maxLength: 60 });
     addSelect('status', 'Status pendaftaran', MEMBER_STATUSES.map(value => [value.replaceAll('_',' '), value]));
     form.append(grid);
