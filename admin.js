@@ -1889,29 +1889,28 @@
         } else if (member.status !== 'ditolak') {
           const regMatches = (data || []).filter(r => r.status !== 'ditolak' && normalizeMemberConfirmation(r.full_name) === normalizeMemberConfirmation(member.full_name) && r.district === member.district);
           const possibleCards = memberCardRows.filter(card => !card.registration_id && normalizeMemberConfirmation(card.full_name) === normalizeMemberConfirmation(member.full_name) && card.district === member.district);
+          const unlinkedCards = memberCardRows.filter(card => !card.registration_id);
           if (regMatches.length === 1 && possibleCards.length === 1) {
             const card = possibleCards[0];
             const item = make('div', 'member-kta-item');
             item.append(make('strong', '', card.member_number || 'KTA'), make('small', '', `${cardStatusLabel[card.status] || card.status} · belum tertaut`));
             const linkButton = make('button', 'admin-link-button', 'Hubungkan KTA');
             linkButton.type = 'button';
-            linkButton.addEventListener('click', async () => {
-              linkButton.disabled = true;
-              const { data: linked, error: linkError } = await client.from('member_cards')
-                .update({ registration_id: member.id }).eq('id', card.id).is('registration_id', null).select('id').maybeSingle();
-              if (linkError || !linked) {
-                linkButton.disabled = false;
-                setMessage(`KTA tidak berhasil dihubungkan: ${linkError?.message || 'tautan mungkin sudah berubah.'}`, 'error');
-                return;
-              }
-              setMessage(`KTA ${card.member_number} berhasil dihubungkan ke pendaftaran ${member.full_name}.`, 'ok');
-              await renderMembers();
-            });
+            linkButton.addEventListener('click', () => openMemberKtaLinkDialog(member, unlinkedCards, card.id));
             item.append(linkButton); ktaCell.append(item);
-          } else if (possibleCards.length || regMatches.length > 1) {
-            ktaCell.append(make('small', 'privacy-mini', 'Ada kecocokan nama/kecamatan, tetapi belum unik. Periksa manual agar tidak tertaut ke orang yang salah.'));
           } else {
-            ktaCell.append(make('small', 'privacy-mini', 'Belum ada KTA tertaut.'));
+            const text = possibleCards.length || regMatches.length > 1
+              ? 'Ada kemungkinan kecocokan, tetapi tidak unik. Pilih kartu yang benar secara manual.'
+              : 'Belum ada KTA tertaut. Jika kartunya sudah dibuat, pilih untuk menautkannya.';
+            ktaCell.append(make('small', 'privacy-mini', text));
+            if (unlinkedCards.length) {
+              const linkButton = make('button', 'admin-link-button', 'Pilih KTA…');
+              linkButton.type = 'button';
+              linkButton.addEventListener('click', () => openMemberKtaLinkDialog(member, unlinkedCards));
+              ktaCell.append(linkButton);
+            } else {
+              ktaCell.append(make('small', 'privacy-mini', 'Tidak ada KTA tanpa tautan. Buat kartu terlebih dahulu jika anggota ini belum memiliki KTA.'));
+            }
           }
         } else {
           ktaCell.append(make('small', 'privacy-mini', 'Pendaftaran ditolak.'));
@@ -1942,6 +1941,56 @@
 
   function normalizeMemberConfirmation(value) {
     return String(value || '').normalize('NFC').trim().replace(/\s+/g, ' ').toLocaleLowerCase('id-ID');
+  }
+
+  function openMemberKtaLinkDialog(member, unlinkedCards, suggestedCardId = '') {
+    const overlay = make('div', 'member-delete-overlay');
+    overlay.setAttribute('role', 'presentation');
+    const dialog = make('section', 'member-delete-dialog member-kta-link-dialog');
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    dialog.setAttribute('aria-labelledby', 'member-kta-link-title');
+    const title = make('h3', '', 'Hubungkan KTA ke pendaftaran');
+    title.id = 'member-kta-link-title';
+    const note = make('p', 'member-delete-warning', `Pilih KTA yang benar untuk ${member.full_name} · ${member.district}. Tautan ini hanya menghubungkan kedua data—nomor, data, dan status KTA tidak berubah.`);
+    const form = make('form');
+    const label = make('label');
+    label.append(make('span', '', 'Kartu KTA yang akan ditautkan'));
+    const select = make('select'); select.required = true;
+    select.append(new Option('— Pilih nomor dan nama KTA —', ''));
+    const statusLabels = { menunggu: 'Menunggu persetujuan', aktif: 'Aktif/disetujui', ditolak: 'Ditolak', nonaktif: 'Nonaktif', dicabut: 'Dicabut' };
+    unlinkedCards.forEach(card => select.append(new Option(`${card.member_number} · ${card.full_name} · ${card.district} · ${statusLabels[card.status] || card.status}`, card.id)));
+    if (suggestedCardId && unlinkedCards.some(card => card.id === suggestedCardId)) select.value = suggestedCardId;
+    label.append(select);
+    form.append(label);
+    const actions = make('div', 'member-delete-actions');
+    const cancel = make('button', 'admin-button admin-button-outline', 'Batal'); cancel.type = 'button';
+    const submit = make('button', 'admin-button admin-button-red', 'Hubungkan KTA'); submit.type = 'submit';
+    submit.disabled = !unlinkedCards.length;
+    actions.append(cancel, submit); form.append(actions);
+    if (!unlinkedCards.length) form.prepend(make('p', 'privacy-mini', 'Belum ada KTA yang tersedia untuk ditautkan. Buat kartu terlebih dahulu melalui modul Kartu anggota.'));
+    dialog.append(title, note, form); overlay.append(dialog); document.body.append(overlay);
+    const close = () => overlay.remove();
+    cancel.addEventListener('click', close);
+    overlay.addEventListener('click', event => { if (event.target === overlay) close(); });
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      const card = unlinkedCards.find(item => item.id === select.value);
+      if (!card) { setMessage('Pilih KTA yang akan dihubungkan.', 'error'); return; }
+      const confirmed = window.confirm(`Tautkan ${card.member_number} (${card.full_name}, ${card.district}) ke pendaftaran ${member.full_name} (${member.district})? Pastikan ini orang yang sama.`);
+      if (!confirmed) return;
+      submit.disabled = true; cancel.disabled = true;
+      const { data: linked, error } = await client.from('member_cards')
+        .update({ registration_id: member.id }).eq('id', card.id).is('registration_id', null).select('id').maybeSingle();
+      if (error || !linked) {
+        submit.disabled = false; cancel.disabled = false;
+        setMessage(`KTA tidak berhasil dihubungkan: ${error?.message || 'tautan mungkin sudah berubah.'}`, 'error');
+        return;
+      }
+      close();
+      setMessage(`KTA ${card.member_number} berhasil ditautkan ke ${member.full_name}. Status KTA tidak berubah.`, 'ok');
+      await renderMembers();
+    });
   }
 
   function openOwnerMemberEditor(member) {

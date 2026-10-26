@@ -230,8 +230,8 @@
 .member-delete-info strong{font-size:14px;color:#171715}
 .member-delete-info span{color:#6d6961}
 .member-delete-dialog label{display:grid;gap:5px;margin:10px 0;font-size:10px;font-weight:800;color:#37352f}
-.member-delete-dialog input,.member-delete-dialog textarea{width:100%;border:1px solid #cbc5b8;background:#fff;color:#171715;padding:10px 11px;font:12px Arial,sans-serif;resize:vertical}
-.member-delete-dialog input:focus,.member-delete-dialog textarea:focus{outline:2px solid rgba(154,41,40,.22);border-color:#9a2928}
+.member-delete-dialog input,.member-delete-dialog textarea,.member-delete-dialog select{width:100%;border:1px solid #cbc5b8;background:#fff;color:#171715;padding:10px 11px;font:12px Arial,sans-serif;resize:vertical}
+.member-delete-dialog input:focus,.member-delete-dialog textarea:focus,.member-delete-dialog select:focus{outline:2px solid rgba(154,41,40,.22);border-color:#9a2928}
 .member-delete-feedback{display:block;margin:8px 0;color:#7a5a12;font-size:10px;line-height:1.5}
 .member-delete-feedback.is-ready{color:#315f2a}
 .member-delete-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
