@@ -2824,7 +2824,9 @@
       nameIn.value = card.full_name;
       numberIn.value = card.member_number;
       districtIn.value = card.district;
-      jabatanIn.value = card.jabatan; syncPick();
+      jabatanIn.value = card.jabatan || 'Anggota';
+      // Refresh options against the opened card so its current unique role remains selectable.
+      refillJabatanPick(); syncPick();
       issuedIn.value = card.issued_at;
       validIn.value = card.valid_until;
       let reg = card.registration_id ? regRows.find(r => r.id === card.registration_id) : null;

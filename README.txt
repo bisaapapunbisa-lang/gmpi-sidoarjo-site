@@ -1,17 +1,9 @@
-MENYAMBUNGKAN PENDAFTARAN ANGGOTA DENGAN KTA
-GMPI DPD Sidoarjo
+PERBAIKAN — PILIHAN JABATAN KTA
 
-Paket ini menambahkan kolom “Status KTA” di tabel Pendaftaran anggota, terpisah dari status pendaftaran. Baris yang sudah bertaut menampilkan nomor dan status kartu (Menunggu persetujuan KTA, Aktif/disetujui, Ditolak, Nonaktif, atau Dicabut).
+“KEPALA HUMAS DPD” memang ada di daftar jabatan. Jabatan tunggal yang sudah dipakai disembunyikan saat membuat kartu baru agar tidak terpilih ganda. Pada form edit kartu lama, daftar belum diperbarui memakai jabatan kartu yang sedang dibuka, sehingga jabatan milik kartu tersebut ikut tersembunyi.
 
-Koneksi
-- KTA baru yang dipilih dari “Pendaftar tersimpan” tetap tertaut menggunakan `member_cards.registration_id`.
-- KTA baru yang diisi manual akan otomatis ditautkan bila tepat ada satu pendaftar aktif dengan nama+kecamatan yang sama.
-- KTA lama yang belum bertaut akan menawarkan tombol “Hubungkan KTA” bila ada tepat satu kecocokan kartu dan pendaftar. Bila nama/kecamatan ganda, sistem tidak menautkan otomatis demi mencegah salah orang; buka kartu melalui modul Kartu anggota, pilih pendaftar tersimpan yang benar, lalu simpan.
-- `registration_id` sudah tersedia dari migration inti `202610200004_member_cards.sql`, jadi pembaruan ini tidak memerlukan migration Supabase baru.
+Patch ini memperbarui `admin.js` agar saat membuka kartu, pilihan jabatan dimuat ulang dan jabatan kartu itu sendiri tetap tampil/terpilih. Jika membuat KTA baru dari pendaftar yang sudah ada, pilih “Pendaftar tersimpan” dahulu agar jabatan pendaftar ikut terisi.
 
-Pemasangan
-1. Ganti `admin.js` dan `admin.css` di repo/branch produksi dengan file dari paket.
-2. Commit/push dan tunggu deploy Vercel.
-3. Muat ulang Admin dengan Ctrl+Shift+R. Buka Pendaftaran anggota dan periksa kolom Status KTA.
+Pemasangan: ganti `admin.js` di repo/branch produksi, commit/push, tunggu deploy Vercel, lalu muat ulang Admin dengan Ctrl+Shift+R. Tidak memerlukan migration Supabase.
 
-Uji lokal: `node --check admin.js` berhasil; arsip lulus `unzip -t`. Browser live belum diuji setelah pembaruan lokal ini.
+Uji lokal: `node --check admin.js` lulus. Browser live belum diuji setelah patch.
