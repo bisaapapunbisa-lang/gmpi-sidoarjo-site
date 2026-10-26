@@ -6,7 +6,7 @@
     ['ketua', 'Ketua DPD'],
     ['wakil_ketua', 'Wakil Ketua'],
     ['sekretaris', 'Sekretaris'],
-    ['ketua_harian', 'Ketua Harian'],
+    ['ketua_harian', 'Ketua Harian I'], ['ketua_harian', 'Ketua Harian II'],
     ['humas', 'Kepala Humas'],
     ['bendahara', 'Bendahara']
   ].map(([section, jabatan], i) => ({ section, jabatan, department: null, person_name: null, photo_path: null, sort_order: i }));
@@ -63,7 +63,7 @@
     chart.append(wk, el('div', 'org-link'));
 
     const branches = el('div', 'org-branches');
-    [['sekretaris', 'wakil_sekretaris', 'Sekretariat'], ['ketua_harian', '', 'Ketua Harian'], ['humas', '', 'Humas'], ['bendahara', 'wakil_bendahara', 'Kebendaharaan']].forEach(([head, deputies, title]) => {
+    [['sekretaris', 'wakil_sekretaris', 'Sekretariat'], ['ketua_harian', '', 'Ketua Harian I & II'], ['humas', '', 'Humas'], ['bendahara', 'wakil_bendahara', 'Kebendaharaan']].forEach(([head, deputies, title]) => {
       const br = el('div', 'org-branch');
       br.append(el('h4', 'org-title', title));
       by(head).forEach(r => br.append(person(r, photoUrl, 'md')));

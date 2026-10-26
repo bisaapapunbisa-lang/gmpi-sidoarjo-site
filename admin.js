@@ -634,7 +634,7 @@
   async function renderStruktur() {
     const heading = make('div', 'workspace-heading');
     const hb = make('div');
-    hb.append(make('h3', '', 'Struktur organisasi DPD'), make('p', '', 'Isi nama dan foto pengurus. Bagan langsung tampil di beranda (bagian "Struktur organisasi"). Susunan mengikuti AD/ART Pasal 9: Dewan Penasihat & Pembina, Ketua, satu Wakil Ketua, Sekretaris, Ketua Harian, Humas, Bendahara (tanpa wakil), dan Departemen. Kosongkan nama bila belum ditetapkan — tampil "Segera diisi".'));
+    hb.append(make('h3', '', 'Struktur organisasi DPD'), make('p', '', 'Isi nama dan foto pengurus. Bagan langsung tampil di beranda (bagian "Struktur organisasi"). Bagian Ketua Harian mendukung dua posisi: Ketua Harian I dan Ketua Harian II. Kosongkan nama bila belum ditetapkan — tampil "Segera diisi".'));
     heading.append(hb);
     const { data, error } = await client.from('org_structure').select('id,section,jabatan,department,person_name,photo_path,sort_order').order('sort_order', { ascending: true });
     if (error) {
@@ -716,6 +716,23 @@
         const fs = make('fieldset', 'org-admin-group');
         fs.append(make('legend', '', label));
         rows.filter(r => r.section === key).forEach(r => fs.append(rowEditor(r)));
+        if (key === 'ketua_harian') {
+          const add = make('button', 'admin-button admin-button-outline', '＋ Tambah posisi Ketua Harian I/II'); add.type = 'button';
+          add.addEventListener('click', () => {
+            const current = rows.filter(x => x.section === 'ketua_harian');
+            const labels = new Set(current.map(x => (x.jabatan || '').trim().toLocaleLowerCase('id-ID')));
+            const label = ['Ketua Harian I', 'Ketua Harian II'].find(x => !labels.has(x.toLocaleLowerCase('id-ID'))) || `Ketua Harian ${current.length + 1}`;
+            const orders = current.map(x => Number(x.sort_order) || 0);
+            const sortOrder = label === 'Ketua Harian I'
+              ? (orders.length ? Math.min(...orders) - 1 : 59)
+              : (orders.length ? Math.max(...orders) + 1 : 60);
+            rows.push({ section: 'ketua_harian', jabatan: label, department: null, person_name: '', photo_path: null, sort_order: sortOrder });
+            build(); refreshPreview();
+            const group = [...groupsHost.querySelectorAll('.org-admin-group')].find(x => x.querySelector('legend')?.textContent === 'Ketua Harian');
+            const last = group?.querySelector('.org-admin-row:last-of-type input[placeholder^="Nama lengkap"]'); if (last) last.focus();
+          });
+          fs.append(add);
+        }
         if (key === 'departemen') {
           const add = make('button', 'admin-button admin-button-outline', '＋ Tambah departemen'); add.type = 'button';
           add.addEventListener('click', () => {
