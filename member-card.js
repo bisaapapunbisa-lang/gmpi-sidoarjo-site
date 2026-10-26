@@ -8,10 +8,10 @@
   const W = 638;
   const H = 1012;
   const SCALE = 2;
-  // QR memakai huruf besar agar mode "alfanumerik" QR aktif: kode lebih sederhana & mudah dipindai.
-  // Jika nanti memakai domain sendiri, ganti alamat ini lalu cetak ulang kartu.
-  const VERIFY_BASE = 'HTTPS://GMPI-SIDOARJO-SITE.VERCEL.APP/V/';
-  const VERIFY_LABEL = 'gmpi-sidoarjo-site.vercel.app/v';
+  // QR baru memakai domain resmi; QR kartu lama di vercel.app tetap dilayani sebagai alamat legacy.
+  // Huruf besar mengaktifkan mode alfanumerik QR agar kode ringkas dan mudah dipindai.
+  const VERIFY_BASE = 'HTTPS://WWW.GMPISIDOARJO.COM/V/';
+  const VERIFY_LABEL = 'www.gmpisidoarjo.com/v';
   const C = {
     ink: '#0c0c0b', ink2: '#161614', line: 'rgba(255,255,255,.12)',
     red: '#e51c24', red2: '#8f0d12', gold: '#d7ac4c', goldHi: '#f3d685',

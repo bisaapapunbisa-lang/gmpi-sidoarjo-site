@@ -21,7 +21,7 @@ LANGKAH 2 — Unggah 5 berkas ke GitHub:
      di dalamnya ada satu berkas baru: assets/wilayah-sidoarjo.js — data 346 desa+kode pos)
 
 LANGKAH 3 — Coba cepat:
-   Buka https://gmpi-sidoarjo-site.vercel.app/#gabung → pilih kecamatan apa saja
+   Buka https://www.gmpisidoarjo.com/#gabung → pilih kecamatan apa saja
    → desa-kelurahannya harus muncul → pilih desa → kode pos terisi otomatis.
    Coba juga pilih "Di luar Kab. Sidoarjo" → kolom kota/kabupaten muncul.
    (Belum perlu mengirim formulir asli kalau cuma mau cek.)

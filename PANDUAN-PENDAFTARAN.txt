@@ -26,7 +26,7 @@ LANGKAH 2 — Unggah 3 berkas ke GitHub
 3. Klik "Commit changes" → tunggu ±1 menit.
 
 LANGKAH 3 — Coba dengan data asli pengurus (sekaligus cek sistem)
-1. Buka: https://gmpi-sidoarjo-site.vercel.app/#gabung
+1. Buka: https://www.gmpisidoarjo.com/#gabung
 2. Isi formulir dengan data ASLI salah satu pengurus (foto KTP & pas foto
    dari HP), centang dua kotak persetujuan, lalu Kirim pendaftaran.
 3. Harus muncul tulisan "PENDAFTARAN TERKIRIM". Kalau muncul = sistem jalan.

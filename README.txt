@@ -1,9 +1,17 @@
-PERBAIKAN — PILIHAN JABATAN KTA
+PEMBARUAN ALAMAT RESMI WEBSITE GMPI
+Domain resmi: https://www.gmpisidoarjo.com
 
-“KEPALA HUMAS DPD” memang ada di daftar jabatan. Jabatan tunggal yang sudah dipakai disembunyikan saat membuat kartu baru agar tidak terpilih ganda. Pada form edit kartu lama, daftar belum diperbarui memakai jabatan kartu yang sedang dibuka, sehingga jabatan milik kartu tersebut ikut tersembunyi.
+Yang diubah
+- Link QR pada KTA yang diterbitkan ke depan memakai www.gmpisidoarjo.com/V/<kode>.
+- Halaman verifikasi mengakui QR baru menggunakan domain resmi dan menjelaskan bahwa QR kartu lama tetap bisa diverifikasi.
+- Open Graph image untuk beranda, berita, darurat, dan RSVP memakai domain resmi.
+- Panduan pendaftaran, Admin/media, undangan, dan generator undangan menggunakan domain resmi.
 
-Patch ini memperbarui `admin.js` agar saat membuka kartu, pilihan jabatan dimuat ulang dan jabatan kartu itu sendiri tetap tampil/terpilih. Jika membuat KTA baru dari pendaftar yang sudah ada, pilih “Pendaftar tersimpan” dahulu agar jabatan pendaftar ikut terisi.
+Cara pasang
+1. Ekstrak ZIP.
+2. Salin file ke repo GitHub sesuai foldernya, timpa file lama saat nama/path sama.
+3. Commit dan push ke branch produksi (main). Vercel akan deploy otomatis.
+4. Tidak ada perubahan Supabase yang diperlukan.
+5. Setelah deploy, hard-refresh situs/Admin. KTA baru yang dibuat setelah deploy memakai QR www.gmpisidoarjo.com. QR KTA yang sudah tercetak tetap dapat berfungsi karena alamat Vercel lama tetap diarahkan ke proyek yang sama.
 
-Pemasangan: ganti `admin.js` di repo/branch produksi, commit/push, tunggu deploy Vercel, lalu muat ulang Admin dengan Ctrl+Shift+R. Tidak memerlukan migration Supabase.
-
-Uji lokal: `node --check admin.js` lulus. Browser live belum diuji setelah patch.
+Pemeriksaan lokal: `node --check member-card.js` dan kompilasi sintaks `kop2/build_undangan.py` lulus. Rute custom domain /V/CONTOH, halaman verifikasi, dan og-share.jpg merespons HTTP 200. Pembaruan berkas belum didorong ke GitHub dari workspace ini.

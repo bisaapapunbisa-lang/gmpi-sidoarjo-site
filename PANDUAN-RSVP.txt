@@ -19,7 +19,7 @@ LANGKAH 2 — Unggah 3 file ke GitHub
 5. Tunggu sekitar 1 menit sampai Vercel selesai membangun ulang situs.
 
 LANGKAH 3 — Coba dulu sebelum dibagikan
-1. Buka: https://gmpi-sidoarjo-site.vercel.app/rsvp
+1. Buka: https://www.gmpisidoarjo.com/rsvp
 2. Is formulir latihan (nama bebas) → kirim. Harus muncul "Terima kasih".
 3. Buka Admin → masuk → klik tab "Kehadiran" → jawaban latihan tadi terlihat.
 4. Klik "Kosongkan daftar (acara baru)" supaya data latihan hilang.

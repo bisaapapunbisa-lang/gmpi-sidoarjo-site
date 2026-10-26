@@ -48,9 +48,9 @@ Hanya peran Pemilik dan Editor Situs yang boleh mengganti logo. Bucket `site-ass
 2. Masuk Admin → tab **Kartu anggota** (hanya Pemilik & Petugas Registrasi).
 3. Isi nama, nomor anggota (otomatis disarankan `GMPI-SDA-TAHUN-URUT`), kecamatan, jabatan, masa berlaku → **Simpan & terbitkan kartu**.
 4. Pilih pas foto (hanya diproses di perangkat, tidak diunggah) → atur zoom/geser → **Unduh kartu (PNG)**. Ukuran cetak 54 × 85,6 mm.
-5. QR berisi `https://gmpi-sidoarjo-site.vercel.app/V/<kode acak 20 karakter>`. Pemindai melihat halaman `verifikasi.html` dengan status: Asli & aktif / Kedaluwarsa / Nonaktif / Dicabut / Tidak terdaftar.
+5. QR kartu baru berisi `https://www.gmpisidoarjo.com/V/<kode acak 20 karakter>`. Pemindai melihat halaman `verifikasi.html` dengan status: Asli & aktif / Kedaluwarsa / Nonaktif / Dicabut / Tidak terdaftar.
 6. Kartu hilang atau disalahgunakan → ubah status menjadi **Dicabut**. Kode QR tidak bisa diubah setelah terbit (dikunci trigger database).
-7. Jika nanti memakai domain sendiri, ubah `VERIFY_BASE` dan `VERIFY_LABEL` di `member-card.js`; alamat vercel.app lama tetap berfungsi untuk kartu yang sudah dicetak.
+7. QR kartu yang diterbitkan mulai sekarang memakai domain resmi `www.gmpisidoarjo.com`. QR pada kartu yang sudah tercetak sebelumnya tetap dapat diverifikasi melalui domain lama yang masih diarahkan ke situs GMPI.
 
 Contoh kartu di beranda memakai kode `CONTOH` dan ditandai sebagai kartu contoh di halaman verifikasi.
 

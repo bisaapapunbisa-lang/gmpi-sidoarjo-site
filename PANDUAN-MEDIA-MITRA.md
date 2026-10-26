@@ -18,7 +18,7 @@ Pengurus (Pemilik/Editor Situs) dapat **menyembunyikan** berita apa pun. Berita 
 tidak bisa diubah lagi oleh media.
 
 ## B. Untuk redaksi media — menulis berita
-1. Buka **https://gmpi-sidoarjo-site.vercel.app/admin.html** (alamat akan berubah bila domain baru aktif).
+1. Buka **https://www.gmpisidoarjo.com/admin.html**.
 2. Masuk dengan email & kata sandi yang dibuat dari email undangan.
 3. Klik **+ Tulis berita** → isi **Judul**, **Ringkasan** (1–2 kalimat), **Isi berita**
    (pisahkan paragraf dengan satu baris kosong), dan **Foto sampul** (foto mendatar).
