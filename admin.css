@@ -256,3 +256,10 @@
 .member-edit-field-wide{grid-column:1/-1}
 .member-edit-buttons{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
 @media(max-width:640px){.member-edit-dialog{padding:16px}.member-edit-grid{grid-template-columns:1fr}.member-edit-field-wide{grid-column:auto}.member-edit-dialog h3{font-size:22px}}
+
+/* Registration-to-KTA relationship and verification status */
+.member-kta-cell{min-width:150px;max-width:220px}
+.member-kta-item{display:grid;justify-items:start;gap:3px;margin:0 0 7px;padding:6px 7px;background:#f4f0e7;border:1px solid #ddd5c8;font-size:10px;line-height:1.35}
+.member-kta-item strong{font:800 10px/1.35 Arial,sans-serif;color:#332b1c;overflow-wrap:anywhere}
+.member-kta-item small{font-size:9px;color:#6f5b2c}
+.member-kta-item .admin-link-button{font-size:9px;padding:3px 0}

@@ -1,16 +1,17 @@
-PEMBARUAN — KETUA DPD BERLAKU UNTUK SELURUH BIDANG
+MENYAMBUNGKAN PENDAFTARAN ANGGOTA DENGAN KTA
+GMPI DPD Sidoarjo
 
-Paket ini menambahkan opsi “Seluruh bidang (Ketua DPD)” pada form Owner → Edit data pendaftaran. Gunakan opsi tersebut untuk Ketua DPD agar tidak ditempatkan di salah satu bidang pergerakan saja.
+Paket ini menambahkan kolom “Status KTA” di tabel Pendaftaran anggota, terpisah dari status pendaftaran. Baris yang sudah bertaut menampilkan nomor dan status kartu (Menunggu persetujuan KTA, Aktif/disetujui, Ditolak, Nonaktif, atau Dicabut).
 
-Isi
-- admin.js — opsi dan keterangan untuk klasifikasi Ketua lintas bidang.
-- supabase/migrations/202610260025_ketua_seluruh_bidang.sql — memperbolehkan nilai baru di kolom division dan memperbarui RPC edit Owner.
+Koneksi
+- KTA baru yang dipilih dari “Pendaftar tersimpan” tetap tertaut menggunakan `member_cards.registration_id`.
+- KTA baru yang diisi manual akan otomatis ditautkan bila tepat ada satu pendaftar aktif dengan nama+kecamatan yang sama.
+- KTA lama yang belum bertaut akan menawarkan tombol “Hubungkan KTA” bila ada tepat satu kecocokan kartu dan pendaftar. Bila nama/kecamatan ganda, sistem tidak menautkan otomatis demi mencegah salah orang; buka kartu melalui modul Kartu anggota, pilih pendaftar tersimpan yang benar, lalu simpan.
+- `registration_id` sudah tersedia dari migration inti `202610200004_member_cards.sql`, jadi pembaruan ini tidak memerlukan migration Supabase baru.
 
 Pemasangan
-1. Ganti `admin.js` di repo/branch produksi dengan file paket, commit/push, lalu tunggu deploy Vercel.
-2. Jalankan migration 025 di Supabase SQL Editor. Migration ini dijalankan setelah migration 024 (editor lengkap Owner).
-3. Muat ulang Admin menggunakan Ctrl+Shift+R. Buka Pendaftaran anggota → Edit data… → Bidang → pilih “Seluruh bidang (Ketua DPD)” → Simpan semua perubahan.
+1. Ganti `admin.js` dan `admin.css` di repo/branch produksi dengan file dari paket.
+2. Commit/push dan tunggu deploy Vercel.
+3. Muat ulang Admin dengan Ctrl+Shift+R. Buka Pendaftaran anggota dan periksa kolom Status KTA.
 
-Migration ini khusus klasifikasi bidang Ketua pada editor Admin. Daftar bidang yang dipilih pendaftar umum tidak berubah. Jangan jalankan migration lama 022 setelah migration 023.
-
-Uji lokal: `node --check admin.js` lulus dan arsip diuji dengan `unzip -t`. Perilaku database/browser belum diuji langsung.
+Uji lokal: `node --check admin.js` berhasil; arsip lulus `unzip -t`. Browser live belum diuji setelah pembaruan lokal ini.

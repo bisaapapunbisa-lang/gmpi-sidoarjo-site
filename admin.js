@@ -1773,17 +1773,30 @@
     const heading = make('div', 'workspace-heading');
     const titleBlock = make('div');
     titleBlock.append(make('h3', '', 'Pendaftaran anggota'));
-    titleBlock.append(make('p', '', 'Modul ini tersedia untuk Pemilik situs dan Petugas Registrasi. NIK ditampilkan tersamar. Duplikat dapat dihapus permanen setelah ditandai Ditolak, dengan konfirmasi nama dan empat digit terakhir NIK.'));
+    titleBlock.append(make('p', '', 'Modul ini tersedia untuk Pemilik situs dan Petugas Registrasi. Status pendaftaran dan status persetujuan KTA ditampilkan terpisah. NIK tersamar; KTA yang cocok otomatis ditautkan bila nama+kecamatan unik, atau dapat dihubungkan manual dari kolom Status KTA.'));
     heading.append(titleBlock);
     const { data, error } = await client.from('member_registrations').select('id,created_at,full_name,nik,birth_place,birth_date,gender,phone,district,address,kelurahan,rt,rw,kode_pos,kota_luar,jabatan,division,status,ktp_object_key,profile_object_key').order('created_at', { ascending: false }).limit(100);
     if (error) return showWorkspaceError('Data anggota tidak bisa dimuat. Pastikan akun memiliki role Pemilik (Owner) atau Petugas Registrasi dan migration akses pendaftaran sudah diterapkan.');
+    const cardResult = await client.from('member_cards')
+      .select('id,registration_id,member_number,full_name,district,status')
+      .eq('is_sample', false).order('created_at', { ascending: false }).limit(500);
+    const memberCardRows = cardResult.data || [];
+    const memberCardLoadError = cardResult.error;
+    const cardsByRegistration = new Map();
+    memberCardRows.forEach(card => {
+      if (!card.registration_id) return;
+      const bucket = cardsByRegistration.get(card.registration_id) || [];
+      bucket.push(card); cardsByRegistration.set(card.registration_id, bucket);
+    });
+    const memberStatusLabel = { menunggu_verifikasi: 'Menunggu verifikasi', ditinjau: 'Ditinjau', diterima: 'Diterima', ditolak: 'Ditolak' };
+    const cardStatusLabel = { menunggu: 'Menunggu persetujuan KTA', aktif: 'Aktif / disetujui', ditolak: 'Ditolak', nonaktif: 'Nonaktif', dicabut: 'Dicabut' };
     const { data: pendingCleanup } = await client.from('member_registration_deletion_audit')
       .select('id,deleted_at,reason,ktp_object_key,profile_object_key')
       .eq('storage_cleanup_status', 'pending').order('deleted_at', { ascending: true }).limit(20);
     // Judul jabatan tunggal yang sudah terisi agar tidak dapat dipilih dua kali.
     const { data: takenCards } = await client.from('member_cards').select('jabatan,status').eq('is_sample', false).in('status', ['aktif', 'menunggu']).limit(500);
     const jabatanTaken = jabatanTakenSet(data, takenCards);
-    const { wrap, body } = makeTable(['Tanggal', 'Nama / NIK', 'Kontak / kecamatan', 'Bidang', 'Jabatan pengurus', 'Dokumen', 'Status', 'Aksi']);
+    const { wrap, body } = makeTable(['Tanggal', 'Nama / NIK', 'Kontak / kecamatan', 'Bidang', 'Jabatan pengurus', 'Dokumen', 'Status pendaftaran', 'Status KTA', 'Aksi']);
     (data || []).forEach(member => {
       const row = make('tr');
       row.append(make('td', '', new Date(member.created_at).toLocaleDateString('id-ID')));
@@ -1840,7 +1853,7 @@
       const statusCell = make('td');
       const select = make('select');
       MEMBER_STATUSES.forEach(value => {
-        const option = make('option', '', value);
+        const option = make('option', '', memberStatusLabel[value] || value);
         option.value = value;
         option.selected = value === member.status;
         select.append(option);
@@ -1862,6 +1875,49 @@
       });
       statusCell.append(select);
       row.append(statusCell);
+      const ktaCell = make('td', 'member-kta-cell');
+      if (memberCardLoadError) {
+        ktaCell.append(make('small', 'privacy-mini', 'Status KTA tidak dapat dimuat.'));
+      } else {
+        const linkedCards = cardsByRegistration.get(member.id) || [];
+        if (linkedCards.length) {
+          linkedCards.forEach(card => {
+            const item = make('div', 'member-kta-item');
+            item.append(make('strong', '', card.member_number || 'KTA'), make('small', '', cardStatusLabel[card.status] || card.status));
+            ktaCell.append(item);
+          });
+        } else if (member.status !== 'ditolak') {
+          const regMatches = (data || []).filter(r => r.status !== 'ditolak' && normalizeMemberConfirmation(r.full_name) === normalizeMemberConfirmation(member.full_name) && r.district === member.district);
+          const possibleCards = memberCardRows.filter(card => !card.registration_id && normalizeMemberConfirmation(card.full_name) === normalizeMemberConfirmation(member.full_name) && card.district === member.district);
+          if (regMatches.length === 1 && possibleCards.length === 1) {
+            const card = possibleCards[0];
+            const item = make('div', 'member-kta-item');
+            item.append(make('strong', '', card.member_number || 'KTA'), make('small', '', `${cardStatusLabel[card.status] || card.status} · belum tertaut`));
+            const linkButton = make('button', 'admin-link-button', 'Hubungkan KTA');
+            linkButton.type = 'button';
+            linkButton.addEventListener('click', async () => {
+              linkButton.disabled = true;
+              const { data: linked, error: linkError } = await client.from('member_cards')
+                .update({ registration_id: member.id }).eq('id', card.id).is('registration_id', null).select('id').maybeSingle();
+              if (linkError || !linked) {
+                linkButton.disabled = false;
+                setMessage(`KTA tidak berhasil dihubungkan: ${linkError?.message || 'tautan mungkin sudah berubah.'}`, 'error');
+                return;
+              }
+              setMessage(`KTA ${card.member_number} berhasil dihubungkan ke pendaftaran ${member.full_name}.`, 'ok');
+              await renderMembers();
+            });
+            item.append(linkButton); ktaCell.append(item);
+          } else if (possibleCards.length || regMatches.length > 1) {
+            ktaCell.append(make('small', 'privacy-mini', 'Ada kecocokan nama/kecamatan, tetapi belum unik. Periksa manual agar tidak tertaut ke orang yang salah.'));
+          } else {
+            ktaCell.append(make('small', 'privacy-mini', 'Belum ada KTA tertaut.'));
+          }
+        } else {
+          ktaCell.append(make('small', 'privacy-mini', 'Pendaftaran ditolak.'));
+        }
+      }
+      row.append(ktaCell);
       const actions = make('td');
       if (isOwner()) {
         const editButton = make('button', 'admin-link-button', 'Edit data…');
@@ -1878,7 +1934,7 @@
       row.append(actions);
       body.append(row);
     });
-    if (!data?.length) body.append(emptyRow(8, 'Belum ada pendaftar. Saat ada yang mengisi formulir di situs (#gabung), datanya tampil di sini.'));
+    if (!data?.length) body.append(emptyRow(9, 'Belum ada pendaftar. Saat ada yang mengisi formulir di situs (#gabung), datanya tampil di sini.'));
     const cleanupBox = makePendingMemberCleanupBox(pendingCleanup || []);
     const privacyNote = make('p', 'privacy-mini', 'KTP dan foto profil berada di bucket privat member-documents. Penghapusan dicatat tanpa nama/NIK. Jika terhubung ke KTA, hanya Pemilik yang dapat melanjutkan dengan konfirmasi pelepasan tautan; KTA tetap aktif.');
     workspace.replaceChildren(heading, ...(cleanupBox ? [cleanupBox] : []), wrap, privacyNote);
@@ -2787,6 +2843,10 @@
         issued_at: issuedIn.value,
         valid_until: validIn.value
       };
+      if (!editing && !selectedRegistrationId && !registrationSelectionTouched && canSeeMembers()) {
+        const matches = regRows.filter(r => r.status !== 'ditolak' && normalizeName(r.full_name) === normalizeName(payload.full_name) && r.district === payload.district);
+        if (matches.length === 1) selectedRegistrationId = matches[0].id;
+      }
       if (!editing || selectedRegistrationId || registrationSelectionTouched) payload.registration_id = selectedRegistrationId || null;
       if (payload.full_name.length < 2) { setMessage('Isi nama lengkap anggota.', 'error'); return; }
       if (!payload.district) { setMessage('Pilih kecamatan.', 'error'); return; }
