@@ -29,6 +29,7 @@
   let currentUser = null;
   let roles = [];
   let memberListView = 'perlu-diproses';
+  let openCardOnNextRenderId = null;
 
   function setMessage(text, type = 'ok') {
     globalMessage.textContent = text;
@@ -1789,7 +1790,7 @@
       const bucket = cardsByRegistration.get(card.registration_id) || [];
       bucket.push(card); cardsByRegistration.set(card.registration_id, bucket);
     });
-    const memberStatusLabel = { menunggu_verifikasi: 'Menunggu verifikasi', ditinjau: 'Ditinjau', diterima: 'Diterima', ditolak: 'Ditolak' };
+    const memberStatusLabel = { menunggu_verifikasi: 'Menunggu verifikasi', ditinjau: 'Ditinjau', diterima: 'Diizinkan', ditolak: 'Ditolak' };
     const cardStatusLabel = { menunggu: 'Menunggu persetujuan KTA', aktif: 'Aktif / disetujui', ditolak: 'Ditolak', nonaktif: 'Nonaktif', dicabut: 'Dicabut' };
     const { data: pendingCleanup } = await client.from('member_registration_deletion_audit')
       .select('id,deleted_at,reason,ktp_object_key,profile_object_key')
@@ -1800,7 +1801,7 @@
     const jabatanTaken = jabatanTakenSet(allMembers, takenCards);
     const memberViews = [
       { key: 'perlu-diproses', label: 'Perlu diproses', match: member => ['menunggu_verifikasi','ditinjau'].includes(member.status) },
-      { key: 'disetujui', label: 'Anggota disetujui', match: member => member.status === 'diterima' },
+      { key: 'disetujui', label: 'Diizinkan · siap cetak', match: member => member.status === 'diterima' },
       { key: 'ditolak', label: 'Ditolak / duplikat', match: member => member.status === 'ditolak' },
       { key: 'semua', label: 'Semua pendaftar', match: () => true }
     ];
@@ -1816,8 +1817,8 @@
       viewTabs.append(button);
     });
     const viewHint = make('p', 'privacy-mini member-list-hint', memberListView === 'perlu-diproses'
-      ? 'Daftar ini hanya menampilkan pendaftar yang menunggu verifikasi atau sedang ditinjau. Setelah status Diterima, anggota berpindah ke tab Anggota disetujui.'
-      : (memberListView === 'disetujui' ? 'Daftar anggota yang pendaftarannya sudah disetujui. Status persetujuan KTA terlihat terpisah di kolom Status KTA.'
+      ? 'Daftar ini hanya menampilkan pendaftar yang menunggu verifikasi atau sedang ditinjau. Saat diubah menjadi Diizinkan, KTA dibuat/diaktifkan otomatis dan anggota berpindah ke tab Diizinkan · siap cetak.'
+      : (memberListView === 'disetujui' ? 'Anggota yang diizinkan memiliki KTA aktif dan siap dibuka/diunduh untuk dicetak. Status KTA terlihat pada kolom Status KTA.'
         : (memberListView === 'ditolak' ? 'Daftar ditolak/duplikat. Penghapusan aman hanya tersedia dari daftar ini setelah status Ditolak.' : 'Semua pendaftar, termasuk yang menunggu, disetujui, dan ditolak.')));
     const { wrap, body } = makeTable(['Tanggal', 'Nama / NIK', 'Kontak / kecamatan', 'Bidang', 'Jabatan pengurus', 'Dokumen', 'Status pendaftaran', 'Status KTA', 'Aksi']);
     visibleMembers.forEach(member => {
@@ -1882,19 +1883,36 @@
         select.append(option);
       });
       select.addEventListener('change', async () => {
+        const requestedStatus = select.value;
+        if (requestedStatus === 'diterima' && !isOwner()) {
+          select.value = member.status;
+          setMessage('Pengizinan akhir sekaligus penerbitan KTA langsung hanya dapat dilakukan Pemilik (Owner).', 'error');
+          return;
+        }
         select.disabled = true;
         let updateError = null;
-        if (isOwner()) {
-          const result = await client.rpc('owner_update_member_registration', { p_registration_id: member.id, p_values: { status: select.value } });
+        let issueResult = null;
+        if (isOwner() && requestedStatus === 'diterima') {
+          const result = await client.rpc('owner_approve_member_and_issue_kta', { p_registration_id: member.id });
+          updateError = result.error;
+          issueResult = result.data;
+        } else if (isOwner()) {
+          const result = await client.rpc('owner_update_member_registration', { p_registration_id: member.id, p_values: { status: requestedStatus } });
           updateError = result.error;
         } else {
-          const result = await client.from('member_registrations').update({ status: select.value }).eq('id', member.id);
+          const result = await client.from('member_registrations').update({ status: requestedStatus }).eq('id', member.id);
           updateError = result.error;
         }
         select.disabled = false;
-        if (updateError) { setMessage(`Status anggota tidak berhasil diperbarui: ${updateError.message || 'izin database belum diterapkan.'}`, 'error'); return; }
-        if (memberListView !== 'semua') memberListView = select.value === 'diterima' ? 'disetujui' : (select.value === 'ditolak' ? 'ditolak' : 'perlu-diproses');
-        setMessage(select.value === 'diterima' ? 'Pendaftaran disetujui dan dipindahkan ke tab Anggota disetujui.' : 'Status anggota diperbarui.');
+        if (updateError) {
+          select.value = member.status;
+          setMessage(`Status anggota tidak berhasil diperbarui: ${updateError.message || 'pastikan migration penerbitan KTA langsung sudah dijalankan.'}`, 'error');
+          return;
+        }
+        if (memberListView !== 'semua') memberListView = requestedStatus === 'diterima' ? 'disetujui' : (requestedStatus === 'ditolak' ? 'ditolak' : 'perlu-diproses');
+        setMessage(requestedStatus === 'diterima'
+          ? `Pendaftaran diizinkan. KTA ${issueResult?.member_number || ''} berstatus Aktif dan siap dicetak dari tab Kartu anggota.`
+          : 'Status anggota diperbarui.');
         await renderMembers();
       });
       statusCell.append(select);
@@ -1908,6 +1926,17 @@
           linkedCards.forEach(card => {
             const item = make('div', 'member-kta-item');
             item.append(make('strong', '', card.member_number || 'KTA'), make('small', '', cardStatusLabel[card.status] || card.status));
+            if (card.status === 'aktif') {
+              const printButton = make('button', 'admin-link-button', 'Buka & cetak');
+              printButton.type = 'button';
+              printButton.addEventListener('click', () => {
+                openCardOnNextRenderId = card.id;
+                const cardsTab = tabsContainer.querySelector('[data-tab="cards"]');
+                if (cardsTab) cardsTab.click();
+                else { openCardOnNextRenderId = null; setMessage('Tab Kartu anggota tidak tersedia untuk akun ini.', 'error'); }
+              });
+              item.append(printButton);
+            }
             ktaCell.append(item);
           });
         } else if (member.status !== 'ditolak') {
@@ -1967,7 +1996,7 @@
     });
     if (!visibleMembers.length) {
       const emptyText = memberListView === 'perlu-diproses' ? 'Tidak ada pendaftar yang menunggu verifikasi.'
-        : (memberListView === 'disetujui' ? 'Belum ada anggota yang disetujui.'
+        : (memberListView === 'disetujui' ? 'Belum ada anggota yang diizinkan.'
           : (memberListView === 'ditolak' ? 'Belum ada pendaftar berstatus Ditolak.' : 'Belum ada pendaftar.'));
       body.append(emptyRow(9, emptyText));
     }
@@ -3139,6 +3168,11 @@
     workspace.replaceChildren(...[heading, setupNote, pendingBox, designer, listHeading, listWrap].filter(Boolean));
     resetForm();
     renderList();
+    if (openCardOnNextRenderId) {
+      const cardToOpen = cards.find(card => card.id === openCardOnNextRenderId);
+      openCardOnNextRenderId = null;
+      if (cardToOpen) await openCard(cardToOpen);
+    }
   }
 
   function showWorkspaceError(text) {
