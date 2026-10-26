@@ -1917,19 +1917,27 @@
         }
       }
       row.append(ktaCell);
-      const actions = make('td');
+      const actions = make('td', 'member-actions-cell');
       if (isOwner()) {
-        const editButton = make('button', 'admin-link-button', 'Edit data…');
+        const editButton = make('button', 'admin-link-button member-action-button', 'Edit data…');
         editButton.type = 'button';
         editButton.title = 'Pemilik dapat mengubah seluruh data pendaftaran anggota.';
         editButton.addEventListener('click', () => openOwnerMemberEditor(member));
         actions.append(editButton, make('br'));
       }
-      const deleteButton = make('button', 'admin-link-button is-danger', 'Hapus duplikat…');
+      const deleteButton = make('button', 'admin-link-button is-danger member-action-button', 'Hapus duplikat…');
       deleteButton.type = 'button';
       deleteButton.title = 'Permanen; hanya tersedia setelah status Ditolak.';
-      deleteButton.addEventListener('click', () => openMemberDeleteDialog(member));
+      deleteButton.addEventListener('click', () => {
+        if (member.status !== 'ditolak') {
+          setMessage('Untuk keamanan, ubah Status pendaftaran menjadi Ditolak terlebih dahulu. Setelah daftar dimuat ulang, hapus duplikat dapat dilanjutkan.', 'warning');
+          select.focus();
+          return;
+        }
+        openMemberDeleteDialog(member);
+      });
       actions.append(deleteButton);
+      if (member.status !== 'ditolak') actions.append(make('small', 'member-delete-hint', 'Tandai Ditolak dulu'));
       row.append(actions);
       body.append(row);
     });
