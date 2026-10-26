@@ -15,7 +15,7 @@
     { key: 'footer_slogan', label: 'Slogan footer', help: 'Teks slogan di bagian bawah situs.' }
   ];
   const ROLE_LABELS = {
-    owner: 'Pemilik / pengelola',
+    owner: 'Pemilik / akses penuh',
     content_editor: 'Editor situs',
     lbh_officer: 'Petugas LBH',
     registrar: 'Petugas registrasi (data sensitif)',
@@ -43,7 +43,7 @@
   }
   function canSeeReports() { return roles.includes('owner') || roles.includes('lbh_officer'); }
   function canEditContent() { return roles.includes('owner') || roles.includes('content_editor'); }
-  function canSeeMembers() { return roles.includes('registrar'); }
+  function canSeeMembers() { return roles.includes('owner') || roles.includes('registrar'); }
   function isOwner() { return roles.includes('owner'); }
   function canManageNews() { return canEditContent() || roles.includes('media_partner'); }
   function canManageCards() { return roles.includes('owner') || roles.includes('registrar') || roles.includes('card_approver'); }
@@ -1773,7 +1773,7 @@
     const heading = make('div', 'workspace-heading');
     const titleBlock = make('div');
     titleBlock.append(make('h3', '', 'Pendaftaran anggota'));
-    titleBlock.append(make('p', '', 'Modul ini hanya tersedia untuk peran Petugas Registrasi. NIK ditampilkan tersamar. Duplikat dapat dihapus permanen setelah ditandai Ditolak, dengan konfirmasi nama dan empat digit terakhir NIK.'));
+    titleBlock.append(make('p', '', 'Modul ini tersedia untuk Pemilik situs dan Petugas Registrasi. NIK ditampilkan tersamar. Duplikat dapat dihapus permanen setelah ditandai Ditolak, dengan konfirmasi nama dan empat digit terakhir NIK.'));
     heading.append(titleBlock);
     const { data, error } = await client.from('member_registrations').select('id,created_at,full_name,nik,phone,district,jabatan,address,division,status,ktp_object_key,profile_object_key').order('created_at', { ascending: false }).limit(100);
     if (error) return showWorkspaceError('Data anggota tidak bisa dimuat. Pastikan akun memiliki peran Petugas Registrasi.');
@@ -1859,7 +1859,7 @@
     });
     if (!data?.length) body.append(emptyRow(8, 'Belum ada pendaftar. Saat ada yang mengisi formulir di situs (#gabung), datanya tampil di sini.'));
     const cleanupBox = makePendingMemberCleanupBox(pendingCleanup || []);
-    const privacyNote = make('p', 'privacy-mini', 'KTP dan foto profil berada di bucket privat member-documents. Penghapusan menyimpan catatan audit tanpa nama/NIK; jika terkait KTA, sistem akan menolak penghapusan.');
+    const privacyNote = make('p', 'privacy-mini', 'KTP dan foto profil berada di bucket privat member-documents. Penghapusan dicatat tanpa nama/NIK. Jika terhubung ke KTA, hanya Pemilik yang dapat melanjutkan dengan konfirmasi pelepasan tautan; KTA tetap aktif.');
     workspace.replaceChildren(heading, ...(cleanupBox ? [cleanupBox] : []), wrap, privacyNote);
   }
 
@@ -1867,11 +1867,19 @@
     return String(value || '').normalize('NFC').trim().replace(/\s+/g, ' ').toLocaleLowerCase('id-ID');
   }
 
-  function openMemberDeleteDialog(member) {
+  async function openMemberDeleteDialog(member) {
     if (member.status !== 'ditolak') {
       setMessage('Untuk mencegah salah hapus, ubah status pendaftaran menjadi Ditolak terlebih dahulu, lalu buka kembali daftar.', 'warning');
       return;
     }
+    const { data: linkedCards, error: linkedError } = await client.from('member_cards')
+      .select('id').eq('registration_id', member.id).eq('is_sample', false).limit(1);
+    if (linkedError) {
+      setMessage('Status keterkaitan KTA tidak dapat diperiksa. Penghapusan dibatalkan demi keamanan.', 'error');
+      return;
+    }
+    const hasLinkedCard = Boolean(linkedCards?.length);
+    const ownerCanUnlink = isOwner();
     const overlay = make('div', 'member-delete-overlay');
     overlay.setAttribute('role', 'presentation');
     const dialog = make('section', 'member-delete-dialog');
@@ -1880,10 +1888,25 @@
     dialog.setAttribute('aria-labelledby', 'member-delete-title');
     const title = make('h3', '', 'Hapus pendaftaran permanen?');
     title.id = 'member-delete-title';
-    const warning = make('p', 'member-delete-warning', 'Tindakan ini menghapus data pendaftaran beserta foto KTP dan profil privatnya. Tidak dapat dibatalkan. Jika sudah terhubung ke KTA, sistem akan menolak penghapusan.');
+    const warning = make('p', 'member-delete-warning', 'Tindakan permanen: data pendaftaran beserta foto KTP dan profil privatnya akan dihapus. Periksa tanggal, kecamatan, dan 4 digit NIK sebelum melanjutkan.');
     const memberInfo = make('div', 'member-delete-info');
     memberInfo.append(make('strong', '', member.full_name));
     memberInfo.append(make('span', '', `${new Date(member.created_at).toLocaleDateString('id-ID')} · ${member.district} · NIK berakhir ••••${String(member.nik || '').slice(-4)}`));
+    let unlinkCheckbox = null;
+    if (hasLinkedCard) {
+      const ktaWarning = make('p', 'member-delete-warning', ownerCanUnlink
+        ? 'Pendaftaran ini terhubung ke KTA. Jika Pemilik melanjutkan, data pendaftaran dan foto dihapus, tetapi KTA tetap aktif dan tautan ke pendaftaran dilepas.'
+        : 'Pendaftaran ini terhubung ke KTA. Petugas Registrasi tidak dapat menghapusnya. Minta Pemilik situs meninjau dan mengonfirmasi pelepasan tautan KTA.');
+      dialog.append(title, warning, memberInfo, ktaWarning);
+    } else {
+      dialog.append(title, warning, memberInfo);
+    }
+    if (hasLinkedCard && ownerCanUnlink) {
+      const unlinkLabel = make('label', 'member-kta-override');
+      unlinkCheckbox = make('input'); unlinkCheckbox.type = 'checkbox';
+      unlinkLabel.append(unlinkCheckbox, make('span', '', 'Saya memahami KTA akan tetap aktif, tetapi tautannya ke pendaftaran ini akan dilepas.'));
+      dialog.append(unlinkLabel);
+    }
     const nameLabel = make('label', '', 'Ketik nama lengkap untuk konfirmasi');
     const nameInput = make('input');
     nameInput.type = 'text'; nameInput.autocomplete = 'off'; nameInput.spellcheck = false;
@@ -1902,7 +1925,7 @@
     const cancel = make('button', 'admin-button admin-button-outline', 'Batal'); cancel.type = 'button';
     const confirm = make('button', 'admin-button admin-button-red', 'Hapus permanen'); confirm.type = 'button'; confirm.disabled = true;
     actions.append(cancel, confirm);
-    dialog.append(title, warning, memberInfo, nameLabel, last4Label, reasonLabel, feedback, actions);
+    dialog.append(nameLabel, last4Label, reasonLabel, feedback, actions);
     overlay.append(dialog);
     document.body.append(overlay);
     const close = () => overlay.remove();
@@ -1913,32 +1936,37 @@
       const nameOk = normalizeMemberConfirmation(nameInput.value) === normalizeMemberConfirmation(member.full_name);
       const last4Ok = /^\d{4}$/.test(last4Input.value.trim()) && last4Input.value.trim() === expectedLast4;
       const reasonOk = reasonInput.value.trim().length >= 5;
-      confirm.disabled = !(nameOk && last4Ok && reasonOk);
-      feedback.textContent = confirm.disabled ? 'Nama, empat digit NIK, dan alasan wajib cocok/lengkap.' : 'Konfirmasi cocok. Data dan dokumen privat akan dihapus.';
+      const ktaOk = !hasLinkedCard || (ownerCanUnlink && Boolean(unlinkCheckbox?.checked));
+      confirm.disabled = !(nameOk && last4Ok && reasonOk && ktaOk);
+      feedback.textContent = !ktaOk && hasLinkedCard && !ownerCanUnlink
+        ? 'Tindakan diblokir untuk Registrar; Pemilik dapat meninjau pelepasan tautan KTA.'
+        : (confirm.disabled ? 'Nama, empat digit NIK, alasan, dan konfirmasi KTA wajib cocok/lengkap.' : 'Konfirmasi cocok. Data dan dokumen privat akan dihapus.');
       feedback.classList.toggle('is-ready', !confirm.disabled);
     };
     [nameInput, last4Input, reasonInput].forEach(input => input.addEventListener('input', validate));
+    unlinkCheckbox?.addEventListener('change', validate);
     confirm.addEventListener('click', async () => {
       confirm.disabled = true; cancel.disabled = true;
       confirm.textContent = 'Menghapus…';
-      const ok = await permanentlyDeleteMember(member, nameInput.value, last4Input.value.trim(), reasonInput.value.trim());
+      const ok = await permanentlyDeleteMember(member, nameInput.value, last4Input.value.trim(), reasonInput.value.trim(), hasLinkedCard && ownerCanUnlink && Boolean(unlinkCheckbox?.checked));
       if (ok) close();
       else { confirm.disabled = false; cancel.disabled = false; confirm.textContent = 'Hapus permanen'; }
     });
     nameInput.focus();
   }
 
-  async function permanentlyDeleteMember(member, typedName, typedLast4, reason) {
+  async function permanentlyDeleteMember(member, typedName, typedLast4, reason, allowKtaUnlink) {
     setMessage('Memverifikasi izin dan menghapus data pendaftaran…', 'warning');
     const { data, error } = await client.rpc('delete_member_registration_safe', {
       p_registration_id: member.id,
       p_confirm_name: typedName.trim(),
       p_confirm_nik_last4: typedLast4,
-      p_reason: reason
+      p_reason: reason,
+      p_allow_kta_unlink: Boolean(allowKtaUnlink)
     });
     if (error || !data?.audit_id) {
       const msg = String(error?.message || 'Prosedur aman belum tersedia. Pastikan migrasi penghapusan duplikat telah diterapkan.');
-      setMessage(msg.includes('KTA') || msg.includes('Ditolak') || msg.includes('Konfirmasi') || msg.includes('NIK') ? msg : 'Penghapusan dibatalkan. Periksa izin Registrar dan pastikan migration penghapusan aman sudah diterapkan.', 'error');
+      setMessage(msg.includes('KTA') || msg.includes('Ditolak') || msg.includes('Konfirmasi') || msg.includes('NIK') ? msg : 'Penghapusan dibatalkan. Pastikan akun Pemilik atau Petugas Registrasi dan migration akses penuh/penghapusan aman sudah diterapkan.', 'error');
       return false;
     }
     const keys = [data.ktp_object_key, data.profile_object_key].filter(Boolean);
@@ -2013,7 +2041,7 @@
     const heading = make('div', 'workspace-heading');
     const titleBlock = make('div');
     titleBlock.append(make('h3', '', 'Akun dan peran'));
-    titleBlock.append(make('p', '', 'Undang akun terlebih dahulu melalui Supabase Authentication. Setelah itu, tetapkan peran di sini. Jangan berikan peran Registrar kecuali petugas memang perlu melihat NIK/KTP.'));
+    titleBlock.append(make('p', '', 'Undang akun melalui Supabase Authentication, lalu tetapkan peran. Pemilik memiliki akses penuh ke panel; peran Registrar dapat dipakai untuk petugas yang memang perlu menangani data pendaftaran dan dokumen sensitif.'));
     heading.append(titleBlock);
     const form = make('form', 'admin-inline-form');
     const emailLabel = make('label', '', 'Email akun');
@@ -2071,7 +2099,7 @@
       body.append(row);
     });
     if (!data?.length) body.append(emptyRow(4, 'Belum ada akun Admin. Pemilik pertama perlu dibuat melalui SQL Editor sesuai panduan penyiapan.'));
-    workspace.replaceChildren(heading, form, wrap, make('p', 'privacy-mini', 'Peran Owner dapat mengelola isi situs dan daftar hak akses serta melihat aduan. Untuk melihat NIK/KTP, akun Owner juga harus diberi peran Registrar.'));
+    workspace.replaceChildren(heading, form, wrap, make('p', 'privacy-mini', 'Pemilik memiliki akses penuh ke panel termasuk pendaftaran dan dokumen sensitif. Batasi akses akun Pemilik dan Registrar; KTP tetap privat dan semua akses perlu untuk tugas resmi.'));
   }
 
   function emptyRow(colspan, text) {
@@ -2141,7 +2169,7 @@
     return sel;
   }
   const CARD_STATUS_LABELS = { menunggu: 'Menunggu persetujuan', ditolak: 'Ditolak', aktif: 'Aktif', nonaktif: 'Nonaktif', dicabut: 'Dicabut' };
-  const CARD_COLS_BASE = 'id,card_token,member_number,full_name,district,jabatan,status,issued_at,valid_until';
+  const CARD_COLS_BASE = 'id,registration_id,card_token,member_number,full_name,district,jabatan,status,issued_at,valid_until';
   const CARD_COLS = CARD_COLS_BASE + ',submitted_by,approved_by,approved_at,review_note';
 
   function isoDate(date) {
@@ -2251,10 +2279,31 @@
     const jabatanIn = input('card-jabatan', 'text', { required: true, maxLength: 60, value: 'Anggota' });
     const list = make('select'); list.id = 'card-jabatan-pick'; list.className = 'card-jabatan-pick';
     list.setAttribute('aria-label', 'Pilih jabatan');
-    // Judul jabatan tunggal yang sudah terisi disembunyikan dari daftar (sumber: pendaftaran + kartu).
+    // Read saved registration profile photos only for Owner/Registrar, never KTP images.
     let regRows = [];
-    ({ data: regRows } = await client.from('member_registrations').select('jabatan,status').neq('status', 'ditolak').limit(500));
-    regRows = regRows || [];
+    let regLoadError = null;
+    if (canSeeMembers()) {
+      const regResult = await client.from('member_registrations')
+        .select('id,full_name,district,jabatan,status,profile_object_key,created_at')
+        .order('created_at', { ascending: false }).limit(500);
+      if (regResult.error) regLoadError = regResult.error;
+      else regRows = regResult.data || [];
+    }
+    const memberPick = make('select');
+    memberPick.id = 'card-saved-member';
+    memberPick.setAttribute('aria-label', 'Pilih anggota terdaftar');
+    memberPick.append(new Option('— Pilih nama dari pendaftaran tersimpan —', ''));
+    regRows.forEach(reg => {
+      const dateLabel = reg.created_at ? new Date(reg.created_at).toLocaleDateString('id-ID') : '';
+      const photoLabel = reg.profile_object_key ? 'foto tersimpan' : 'tanpa foto profil';
+      const rejected = reg.status === 'ditolak';
+      const option = new Option(`${reg.full_name} · ${reg.district} · ${photoLabel}${dateLabel ? ` · ${dateLabel}` : ''}${rejected ? ' · ditolak (kartu lama)' : ''}`, reg.id);
+      if (rejected) option.disabled = true;
+      memberPick.append(option);
+    });
+    const memberPickField = field('Pendaftar tersimpan (opsional)', memberPick,
+      'Pilih orang yang sudah terdaftar untuk mengisi nama, kecamatan, jabatan, dan memuat foto profil tersimpan. Foto KTP tidak dipakai.');
+    memberPickField.hidden = !canSeeMembers();
     const refillJabatanPick = () => fillJabatanOptions(list, jabatanTakenSet(regRows, cards), districtIn.value, jabatanIn.value, '— Pilih jabatan dari daftar —');
     refillJabatanPick();
     districtIn.addEventListener('change', refillJabatanPick);
@@ -2344,9 +2393,16 @@
     newBtn.type = 'button';
     const btnRow = make('div', 'card-buttons'); btnRow.append(saveBtn, downloadBtn, downloadBackBtn, newBtn);
 
-    formEl.append(statusLine, field('Nama lengkap', nameIn), rowA, field('Jabatan', list, 'Pilih dari daftar sesuai AD/ART. Untuk jabatan Ranting, nama kecamatan ikut ditambahkan otomatis.'), field('Jabatan tertulis di kartu', jabatanIn, 'Boleh diketik/diubah manual, mis. "Korja Ranting Buduran" atau "Wakil Ketua Departemen Hukum".'), rowB,
-      field('Foto anggota (pas foto 4×6, latar biru)', photoIn, 'Foto hanya dipakai di perangkat ini untuk membuat gambar kartu — tidak diunggah atau disimpan di server. Simpan file kartu (PNG) hasil unduhan.'),
-      photoTools, backTools, btnRow);
+    const photoField = field('Foto anggota (opsional; unggah manual/pengganti)', photoIn, 'Jika memilih pendaftar tersimpan, foto profil privat dimuat otomatis—tidak perlu memilih file lagi. Foto manual hanya digunakan di sesi/perangkat ini; foto KTP tidak pernah dipakai.');
+    const photoSourceStatus = make('small', 'privacy-mini', canSeeMembers()
+      ? (regLoadError ? 'Daftar/foto pendaftar tersimpan tidak dapat dimuat. Periksa izin Pemilik/Petugas Registrasi.' : 'Pilih pendaftar tersimpan agar foto profil otomatis dimuat.')
+      : 'Pilih foto manual untuk kartu ini.');
+    photoField.append(photoSourceStatus);
+    const formFields = [statusLine];
+    if (canSeeMembers()) formFields.push(memberPickField);
+    formFields.push(field('Nama lengkap', nameIn), rowA, field('Jabatan', list, 'Pilih dari daftar sesuai AD/ART. Untuk jabatan Ranting, nama kecamatan ikut ditambahkan otomatis.'), field('Jabatan tertulis di kartu', jabatanIn, 'Boleh diketik/diubah manual, mis. "Korja Ranting Buduran" atau "Wakil Ketua Departemen Hukum".'), rowB,
+      photoField, photoTools, backTools, btnRow);
+    formEl.append(...formFields);
 
     const preview = make('div', 'card-preview');
     const sideSwitch = make('div', 'card-side-switch');
@@ -2369,6 +2425,12 @@
     let photo = null;
     let signature = null;
     let side = 'front';
+    let selectedRegistrationId = null;
+    let registrationPhotoId = null;
+    let registrationSelectionTouched = false;
+    let applyingRegistration = false;
+    let photoLoadSequence = 0;
+    const normalizeName = value => String(value || '').normalize('NFC').trim().replace(/\s+/g, ' ').toLocaleLowerCase('id-ID');
 
     function data() {
       return {
@@ -2382,6 +2444,82 @@
     let raf = 0;
     function render(target, which) { return which === 'back' ? window.GMPICard.drawBack(target, data()) : window.GMPICard.draw(target, data()); }
     function redraw() { cancelAnimationFrame(raf); raf = requestAnimationFrame(() => render(canvas, side)); }
+    async function loadRegistrationPhoto(reg) {
+      const sequence = ++photoLoadSequence;
+      photo = null;
+      registrationPhotoId = null;
+      photoIn.value = '';
+      photoTools.hidden = true;
+      if (!reg?.profile_object_key) {
+        photoSourceStatus.textContent = 'Pendaftar ini belum memiliki foto profil tersimpan. Pilih foto secara manual bila tersedia.';
+        redraw();
+        return false;
+      }
+      photoSourceStatus.textContent = 'Memuat foto profil tersimpan…';
+      redraw();
+      const { data, error } = await client.storage.from('member-documents').createSignedUrl(reg.profile_object_key, 60);
+      if (sequence !== photoLoadSequence) return false;
+      if (error || !data?.signedUrl) {
+        photoSourceStatus.textContent = 'Foto profil tersimpan tidak dapat dibuka. Pastikan akun Pemilik/Registrar memiliki akses dokumen.';
+        setMessage('Foto profil privat tidak dapat dimuat. Kartu tidak memakai foto KTP; pilih foto manual atau periksa izin akses.', 'error');
+        return false;
+      }
+      const img = await window.GMPICard.loadImage(data.signedUrl, true);
+      if (sequence !== photoLoadSequence) return false;
+      if (!img) {
+        photoSourceStatus.textContent = 'Foto profil tidak berhasil dimuat. Anda dapat memilih foto manual.';
+        setMessage('Foto profil tidak berhasil dibaca. Pilih foto manual atau coba lagi.', 'error');
+        return false;
+      }
+      photo = img;
+      registrationPhotoId = reg.id;
+      photoTools.hidden = false;
+      photoSourceStatus.textContent = 'Foto profil tersimpan berhasil dimuat otomatis—tidak perlu memilih ulang.';
+      redraw();
+      return true;
+    }
+    function clearSelectedRegistrationIfMismatch() {
+      if (applyingRegistration || !selectedRegistrationId) return;
+      const reg = regRows.find(r => r.id === selectedRegistrationId);
+      if (reg && normalizeName(nameIn.value) === normalizeName(reg.full_name) && districtIn.value === reg.district) return;
+      const oldId = selectedRegistrationId;
+      selectedRegistrationId = null;
+      registrationSelectionTouched = true;
+      memberPick.value = '';
+      if (registrationPhotoId === oldId) {
+        photoLoadSequence += 1;
+        registrationPhotoId = null;
+        photo = null;
+        photoTools.hidden = true;
+        photoSourceStatus.textContent = 'Nama/kecamatan diubah; foto otomatis dilepas. Pilih kembali pendaftar atau foto manual.';
+        redraw();
+      }
+    }
+    memberPick.addEventListener('change', async () => {
+      const reg = regRows.find(r => r.id === memberPick.value);
+      registrationSelectionTouched = true;
+      if (!reg || reg.status === 'ditolak') {
+        selectedRegistrationId = null;
+        photoLoadSequence += 1;
+        registrationPhotoId = null;
+        photo = null;
+        photoTools.hidden = true;
+        photoSourceStatus.textContent = 'Pilih pendaftar tersimpan untuk memuat foto profil.';
+        redraw();
+        return;
+      }
+      selectedRegistrationId = reg.id;
+      applyingRegistration = true;
+      nameIn.value = reg.full_name || '';
+      districtIn.value = reg.district || '';
+      jabatanIn.value = reg.jabatan || 'Anggota';
+      syncPick();
+      refillJabatanPick();
+      applyingRegistration = false;
+      await loadRegistrationPhoto(reg);
+    });
+    nameIn.addEventListener('input', clearSelectedRegistrationIfMismatch);
+    districtIn.addEventListener('change', clearSelectedRegistrationIfMismatch);
     function setSide(next) {
       side = next;
       frontTab.classList.toggle('is-active', side === 'front');
@@ -2445,21 +2583,60 @@
       jabatanIn.value = 'Anggota'; syncPick();
       issuedIn.value = today;
       validIn.value = addYears(today, 2);
-      photo = null; photoTools.hidden = true;
+      photoLoadSequence += 1;
+      photo = null; photoTools.hidden = true; photoIn.value = '';
+      selectedRegistrationId = null; registrationPhotoId = null; registrationSelectionTouched = false;
+      applyingRegistration = false; memberPick.value = '';
+      photoSourceStatus.textContent = canSeeMembers() ? 'Pilih pendaftar tersimpan agar foto profil otomatis dimuat.' : 'Pilih foto manual untuk kartu ini.';
       zoomIn.value = 100; xIn.value = 0; yIn.value = 0;
       setMode();
     }
 
-    function openCard(card) {
+    async function openCard(card) {
       editing = card;
+      photoLoadSequence += 1;
+      photo = null; registrationPhotoId = null; photoTools.hidden = true; photoIn.value = '';
+      selectedRegistrationId = null; registrationSelectionTouched = false; memberPick.value = '';
       nameIn.value = card.full_name;
       numberIn.value = card.member_number;
       districtIn.value = card.district;
       jabatanIn.value = card.jabatan; syncPick();
       issuedIn.value = card.issued_at;
       validIn.value = card.valid_until;
+      let reg = card.registration_id ? regRows.find(r => r.id === card.registration_id) : null;
+      let ambiguous = false;
+      // Kartu lama/tertaut mungkin menunjuk pendaftaran yang lebih lama dari 500 entri awal.
+      if (!reg && card.registration_id && canSeeMembers()) {
+        const linked = await client.from('member_registrations')
+          .select('id,full_name,district,jabatan,status,profile_object_key,created_at')
+          .eq('id', card.registration_id).maybeSingle();
+        if (!linked.error && linked.data) {
+          reg = linked.data;
+          regRows.unshift(reg);
+          const dateLabel = reg.created_at ? new Date(reg.created_at).toLocaleDateString('id-ID') : '';
+          const photoLabel = reg.profile_object_key ? 'foto tersimpan' : 'tanpa foto profil';
+          const rejected = reg.status === 'ditolak';
+          const option = new Option(`${reg.full_name} · ${reg.district} · ${photoLabel}${dateLabel ? ` · ${dateLabel}` : ''}${rejected ? ' · ditolak (kartu lama)' : ''}`, reg.id);
+          if (rejected) option.disabled = true;
+          memberPick.append(option);
+        }
+      }
+      if (!reg && canSeeMembers()) {
+        const matches = regRows.filter(r => r.status !== 'ditolak' && normalizeName(r.full_name) === normalizeName(card.full_name) && r.district === card.district);
+        if (matches.length === 1) reg = matches[0];
+        else if (matches.length > 1) ambiguous = true;
+      }
+      if (reg) {
+        selectedRegistrationId = reg.id;
+        memberPick.value = reg.id;
+        await loadRegistrationPhoto(reg);
+      } else {
+        photoSourceStatus.textContent = ambiguous
+          ? 'Ada beberapa pendaftar dengan nama/kecamatan sama. Pilih entri yang benar di daftar pendaftar tersimpan.'
+          : (canSeeMembers() ? 'Belum ada foto profil tersimpan yang cocok. Pilih pendaftar atau foto manual.' : 'Pilih foto manual untuk kartu ini.');
+      }
       setMode();
-      setMessage(photo ? 'Kartu dibuka. Periksa foto lalu unduh sisi depan dan belakang.' : 'Kartu dibuka. Pilih foto anggota, lalu unduh sisi depan dan belakang.');
+      setMessage(reg && photo ? 'Kartu dibuka. Foto profil tersimpan dimuat otomatis.' : (ambiguous ? 'Kartu dibuka. Pilih pendaftar yang tepat agar foto tersimpan dimuat.' : 'Kartu dibuka. Foto belum tersedia; pilih pendaftar tersimpan atau foto manual.'));
       designer.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
@@ -2473,7 +2650,10 @@
       const url = URL.createObjectURL(file);
       const img = await window.GMPICard.loadImage(url);
       if (!img) { setMessage('Foto tidak bisa dibaca.', 'error'); return; }
+      photoLoadSequence += 1;
       photo = img;
+      registrationPhotoId = null;
+      photoSourceStatus.textContent = 'Foto manual dipilih dari perangkat. Foto ini tidak disimpan ulang ke server.';
       zoomIn.value = 100; xIn.value = 0; yIn.value = 0;
       photoTools.hidden = false;
       redraw();
@@ -2488,6 +2668,7 @@
         issued_at: issuedIn.value,
         valid_until: validIn.value
       };
+      if (!editing || selectedRegistrationId || registrationSelectionTouched) payload.registration_id = selectedRegistrationId || null;
       if (payload.full_name.length < 2) { setMessage('Isi nama lengkap anggota.', 'error'); return; }
       if (!payload.district) { setMessage('Pilih kecamatan.', 'error'); return; }
       if (payload.valid_until < payload.issued_at) { setMessage('Tanggal berlaku harus setelah tanggal terbit.', 'error'); return; }

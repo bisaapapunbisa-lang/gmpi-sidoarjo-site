@@ -238,3 +238,6 @@
 .member-cleanup-warning{display:grid;justify-items:start;gap:8px;padding:14px 16px;margin:0 0 16px;background:#f5ecd5;border-left:3px solid #c69b3b;color:#624e1f;font-size:11px;line-height:1.6}
 .member-cleanup-warning p{margin:0}
 .member-cleanup-warning .admin-button{min-height:34px;padding:0 11px;font-size:10px}
+.member-delete-dialog .member-kta-override{display:flex;grid-template-columns:none;align-items:flex-start;gap:9px;padding:10px 12px;margin:0 0 12px;background:#fff4d8;border:1px solid #d9bd74;color:#513f1b;font-size:11px;line-height:1.5}
+.member-delete-dialog .member-kta-override input{width:auto;flex:none;margin:2px 0 0;accent-color:#9a2928}
+.member-delete-dialog .member-kta-override span{flex:1}
