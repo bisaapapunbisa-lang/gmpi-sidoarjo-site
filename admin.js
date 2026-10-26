@@ -1773,14 +1773,17 @@
     const heading = make('div', 'workspace-heading');
     const titleBlock = make('div');
     titleBlock.append(make('h3', '', 'Pendaftaran anggota'));
-    titleBlock.append(make('p', '', 'Modul ini hanya tersedia untuk peran Petugas Registrasi. NIK ditampilkan tersamar; buka hanya saat benar-benar diperlukan untuk verifikasi. Jabatan pengurus dipilih di kolomnya — jabatan tunggal yang sudah terisi (mis. Ketua DPD) otomatis tidak tampil di daftar pilihan.'));
+    titleBlock.append(make('p', '', 'Modul ini hanya tersedia untuk peran Petugas Registrasi. NIK ditampilkan tersamar. Duplikat dapat dihapus permanen setelah ditandai Ditolak, dengan konfirmasi nama dan empat digit terakhir NIK.'));
     heading.append(titleBlock);
     const { data, error } = await client.from('member_registrations').select('id,created_at,full_name,nik,phone,district,jabatan,address,division,status,ktp_object_key,profile_object_key').order('created_at', { ascending: false }).limit(100);
-    if (error) return showWorkspaceError('Data anggota tidak dapat dibuka. Pastikan akun memiliki peran Petugas Registrasi.');
-    // Judul jabatan tunggal yang sudah terisi (pendaftaran selain-ditolak + kartu menunggu/aktif) agar tidak bisa dipilih dua kali.
+    if (error) return showWorkspaceError('Data anggota tidak bisa dimuat. Pastikan akun memiliki peran Petugas Registrasi.');
+    const { data: pendingCleanup } = await client.from('member_registration_deletion_audit')
+      .select('id,deleted_at,reason,ktp_object_key,profile_object_key')
+      .eq('storage_cleanup_status', 'pending').order('deleted_at', { ascending: true }).limit(20);
+    // Judul jabatan tunggal yang sudah terisi agar tidak dapat dipilih dua kali.
     const { data: takenCards } = await client.from('member_cards').select('jabatan,status').eq('is_sample', false).in('status', ['aktif', 'menunggu']).limit(500);
     const jabatanTaken = jabatanTakenSet(data, takenCards);
-    const { wrap, body } = makeTable(['Tanggal', 'Nama / NIK', 'Kontak / kecamatan', 'Bidang', 'Jabatan pengurus', 'Dokumen', 'Status']);
+    const { wrap, body } = makeTable(['Tanggal', 'Nama / NIK', 'Kontak / kecamatan', 'Bidang', 'Jabatan pengurus', 'Dokumen', 'Status', 'Aksi']);
     (data || []).forEach(member => {
       const row = make('tr');
       row.append(make('td', '', new Date(member.created_at).toLocaleDateString('id-ID')));
@@ -1800,7 +1803,7 @@
       const kontakCell = make('td');
       kontakCell.append(make('div', '', `${member.phone} · ${member.district}`));
       if (member.address) {
-        const ad = make('div', '', member.address);
+        const ad = make('div', 'privacy-mini', member.address);
         ad.style.cssText = 'font-size:10px;color:#706a5f;margin-top:4px';
         kontakCell.append(ad);
       }
@@ -1839,14 +1842,154 @@
         select.disabled = true;
         const { error: updateError } = await client.from('member_registrations').update({ status: select.value }).eq('id', member.id);
         select.disabled = false;
-        setMessage(updateError ? 'Status anggota tidak berhasil diperbarui.' : 'Status anggota diperbarui.', updateError ? 'error' : 'ok');
+        if (updateError) { setMessage('Status anggota tidak berhasil diperbarui.', 'error'); return; }
+        setMessage('Status anggota diperbarui. Muat ulang daftar bila ingin melakukan tindakan berikutnya.');
+        await renderMembers();
       });
       statusCell.append(select);
       row.append(statusCell);
+      const actions = make('td');
+      const deleteButton = make('button', 'admin-link-button is-danger', 'Hapus duplikat…');
+      deleteButton.type = 'button';
+      deleteButton.title = 'Permanen; hanya tersedia setelah status Ditolak.';
+      deleteButton.addEventListener('click', () => openMemberDeleteDialog(member));
+      actions.append(deleteButton);
+      row.append(actions);
       body.append(row);
     });
-    if (!data?.length) body.append(emptyRow(7, 'Belum ada pendaftar. Saat ada yang mengisi formulir di situs (#gabung), datanya tampil di sini.'));
-    workspace.replaceChildren(heading, wrap, make('p', 'privacy-mini', 'Dokumen KTP berada di bucket privat. Tautan dokumen berlaku singkat; jangan unduh atau teruskan tanpa dasar tugas.'));
+    if (!data?.length) body.append(emptyRow(8, 'Belum ada pendaftar. Saat ada yang mengisi formulir di situs (#gabung), datanya tampil di sini.'));
+    const cleanupBox = makePendingMemberCleanupBox(pendingCleanup || []);
+    const privacyNote = make('p', 'privacy-mini', 'KTP dan foto profil berada di bucket privat member-documents. Penghapusan menyimpan catatan audit tanpa nama/NIK; jika terkait KTA, sistem akan menolak penghapusan.');
+    workspace.replaceChildren(heading, ...(cleanupBox ? [cleanupBox] : []), wrap, privacyNote);
+  }
+
+  function normalizeMemberConfirmation(value) {
+    return String(value || '').normalize('NFC').trim().replace(/\s+/g, ' ').toLocaleLowerCase('id-ID');
+  }
+
+  function openMemberDeleteDialog(member) {
+    if (member.status !== 'ditolak') {
+      setMessage('Untuk mencegah salah hapus, ubah status pendaftaran menjadi Ditolak terlebih dahulu, lalu buka kembali daftar.', 'warning');
+      return;
+    }
+    const overlay = make('div', 'member-delete-overlay');
+    overlay.setAttribute('role', 'presentation');
+    const dialog = make('section', 'member-delete-dialog');
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    dialog.setAttribute('aria-labelledby', 'member-delete-title');
+    const title = make('h3', '', 'Hapus pendaftaran permanen?');
+    title.id = 'member-delete-title';
+    const warning = make('p', 'member-delete-warning', 'Tindakan ini menghapus data pendaftaran beserta foto KTP dan profil privatnya. Tidak dapat dibatalkan. Jika sudah terhubung ke KTA, sistem akan menolak penghapusan.');
+    const memberInfo = make('div', 'member-delete-info');
+    memberInfo.append(make('strong', '', member.full_name));
+    memberInfo.append(make('span', '', `${new Date(member.created_at).toLocaleDateString('id-ID')} · ${member.district} · NIK berakhir ••••${String(member.nik || '').slice(-4)}`));
+    const nameLabel = make('label', '', 'Ketik nama lengkap untuk konfirmasi');
+    const nameInput = make('input');
+    nameInput.type = 'text'; nameInput.autocomplete = 'off'; nameInput.spellcheck = false;
+    nameInput.placeholder = member.full_name;
+    nameLabel.append(nameInput);
+    const last4Label = make('label', '', 'Masukkan 4 digit terakhir NIK yang tampil di baris ini');
+    const last4Input = make('input');
+    last4Input.type = 'text'; last4Input.inputMode = 'numeric'; last4Input.maxLength = 4; last4Input.autocomplete = 'off'; last4Input.placeholder = '••••';
+    last4Label.append(last4Input);
+    const reasonLabel = make('label', '', 'Alasan penghapusan (wajib)');
+    const reasonInput = make('textarea');
+    reasonInput.rows = 2; reasonInput.maxLength = 300; reasonInput.value = 'Duplikat pendaftaran';
+    reasonLabel.append(reasonInput);
+    const feedback = make('small', 'member-delete-feedback', 'Konfirmasi nama dan empat digit NIK untuk mengaktifkan tombol hapus.');
+    const actions = make('div', 'member-delete-actions');
+    const cancel = make('button', 'admin-button admin-button-outline', 'Batal'); cancel.type = 'button';
+    const confirm = make('button', 'admin-button admin-button-red', 'Hapus permanen'); confirm.type = 'button'; confirm.disabled = true;
+    actions.append(cancel, confirm);
+    dialog.append(title, warning, memberInfo, nameLabel, last4Label, reasonLabel, feedback, actions);
+    overlay.append(dialog);
+    document.body.append(overlay);
+    const close = () => overlay.remove();
+    cancel.addEventListener('click', close);
+    overlay.addEventListener('click', event => { if (event.target === overlay) close(); });
+    const expectedLast4 = String(member.nik || '').slice(-4);
+    const validate = () => {
+      const nameOk = normalizeMemberConfirmation(nameInput.value) === normalizeMemberConfirmation(member.full_name);
+      const last4Ok = /^\d{4}$/.test(last4Input.value.trim()) && last4Input.value.trim() === expectedLast4;
+      const reasonOk = reasonInput.value.trim().length >= 5;
+      confirm.disabled = !(nameOk && last4Ok && reasonOk);
+      feedback.textContent = confirm.disabled ? 'Nama, empat digit NIK, dan alasan wajib cocok/lengkap.' : 'Konfirmasi cocok. Data dan dokumen privat akan dihapus.';
+      feedback.classList.toggle('is-ready', !confirm.disabled);
+    };
+    [nameInput, last4Input, reasonInput].forEach(input => input.addEventListener('input', validate));
+    confirm.addEventListener('click', async () => {
+      confirm.disabled = true; cancel.disabled = true;
+      confirm.textContent = 'Menghapus…';
+      const ok = await permanentlyDeleteMember(member, nameInput.value, last4Input.value.trim(), reasonInput.value.trim());
+      if (ok) close();
+      else { confirm.disabled = false; cancel.disabled = false; confirm.textContent = 'Hapus permanen'; }
+    });
+    nameInput.focus();
+  }
+
+  async function permanentlyDeleteMember(member, typedName, typedLast4, reason) {
+    setMessage('Memverifikasi izin dan menghapus data pendaftaran…', 'warning');
+    const { data, error } = await client.rpc('delete_member_registration_safe', {
+      p_registration_id: member.id,
+      p_confirm_name: typedName.trim(),
+      p_confirm_nik_last4: typedLast4,
+      p_reason: reason
+    });
+    if (error || !data?.audit_id) {
+      const msg = String(error?.message || 'Prosedur aman belum tersedia. Pastikan migrasi penghapusan duplikat telah diterapkan.');
+      setMessage(msg.includes('KTA') || msg.includes('Ditolak') || msg.includes('Konfirmasi') || msg.includes('NIK') ? msg : 'Penghapusan dibatalkan. Periksa izin Registrar dan pastikan migration penghapusan aman sudah diterapkan.', 'error');
+      return false;
+    }
+    const keys = [data.ktp_object_key, data.profile_object_key].filter(Boolean);
+    if (keys.length) {
+      const { error: storageError } = await client.storage.from('member-documents').remove(keys);
+      if (storageError) {
+        setMessage('Data pendaftaran terhapus, tetapi pembersihan foto tertunda. Catatan pembersihan aman tersimpan; gunakan tombol “Bersihkan dokumen tertunda” di atas daftar untuk mencoba lagi.', 'warning');
+        await renderMembers();
+        return true;
+      }
+    }
+    const { error: completeError } = await client.rpc('complete_member_registration_cleanup', { p_audit_id: data.audit_id });
+    if (completeError) {
+      setMessage('Data dan foto sudah dihapus, tetapi penutupan catatan audit tertunda. Muat ulang daftar untuk menyelesaikannya.', 'warning');
+      await renderMembers();
+      return true;
+    }
+    setMessage(`Pendaftaran duplikat ${member.full_name} dan dokumen privatnya berhasil dihapus. Catatan audit tanpa nama/NIK tersimpan.`, 'ok');
+    await renderMembers();
+    return true;
+  }
+
+  function makePendingMemberCleanupBox(rows) {
+    if (!rows.length) return null;
+    const box = make('div', 'member-cleanup-warning');
+    box.append(make('strong', '', `${rows.length} pembersihan dokumen tertunda`));
+    box.append(make('p', '', 'Data pendaftaran sudah dihapus, tetapi Storage belum mengonfirmasi penghapusan semua foto. Coba bersihkan di sini; berkas tetap berada di bucket privat sampai berhasil dibersihkan.'));
+    rows.forEach(item => {
+      const button = make('button', 'admin-button admin-button-outline', `Bersihkan dokumen tertunda · ${new Date(item.deleted_at).toLocaleDateString('id-ID')}`);
+      button.type = 'button';
+      button.addEventListener('click', async () => {
+        button.disabled = true;
+        const keys = [item.ktp_object_key, item.profile_object_key].filter(Boolean);
+        const { error: storageError } = keys.length ? await client.storage.from('member-documents').remove(keys) : { error: null };
+        if (storageError) {
+          button.disabled = false;
+          setMessage('Foto belum berhasil dibersihkan. Dokumen tetap privat; coba lagi nanti atau minta pemilik sistem memeriksa Storage.', 'error');
+          return;
+        }
+        const { error: completeError } = await client.rpc('complete_member_registration_cleanup', { p_audit_id: item.id });
+        if (completeError) {
+          button.disabled = false;
+          setMessage('Foto telah dibersihkan, tetapi status audit belum tertutup. Muat ulang dan coba lagi.', 'warning');
+          return;
+        }
+        setMessage('Foto sisa telah dibersihkan dan catatan audit ditutup.');
+        await renderMembers();
+      });
+      box.append(button);
+    });
+    return box;
   }
 
   function addDocumentButton(parent, label, key) {
