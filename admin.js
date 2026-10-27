@@ -3107,7 +3107,10 @@
         kontakCell.append(ad);
       }
       row.append(kontakCell);
-      row.append(make('td', '', member.division));
+      const bidangCell = make('td', '', member.division || '—');
+      if (!member.division) bidangCell.style.cssText = 'color:#a49d90';
+      if (!member.division) bidangCell.title = 'Bidang belum diisi (pendaftar tidak lagi ditanya bidang)';
+      row.append(bidangCell);
       const jabatanCell = make('td');
       const jabSel = make('select');
       jabSel.className = 'member-jabatan-pick';
@@ -3372,6 +3375,7 @@
     const addressIn = make('textarea'); addressIn.name = 'address'; addressIn.required = true; addressIn.maxLength = 1000; addressIn.rows = 3;
     addressIn.value = member.address || ''; addressWrap.append(addressIn); grid.append(addressWrap); controls.address = addressIn;
     const divisions = [
+      ['— Belum ditentukan —', ''],
       ['Lembaga Bantuan Hukum / Advokasi Hukum Rakyat', 'Lembaga Bantuan Hukum / Advokasi Hukum Rakyat'],
       ['Squad Militansi — Pengamanan & Solidaritas', 'Squad Militansi — Pengamanan & Solidaritas'],
       ['Militansi Perempuan Indonesia (MPI Sidoarjo)', 'Militansi Perempuan Indonesia (MPI Sidoarjo)'],
@@ -3381,7 +3385,7 @@
       ['Seluruh bidang (Ketua DPD)', 'Seluruh bidang (Ketua DPD)']
     ];
     const divisionField = addSelect('division', 'Bidang', divisions);
-    divisionField.append(make('small', 'privacy-mini', 'Untuk Ketua DPD yang membawahi semua divisi, pilih “Seluruh bidang (Ketua DPD)”.'));
+    divisionField.append(make('small', 'privacy-mini', 'Pendaftar tidak lagi ditanya bidang. Isi di sini hanya bila perlu untuk catatan internal; untuk Ketua DPD pilih “Seluruh bidang (Ketua DPD)”.'));
     addField('jabatan', 'Jabatan pengurus (kosongkan untuk anggota biasa)', 'text', { maxLength: 60 });
     addSelect('status', 'Status pendaftaran', MEMBER_STATUSES.map(value => [value.replaceAll('_',' '), value]));
     form.append(grid);
@@ -3450,7 +3454,7 @@
       const values = {};
       Object.entries(controls).forEach(([key, control]) => {
         const value = control.value.trim();
-        const next = ['jabatan','kelurahan','rt','rw','kode_pos','kota_luar'].includes(key) ? (value || null) : value;
+        const next = ['jabatan','division','kelurahan','rt','rw','kode_pos','kota_luar'].includes(key) ? (value || null) : value;
         const old = member[key] == null ? null : String(member[key]);
         if (String(next ?? '') !== String(old ?? '')) values[key] = next;
       });

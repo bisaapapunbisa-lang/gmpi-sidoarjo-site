@@ -117,6 +117,19 @@ Yang boleh mengisi: Pemilik, Editor situs, Petugas registrasi. Publik hanya meli
 
 Batas wilayah kecamatan: data GeoJSON publik 35.15 Sidoarjo (repo GitHub sigitttd/geojsanjson, bersumber dari batas administrasi resmi), disederhanakan ±11 KB dan ditanam di `sebaran.js` — tidak butuh Google Maps atau API key.
 
+## Formulir pendaftaran: tanpa pertanyaan bidang (migration 0032)
+
+Pertanyaan **“Bidang pergerakan yang diminati”** sudah dihapus dari formulir pendaftaran karena
+membingungkan (isinya nama bidang/lembaga, bukan jabatan — jadi “Humas” tidak ada di sana),
+sementara kolom **Jabatan pengurus** sudah tersedia.
+
+1. Jalankan `supabase/migrations/202610290032_bidang_pendaftaran_opsional.sql` sekali di SQL Editor.
+   Migrasi ini membuat kolom `division` boleh kosong, menerima pendaftaran tanpa bidang, dan tetap
+   memvalidasi bila bidang diisi.
+2. Di **Admin → Pendaftaran anggota**, kolom **Bidang** tetap ada sebagai catatan internal. Pendaftar
+   baru tampil “—” sampai pengurus mengisinya lewat **Edit data…** (ada pilihan *— Belum ditentukan —*).
+3. Data pendaftar lama tidak berubah.
+
 ## Struktur organisasi DPD (migration 0013)
 1. Jalankan `supabase/migrations/202610200013_struktur_organisasi.sql` di Supabase SQL Editor. Tabel `org_structure` akan dibuat beserta slot awal: Penasihat ×3, Pembina ×3, Ketua, Sekretaris, Wakil Sekretaris I–III, Bendahara, dan Wakil Bendahara I–III. Aman dijalankan ulang karena slot tidak akan dobel.
    Terakhir jalankan `supabase/migrations/202610290031_struktur_tanpa_wakil_ketua.sql` — menghapus jabatan **Wakil Ketua** dari bagan (DPD Sidoarjo tidak memilikinya) sekaligus memperbaiki daftar bagian yang diizinkan.
