@@ -4359,12 +4359,189 @@
     const listHeading = make('div', 'workspace-heading card-list-heading');
     const listTitle = make('div');
     listTitle.append(make('h3', '', 'Daftar kartu'));
-    listTitle.append(make('p', '', 'Ubah status menjadi Nonaktif atau Dicabut bila kartu hilang, disalahgunakan, atau anggota keluar — hasil pindai QR langsung berubah.'));
+    listTitle.append(make('p', '', 'Ubah status menjadi Nonaktif atau Dicabut bila kartu hilang, disalahgunakan, atau anggota keluar — hasil pindai QR langsung berubah. Kartu yang dicabut/ditolak otomatis disembunyikan (bisa dimunculkan kembali), dan kartu aktif bisa dicetak sekaligus: centang beberapa kartu lalu tekan “Cetak terpilih”.'));
     listHeading.append(listTitle);
     const search = input('card-search', 'search', { placeholder: 'Cari nama / nomor…' });
     search.className = 'card-search';
     listHeading.append(search);
     const listWrap = make('div');
+
+    // ---- Filter & cetak massal ----
+    let hideClosed = (() => {
+      try { return localStorage.getItem('gmpi.card.hideClosed') !== '0'; } catch (e) { return true; }
+    })();
+    const selectedIds = new Set();
+    const listTools = make('div', 'card-tools');
+    const hideWrap = make('label', 'card-tool-check');
+    const hideCheck = make('input'); hideCheck.type = 'checkbox'; hideCheck.checked = hideClosed;
+    hideCheck.addEventListener('change', () => {
+      hideClosed = hideCheck.checked;
+      try { localStorage.setItem('gmpi.card.hideClosed', hideClosed ? '1' : '0'); } catch (e) { /* abaikan */ }
+      renderList();
+    });
+    hideWrap.append(hideCheck, make('span', '', 'Sembunyikan kartu dicabut & ditolak'));
+    const bulkInfo = make('span', 'card-tool-info', '');
+    const pickAllBtn = make('button', 'admin-link-button', 'Pilih semua yang aktif');
+    pickAllBtn.type = 'button';
+    pickAllBtn.addEventListener('click', () => {
+      const printable = visibleCards().filter(c => c.status === 'aktif');
+      const allPicked = printable.length && printable.every(c => selectedIds.has(c.id));
+      printable.forEach(c => (allPicked ? selectedIds.delete(c.id) : selectedIds.add(c.id)));
+      renderList();
+    });
+    const printBtn = make('button', 'admin-button admin-button-red', 'Cetak terpilih');
+    printBtn.type = 'button';
+    printBtn.addEventListener('click', () => printSelected());
+    const pngBtn = make('button', 'admin-button admin-button-outline', 'Unduh PNG terpilih');
+    pngBtn.type = 'button';
+    pngBtn.addEventListener('click', () => downloadSelected());
+    listTools.append(hideWrap, bulkInfo, pickAllBtn, printBtn, pngBtn);
+
+    // Kartu yang lolos pencarian + filter tampilan.
+    const CLOSED_STATUS = ['dicabut', 'ditolak'];
+    function matchesSearch(c) {
+      const q = search.value.trim().toLowerCase();
+      return !q || c.full_name.toLowerCase().includes(q) || c.member_number.toLowerCase().includes(q);
+    }
+    function visibleCards() {
+      return cards.filter(c => matchesSearch(c) && (!hideClosed || !CLOSED_STATUS.includes(c.status)));
+    }
+
+    // Data kartu untuk cetak massal (tidak mengganggu formulir yang sedang dibuka).
+    function bulkData(card, photoImage) {
+      return {
+        name: card.full_name, number: card.member_number, district: card.district,
+        jabatan: card.jabatan || 'Anggota', issued: card.issued_at, validUntil: card.valid_until,
+        token: card.card_token || '', photo: photoImage || null,
+        photoZoom: 1, photoX: 0, photoY: 0, logo,
+        signerName: signerNameIn.value, signerTitle: signerTitleIn.value,
+        signature: null, stamp: ''
+      };
+    }
+    // Foto profil tersimpan milik pendaftar terkait (bila akun berhak membaca dokumen).
+    async function photoForCard(card) {
+      if (!canSeeMembers()) return null;
+      let reg = card.registration_id ? regRows.find(r => r.id === card.registration_id) : null;
+      if (!reg && card.registration_id) {
+        const linked = await client.from('member_registrations')
+          .select('id,full_name,district,jabatan,status,profile_object_key,created_at')
+          .eq('id', card.registration_id).maybeSingle();
+        if (!linked.error && linked.data) { reg = linked.data; regRows.unshift(reg); }
+      }
+      if (!reg?.profile_object_key) return null;
+      const { data, error } = await client.storage.from('member-documents').createSignedUrl(reg.profile_object_key, 300);
+      if (error || !data?.signedUrl) return null;
+      return window.GMPICard.loadImage(data.signedUrl, true);
+    }
+    function selectedCards() {
+      return [...selectedIds].map(id => cards.find(c => c.id === id)).filter(c => c && c.status === 'aktif');
+    }
+
+    async function printSelected() {
+      const list = selectedCards();
+      if (!list.length) { setMessage('Centang dulu kartu yang ingin dicetak (hanya kartu berstatus Aktif).', 'error'); return; }
+      const win = window.open('', '_blank');
+      if (!win) { setMessage('Jendela cetak diblokir browser. Izinkan pop-up untuk halaman ini lalu coba lagi.', 'error'); return; }
+      win.document.write('<!doctype html><meta charset="utf-8"><title>Menyiapkan kartu…</title><p style="font-family:Arial;padding:24px">Menyiapkan ' + list.length + ' kartu…</p>');
+      win.document.close();
+      setMessage(`Menyiapkan ${list.length} kartu untuk dicetak…`);
+
+      const nodes = [];
+      let noPhoto = 0;
+      for (const card of list) {
+        let img = null;
+        try { img = await photoForCard(card); } catch (e) { img = null; }
+        if (!img) noPhoto += 1;
+        const wrapCard = win.document.createElement('div');
+        wrapCard.className = 'card-slot';
+        const front = win.document.createElement('canvas');
+        const back = win.document.createElement('canvas');
+        window.GMPICard.draw(front, bulkData(card, img));
+        window.GMPICard.drawBack(back, bulkData(card, img));
+        front.className = 'face front';
+        back.className = 'face back';
+        wrapCard.append(front, back);
+        const label = win.document.createElement('div');
+        label.className = 'label';
+        label.textContent = `${card.member_number} · ${card.full_name}`;
+        wrapCard.append(label);
+        nodes.push(wrapCard);
+      }
+
+      const sheet = win.document.createElement('div');
+      sheet.className = 'sheet';
+      nodes.forEach(n => sheet.append(n));
+      const bar = win.document.createElement('div');
+      bar.className = 'bar';
+      const go = win.document.createElement('button');
+      go.textContent = 'Cetak sekarang';
+      go.addEventListener('click', () => win.print());
+      const closeBtn = win.document.createElement('button');
+      closeBtn.textContent = 'Tutup';
+      closeBtn.addEventListener('click', () => win.close());
+      bar.append(go, closeBtn, Object.assign(win.document.createElement('span'), {
+        className: 'note',
+        textContent: 'Ukuran tiap sisi 54 × 85,6 mm. Cetak di kertas PVC/art carton, skala 100% (jangan “fit to page”).'
+      }));
+      win.document.title = `Kartu anggota — ${list.length} kartu`;
+      win.document.body.replaceChildren(bar, sheet);
+      const style = win.document.createElement('style');
+      style.textContent = `
+        @page { size: A4; margin: 8mm; }
+        body { margin:0; background:#f4f2ed; font:12px/1.5 Arial,Helvetica,sans-serif; color:#171715; }
+        .bar { position:sticky; top:0; display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:10px 14px; background:#10100f; color:#fff; z-index:5; }
+        .bar button { font:700 12px Arial; padding:8px 16px; border:0; border-radius:5px; cursor:pointer; background:#e51c24; color:#fff; }
+        .bar button + button { background:#3a3833; }
+        .bar .note { color:#b9b5ac; font-size:11px; }
+        .sheet { display:grid; grid-template-columns:repeat(2, 54mm); gap:6mm; padding:10mm; justify-content:center; }
+        .card-slot { width:54mm; break-inside:avoid; page-break-inside:avoid; background:#fff; }
+        .card-slot canvas { width:54mm; height:85.6mm; display:block; }
+        .card-slot .back { margin-top:3mm; }
+        .label { font-size:6.5pt; color:#8a8478; text-align:center; padding-top:1.5mm; }
+        @media print {
+          body { background:#fff; }
+          .bar { display:none; }
+          .sheet { padding:0; gap:5mm; }
+          .label { display:none; }
+          .card-slot { outline:none; }
+        }
+      `;
+      win.document.head.append(style);
+      const photoNote = !noPhoto ? ''
+        : canSeeMembers()
+          ? ` ${noPhoto} kartu tampil tanpa foto karena pendaftar terkait belum punya foto profil tersimpan.`
+          : ` ${noPhoto} kartu tampil tanpa foto karena akun ini bukan Petugas Registrasi/Pemilik sehingga tidak dapat membaca dokumen pendaftar — minta Petugas Registrasi mencetak kartu tersebut.`;
+      setMessage(`${list.length} kartu siap dicetak.${photoNote} Tekan “Cetak sekarang” di jendela baru.`);
+    }
+
+    async function downloadSelected() {
+      const list = selectedCards();
+      if (!list.length) { setMessage('Centang dulu kartu yang ingin diunduh (hanya kartu berstatus Aktif).', 'error'); return; }
+      if (!window.confirm(`Unduh ${list.length * 2} berkas PNG (depan + belakang) untuk ${list.length} kartu? Browser mungkin menanyakan izin mengunduh banyak berkas.`)) return;
+      setMessage('Menyiapkan berkas PNG…');
+      let done = 0;
+      for (const card of list) {
+        let img = null;
+        try { img = await photoForCard(card); } catch (e) { img = null; }
+        for (const which of ['front', 'back']) {
+          const out = document.createElement('canvas');
+          if (which === 'front') window.GMPICard.draw(out, bulkData(card, img));
+          else window.GMPICard.drawBack(out, bulkData(card, img));
+          const blob = await new Promise(resolve => out.toBlob(resolve, 'image/png'));
+          if (blob) {
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `KTA-${card.member_number.replace(/[^A-Z0-9-]/gi, '_')}-${which === 'back' ? 'belakang' : 'depan'}.png`;
+            document.body.append(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+          }
+          await new Promise(resolve => setTimeout(resolve, 350));
+        }
+        done += 1;
+        setMessage(`Mengunduh kartu ${done} dari ${list.length}…`);
+      }
+      setMessage(`${list.length} kartu diunduh (${list.length * 2} berkas PNG). Periksa folder unduhan.`);
+    }
 
     const pendingBox = make('div', 'card-pending');
     async function decide(card, status) {
@@ -4396,17 +4573,52 @@
 
     function renderList() {
       renderPending();
-      const q = search.value.trim().toLowerCase();
       const rank = c => (c.status === 'menunggu' ? 0 : c.status === 'ditolak' ? 1 : 2);
-      const shown = cards.filter(c => !q || c.full_name.toLowerCase().includes(q) || c.member_number.toLowerCase().includes(q))
-        .slice().sort((a, b) => rank(a) - rank(b));
-      const { wrap, body } = makeTable(['No. anggota', 'Nama', 'Kecamatan / jabatan', 'Berlaku s/d', 'Status', 'Aksi']);
+      const matched = visibleCards();
+      const shown = matched.slice().sort((a, b) => rank(a) - rank(b));
+      // Jumlah kartu yang disembunyikan karena statusnya ditutup (bukan karena pencarian).
+      const hiddenCount = hideClosed ? cards.filter(c => matchesSearch(c) && CLOSED_STATUS.includes(c.status)).length : 0;
+      const activeVisible = shown.filter(c => c.status === 'aktif');
+      // Buang pilihan yang kartunya sudah tidak aktif lagi.
+      [...selectedIds].forEach(id => {
+        const c = cards.find(x => x.id === id);
+        if (!c || c.status !== 'aktif') selectedIds.delete(id);
+      });
+      const picked = selectedIds.size;
+      const allPicked = activeVisible.length > 0 && activeVisible.every(c => selectedIds.has(c.id));
+      bulkInfo.textContent = picked
+        ? `${picked} kartu dipilih`
+        : `${activeVisible.length} kartu aktif siap dicetak${hiddenCount ? ` · ${hiddenCount} kartu disembunyikan` : ''}`;
+      pickAllBtn.textContent = allPicked ? 'Batalkan pilihan' : 'Pilih semua yang aktif';
+      printBtn.disabled = !picked;
+      pngBtn.disabled = !picked;
+      printBtn.textContent = picked ? `Cetak terpilih (${picked})` : 'Cetak terpilih';
+      pngBtn.textContent = picked ? `Unduh PNG terpilih (${picked})` : 'Unduh PNG terpilih';
+
+      const { wrap, body } = makeTable(['Pilih', 'No. anggota', 'Nama', 'Kecamatan / jabatan', 'Berlaku s/d', 'Status', 'Aksi']);
       if (!shown.length) {
-        listWrap.replaceChildren(make('div', 'table-empty', cards.length ? 'Tidak ada kartu yang cocok.' : 'Belum ada kartu yang diterbitkan.'));
+        const empty = make('div', 'table-empty', cards.length
+          ? (hiddenCount ? 'Semua kartu pada daftar ini disembunyikan (dicabut/ditolak). Hilangkan centang “Sembunyikan kartu dicabut & ditolak” untuk menampilkannya kembali.' : 'Tidak ada kartu yang cocok.')
+          : 'Belum ada kartu yang diterbitkan.');
+        listWrap.replaceChildren(listTools, empty);
         return;
       }
       shown.forEach(card => {
         const row = make('tr');
+        const pickCell = make('td', 'card-pick-cell');
+        if (card.status === 'aktif') {
+          const cb = make('input'); cb.type = 'checkbox'; cb.checked = selectedIds.has(card.id);
+          cb.setAttribute('aria-label', `Pilih kartu ${card.member_number} untuk dicetak`);
+          cb.addEventListener('change', () => {
+            if (cb.checked) selectedIds.add(card.id); else selectedIds.delete(card.id);
+            renderList();
+          });
+          pickCell.append(cb);
+        } else {
+          pickCell.append(make('span', 'card-note', '—'));
+          pickCell.title = 'Hanya kartu berstatus Aktif yang bisa dicetak.';
+        }
+        row.append(pickCell);
         const numCell = make('td', 'mono-cell', card.member_number);
         if (isReservedNumber(card.member_number)) numCell.append(make('span', 'card-reserved-tag', '★ khusus'));
         row.append(numCell);
@@ -4479,7 +4691,7 @@
         row.append(actions);
         body.append(row);
       });
-      listWrap.replaceChildren(wrap);
+      listWrap.replaceChildren(listTools, wrap);
     }
     search.addEventListener('input', renderList);
 
