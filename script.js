@@ -234,7 +234,6 @@
         p_rw: luar ? null : val('rw'),
         p_kode_pos: luar ? null : val('kode_pos'),
         p_kota_luar: luar ? val('kota_luar') : null,
-        p_division: val('division'),
         p_jabatan: val('jabatan') || null,
         p_ktp_key: ktpKey, p_profile_key: profilKey
       };

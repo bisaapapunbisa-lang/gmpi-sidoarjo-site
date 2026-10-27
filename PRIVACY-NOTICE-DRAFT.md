@@ -15,7 +15,7 @@ Formulir pada situs GMPI DPD Sidoarjo saat ini masih prototipe dan belum mengiri
 Jika formulir kelak diaktifkan, DPD dapat meminta:
 
 - **Aduan warga:** nama, kontak, kecamatan, topik, dan ringkasan persoalan.
-- **Pendaftaran anggota:** nama lengkap, NIK, tempat/tanggal lahir, jenis kelamin, nomor telepon, kecamatan, alamat, bidang minat, pernyataan pledge, foto KTP, dan foto profil.
+- **Pendaftaran anggota:** nama lengkap, NIK, tempat/tanggal lahir, jenis kelamin, nomor telepon, kecamatan, alamat, jabatan pengurus (bila pendaftar mengisi), pernyataan pledge, foto KTP, dan foto profil. Bidang pergerakan tidak lagi ditanyakan saat pendaftaran; bila pengurus mencatatnya untuk keperluan internal, data itu ikut dilindungi ketentuan ini.
 
 NIK dan foto KTP merupakan data berisiko tinggi. DPD harus memastikan setiap data memang diperlukan dan tidak meminta dokumen tambahan tanpa tujuan yang jelas.
 
