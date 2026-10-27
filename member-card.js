@@ -22,6 +22,8 @@
     body: "'GMPI Inter', 'Segoe UI', Arial, sans-serif",
     mono: "'GMPI Mono', 'Consolas', 'Courier New', monospace"
   };
+  // Warna latar logo GMPI (webp) supaya menyatu dengan lingkaran di kartu.
+  const LOGO_BG = '#0b0105';
   const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AGU', 'SEP', 'OKT', 'NOV', 'DES'];
 
   const scriptSrc = document.currentScript && document.currentScript.src;
@@ -127,6 +129,19 @@
     const dx = x - maxX + maxX * Math.max(-1, Math.min(1, offX));
     const dy = y - maxY + maxY * Math.max(-1, Math.min(1, offY));
     ctx.drawImage(img, dx, dy, dw, dh);
+  }
+
+  // Tampilkan logo UTUH di dalam kotak (tanpa memotong sisi/ribbon).
+  function drawContain(ctx, img, x, y, w, h, pad = 0) {
+    const iw = img.naturalWidth || img.width;
+    const ih = img.naturalHeight || img.height;
+    if (!iw || !ih) return;
+    const boxW = Math.max(1, w - pad * 2);
+    const boxH = Math.max(1, h - pad * 2);
+    const k = Math.min(boxW / iw, boxH / ih);
+    const dw = iw * k;
+    const dh = ih * k;
+    ctx.drawImage(img, x + pad + (boxW - dw) / 2, y + pad + (boxH - dh) / 2, dw, dh);
   }
 
   function drawQr(ctx, text, x, y, size) {
@@ -275,9 +290,11 @@
     if (data.logo) {
       ctx.save();
       ctx.beginPath(); ctx.arc(lx, ly, lr, 0, Math.PI * 2); ctx.closePath();
-      ctx.fillStyle = '#10100f'; ctx.fill();
+      // Latar lingkaran disamakan dengan latar gelap logo agar tepi kotak logo tidak terlihat.
+      ctx.fillStyle = LOGO_BG; ctx.fill();
       ctx.clip();
-      drawCover(ctx, data.logo, lx - lr, ly - lr, lr * 2, lr * 2);
+      // Logo utuh di dalam lingkaran (sebelumnya drawCover memotong tepi perisai & ribbon GMPI).
+      drawContain(ctx, data.logo, lx - lr, ly - lr, lr * 2, lr * 2, lr * 0.30);
       ctx.restore();
     } else {
       ctx.fillStyle = '#1f1e1b'; ctx.beginPath(); ctx.arc(lx, ly, lr, 0, Math.PI * 2); ctx.fill();
@@ -568,8 +585,8 @@
     // ---------- Header ----------
     const lx = W - 70, ly = 70, lr = 28;
     if (data.logo) {
-      ctx.save(); ctx.beginPath(); ctx.arc(lx, ly, lr, 0, Math.PI * 2); ctx.fillStyle = '#10100f'; ctx.fill(); ctx.clip();
-      drawCover(ctx, data.logo, lx - lr, ly - lr, lr * 2, lr * 2); ctx.restore();
+      ctx.save(); ctx.beginPath(); ctx.arc(lx, ly, lr, 0, Math.PI * 2); ctx.fillStyle = LOGO_BG; ctx.fill(); ctx.clip();
+      drawContain(ctx, data.logo, lx - lr, ly - lr, lr * 2, lr * 2, lr * 0.30); ctx.restore();
     }
     ctx.lineWidth = 2; ctx.lineCap = 'round';
     [[C.cyan, -0.35, 0.3], [C.red, 1.7, 2.3], [C.goldHi, 3.7, 4.3], ['rgba(100,244,255,.25)', 0, Math.PI * 2]].forEach(([color, a, b]) => {
