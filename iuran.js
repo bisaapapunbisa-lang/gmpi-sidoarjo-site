@@ -327,9 +327,17 @@
       const noteNode = field('note');
       const statusChip = field('status');
 
-      if (nominalNode) nominalNode.textContent = model.nominal > 0 ? rupiah(model.nominal) : 'Sesuai ketetapan';
-      if (periodNode) periodNode.textContent = model.periodText;
-      if (dueNode) dueNode.textContent = model.dueDate ? prettyDate(model.dueDate) : 'Sesuai pengumuman';
+      if (nominalNode) {
+        nominalNode.textContent = model.nominal > 0
+          ? rupiah(model.nominal)
+          : (model.open ? 'Sesuai ketetapan' : 'Belum ada tagihan');
+      }
+      if (periodNode) periodNode.textContent = model.periodText || '—';
+      if (dueNode) {
+        dueNode.textContent = model.dueDate
+          ? prettyDate(model.dueDate)
+          : (model.open ? 'Sesuai pengumuman' : 'Menunggu tagihan');
+      }
       if (noteNode) noteNode.textContent = model.note;
       if (statusChip) {
         statusChip.textContent = model.open ? 'DIBUKA' : 'BELUM DIBUKA';
@@ -354,9 +362,9 @@
     function modelFromSettings(settings) {
       return {
         open: settings.aktif,
-        nominal: settings.nominal,
-        periodText: periodLabel(settings.periode),
-        dueDate: settings.jatuhTempo,
+        nominal: settings.aktif ? settings.nominal : 0,
+        periodText: settings.aktif ? periodLabel(settings.periode) : 'Menunggu keputusan pengurus',
+        dueDate: settings.aktif ? settings.jatuhTempo : '',
         note: settings.aktif
           ? `${settings.nama} sudah dibuka. Bayar lewat QRIS — nominal terisi otomatis, tinggal pindai.`
           : `${settings.nama} belum dibuka — pantau pengumuman grup WhatsApp anggota.`
@@ -599,6 +607,44 @@
       const main = $('#bayar');
       const konfirmasi = $('#konfirmasi');
       const open = state.hasInvoices ? Boolean(state.invoice) : s.aktif;
+
+      // Saat belum ada tagihan berjalan: JANGAN tampilkan nominal apa pun.
+      // Nominal lama di pengaturan bisa menyesatkan anggota.
+      const billAmount = $('#dues-bill-amount');
+      const billMeta = $('#dues-bill-meta');
+      const billSteps = $('#dues-bill-steps');
+      const billPay = $('#dues-bill-pay');
+      if (billAmount) billAmount.hidden = !open;
+      if (billMeta) billMeta.hidden = !open;
+      if (!open) {
+        // Kosongkan angka agar tidak terbaca mesin pencari / pembaca layar
+        // dan tidak menimbulkan kesan ada tagihan.
+        if (nominalNode) nominalNode.textContent = '—';
+        if (unitNode) unitNode.textContent = '';
+        if (periodNode) periodNode.textContent = '—';
+        if (dueNode) dueNode.textContent = '—';
+        const qrisAmount = $('#dues-qris-amount');
+        if (qrisAmount) qrisAmount.textContent = 'Belum ada tagihan';
+        const totalNode = $('#dues-total');
+        if (totalNode) totalNode.textContent = '—';
+        const monthsTotal = $('#dues-months-total');
+        if (monthsTotal) monthsTotal.textContent = '—';
+      }
+      if (billSteps) billSteps.hidden = !open;
+      if (billPay) billPay.hidden = !open;
+      if (kicker) kicker.textContent = open ? 'TAGIHAN ANGGOTA' : 'BELUM ADA TAGIHAN';
+      const intro = $('#dues-intro');
+      if (intro) {
+        intro.textContent = open
+          ? 'Menjaga barisan butuh kas. Bayar iuran anggota dengan cara paling gampang: pilih bulan yang mau dibayar (boleh satu bulan saja), pindai QRIS dengan nominal otomatis, atau bayar lewat e-wallet, transfer bank, maupun tunai ke bendahara.'
+          : 'Belum ada tagihan iuran yang dibuka pengurus. Halaman ini aktif otomatis begitu bendahara meluncurkan tagihan. Sementara itu, Anda tetap bisa memeriksa status pembayaran sebelumnya di bagian bawah.';
+      }
+
+      if (!open && catatan) {
+        catatan.textContent = 'Nominal dan jatuh tempo akan tampil di sini begitu pengurus meluncurkan tagihan. ' +
+          'Sementara ini belum ada yang perlu dibayar — jangan mengirim uang tanpa tagihan resmi.';
+      }
+
       if (!open) {
         if (main) main.hidden = true;
         if (konfirmasi) konfirmasi.hidden = true;
