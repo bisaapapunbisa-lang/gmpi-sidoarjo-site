@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="sos.css">
   <link rel="stylesheet" href="sebaran.css">
   <link rel="stylesheet" href="struktur.css">
+  <link rel="stylesheet" href="iuran.css">
 </head>
 <body>
   <canvas id="starfield" aria-hidden="true"></canvas>
@@ -40,6 +41,7 @@
       <a href="#lensa" class="nav-link" hidden>Lensa Kegiatan</a>
       <a href="#berita" class="nav-link">Berita</a>
       <a href="#perlengkapan" class="nav-link">Perlengkapan</a>
+      <a href="iuran.html" class="nav-link">Iuran</a>
       <a href="#gabung" class="nav-join">Gabung Barisan <span>↗</span></a>
     </nav>
   </header>
@@ -230,6 +232,42 @@
       </figure>
     </section>
 
+    <section class="dues-section" id="iuran" aria-labelledby="dues-home-title" data-dues-teaser>
+      <div class="dues-inner">
+        <div class="dues-head">
+          <div>
+            <div class="dues-eyebrow"><i></i>IURAN ANGGOTA</div>
+            <h2 id="dues-home-title">Bayar iuran,<br><em>semudah pindai.</em></h2>
+          </div>
+          <p class="dues-lead">Iuran anggota menjaga kas organisasi tetap hidup: advokasi warga, kegiatan sosial, dan operasional sekretariat DPD. <b>Pilih QRIS</b> — nominal otomatis terisi, tinggal pindai dan konfirmasi. Bisa juga lewat e-wallet, transfer bank, atau tunai ke bendahara.</p>
+        </div>
+        <div class="dues-grid">
+          <div class="dues-card">
+            <div class="dues-card-kicker">TAGIHAN<span data-dues-field="status">MEMUAT…</span></div>
+            <p class="dues-amount"><span data-dues-field="nominal">Rp—</span></p>
+            <ul class="dues-meta">
+              <li>Periode <b data-dues-field="period">—</b></li>
+              <li>Jatuh tempo <b data-dues-field="due">—</b></li>
+            </ul>
+            <p class="dues-note" data-dues-field="note">Memuat pengaturan iuran…</p>
+            <div class="dues-btn-row">
+              <a class="dues-btn is-gold" href="iuran.html" data-dues-cta>Bayar iuran sekarang</a>
+              <a class="dues-btn is-outline" href="iuran.html#cek">Cek status iuran</a>
+            </div>
+            <p class="dues-status-msg is-error" data-dues-teaser-warning hidden>Pengaturan iuran belum bisa dimuat dari server. Nominal di atas mungkin belum sesuai ketetapan pengurus — buka halaman iuran untuk rincian terbaru.</p>
+            <p class="dues-note" style="margin-top:14px">Pembayaran hanya ke kanal atas nama <b>GMPI DPD SIDOARJO</b>. Jangan mengirim uang ke rekening pribadi.</p>
+          </div>
+          <div class="dues-card is-dark dues-teaser-qr">
+            <div class="dues-card-kicker" style="margin-bottom:12px">PINDAI QRIS IURAN</div>
+            <canvas data-dues-qr width="300" height="300" role="img" aria-label="QRIS pembayaran iuran anggota GMPI DPD Sidoarjo"></canvas>
+            <img data-dues-qr-fallback src="assets/payment/qris-gmpi-dpd-sidoarjo.jpg" alt="QRIS resmi GMPI DPD SIDOARJO" style="width:min(180px,44vw);margin:0 auto;display:block" hidden>
+            <small>Nominal terisi otomatis · semua e-wallet &amp; m-banking</small>
+            <p class="dues-note" style="margin-top:12px">Belum bisa memindai? Buka <a href="iuran.html" style="color:#e0b855;text-decoration:underline">halaman iuran</a> untuk nominal, e-wallet, transfer bank, dan konfirmasi pembayaran.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <section class="section shop-section" id="perlengkapan" aria-labelledby="shop-title">
       <div class="section-head">
         <div><div class="eyebrow"><span class="eyebrow-line"></span> PERLENGKAPAN ORGANISASI</div><h2 id="shop-title">Lengkapi <em>atributmu.</em></h2></div>
@@ -288,7 +326,7 @@
     <a class="brand footer-brand" href="#top"><img data-site-logo src="assets/logo-gmpi-sidoarjo-crop.webp" alt=""><span class="brand-text"><strong>GMPI</strong><small>DPD SIDOARJO</small></span></a>
     <p>Gerakan Militansi Pejuang Indonesia<br><span data-cms-key="footer_slogan">Setia Bersaudara Sampai Urat Nadi</span></p>
     <p><span>Perum, Jl. Graha Bougenville Kav. Depag No.31, Kemiri, Kec. Sidoarjo, Kab. Sidoarjo 61234<br>Telp/WA +62 812-3591-1689 &middot; gmpisda@gmail.com</span></p>
-    <div class="footer-links"><a href="#pilar">Pilar Pergerakan</a><a href="#posko">Posko Digital</a><a href="#lensa" hidden>Lensa Kegiatan</a><a href="berita.html">Berita</a><a href="#perlengkapan">Perlengkapan</a><a href="#struktur">Struktur Organisasi</a><a href="#legalitas">Legalitas</a><a href="verifikasi.html">Verifikasi Kartu</a><a href="darurat.html">Darurat / SOS</a><a class="footer-admin" href="admin.html" aria-label="Masuk ke panel Admin GMPI">Admin ↗</a></div>
+    <div class="footer-links"><a href="#pilar">Pilar Pergerakan</a><a href="#posko">Posko Digital</a><a href="#lensa" hidden>Lensa Kegiatan</a><a href="berita.html">Berita</a><a href="#perlengkapan">Perlengkapan</a><a href="iuran.html">Iuran Anggota</a><a href="#struktur">Struktur Organisasi</a><a href="#legalitas">Legalitas</a><a href="verifikasi.html">Verifikasi Kartu</a><a href="darurat.html">Darurat / SOS</a><a class="footer-admin" href="admin.html" aria-label="Masuk ke panel Admin GMPI">Admin ↗</a></div>
     <small class="copyright">© <span id="year"></span> GMPI DPD Sidoarjo<br>Berbadan hukum · AHU-0010942.AH.01.07.TAHUN 2021</small>
   </footer>
 
@@ -368,6 +406,7 @@
   <script src="script.js"></script>
   <script src="starfield.js"></script>
   <script src="store.js"></script>
+  <script src="iuran.js"></script>
   <script src="news.js"></script>
   <script src="sebaran.js"></script>
   <script src="struktur.js"></script>

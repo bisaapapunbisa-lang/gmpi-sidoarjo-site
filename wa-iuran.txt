@@ -1,0 +1,35 @@
+TEKS SIAP SALIN — PENGUMUMAN IURAN ANGGOTA
+(Ganti bagian [ ] sesuai ketetapan pengurus, lalu kirim ke grup WhatsApp anggota.)
+
+────────────────────────────────────────
+Assalamualaikum saudara/i GMPI Sidoarjo 🇮🇩
+
+*IURAN KEANGGOTAAN [TAHUN/PERIODE]*
+
+Nominal: *Rp[60.000]* per anggota
+Jatuh tempo: [31 Desember 2026]
+
+Cara bayar — pilih yang paling mudah:
+1) *QRIS* (paling cepat): buka m-banking atau e-wallet (DANA, OVO, GoPay, ShopeePay, BCA mobile, Livin', BRImo, dll.) → pilih *Scan / Bayar QRIS* → nominal sudah terisi otomatis.
+2) *E-wallet* dan *transfer bank*: nomor & rekening resmi ada di tautan di bawah.
+3) *Tunai* ke bendahara saat rapat atau di sekretariat.
+
+🔗 Semua cara bayar + konfirmasi + cek status:
+*https://www.gmpisidoarjo.com/iuran*
+
+Setelah membayar, isi formulir konfirmasi singkat di halaman itu (±30 detik, tanpa unggah berkas) supaya langsung tercatat di kas organisasi. Sudah bayar tapi belum tercatat? Cek status di halaman yang sama dengan nomor anggota + nama sesuai kartu.
+
+Pembayaran hanya ke kanal atas nama *GMPI DPD SIDOARJO*. Jangan pernah ke rekening pribadi.
+
+Iuran ini menghidupkan advokasi warga, kegiatan sosial, dan operasional sekretariat kita. Terima kasih atas kesetiaan dan iurannya.
+
+_Setia Bersaudara Sampai Urat Nadi_
+*Bendahara GMPI DPD Sidoarjo*
+────────────────────────────────────────
+
+CATATAN UNTUK PENGURUS
+- Teks otomatis (sudah menyesuaikan nominal & periode dari panel Admin) bisa dibuat di:
+  Admin → tab "Iuran" → tombol "Buat teks pengumuman WhatsApp" → "Salin teks".
+- Lampirkan juga gambar poster/QRIS resmi bila perlu.
+- Halaman /iuran sudah memuat QRIS dengan nominal otomatis, jadi anggota tidak perlu
+  mengetik jumlah pembayaran.

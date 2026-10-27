@@ -131,3 +131,33 @@ Batas wilayah kecamatan: data GeoJSON publik 35.15 Sidoarjo (repo GitHub sigittt
 - Tampilan kartu sama dengan kartu biasa. Di daftar Admin, nomor khusus diberi tanda "★ khusus".
 - Kartu bernomor khusus tetap harus disetujui oleh **Penyetuju Kartu lain**, karena pembuat kartu tidak boleh menyetujui kartunya sendiri.
 - Kartu yang terbit sebelum migrasi ini tidak diubah.
+
+## Iuran keanggotaan (QRIS otomatis, e-wallet, transfer, tunai)
+
+Fitur ini menagih iuran anggota lewat halaman publik `/iuran` dan memverifikasinya di panel Admin.
+
+1. Jalankan sekali `supabase/migrations/202610270028_iuran_keanggotaan.sql` di Supabase SQL Editor.
+2. Opsional: beri peran `bendahara` kepada akun bendahara (tanpa akses NIK/KTP):
+
+```sql
+insert into public.admin_profiles (email, role, active)
+select lower(email), 'bendahara', true
+from auth.users
+where lower(email) = lower('EMAIL-BENDAHARA@CONTOH.ID')
+on conflict (email, role) do update set active = true;
+```
+
+3. Masuk Admin → tab **Iuran** (Pemilik, Registrasi, atau Bendahara). Isi nama iuran, periode
+   (`2026` tahunan atau `2026-10` bulanan), nominal, jatuh tempo, nomor e-wallet, rekening bank,
+   dan WhatsApp bendahara. Ubah **Status periode iuran** menjadi *Buka* bila semuanya sudah benar.
+4. Bagikan `https://www.gmpisidoarjo.com/iuran` + teks dari tombol **Buat teks pengumuman WhatsApp**.
+5. Anggota mengirim konfirmasi dari halaman itu → muncul sebagai *Menunggu* → cocokkan dengan mutasi
+   QRIS/rekening → **Verifikasi**.
+6. QRIS di halaman iuran dibuat di browser dari payload QRIS statis resmi (NMID ID1026605146624)
+   dengan nominal terisi otomatis dan checksum CRC16 dihitung ulang. Bila organisasi mengganti akun
+   QRIS, ganti konstanta `QRIS_STATIC_PAYLOAD` di `iuran.js` — langkah rincinya ada di
+   `PANDUAN-IURAN.md`.
+7. Publik tidak bisa membaca tabel `dues_payments`. Cek status anggota hanya membalas bila nomor
+   anggota + nama cocok dengan kartu anggota. Hanya Pemilik yang dapat menghapus catatan.
+
+Panduan lengkap untuk pengurus: **`PANDUAN-IURAN.md`**. Teks pengumuman siap pakai: **`wa-iuran.txt`**.

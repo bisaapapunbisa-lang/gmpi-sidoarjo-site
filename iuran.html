@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#151513">
+  <meta name="description" content="Bayar iuran keanggotaan GMPI DPD Sidoarjo dengan mudah: QRIS (nominal terisi otomatis), e-wallet DANA/OVO/GoPay/ShopeePay, transfer bank, atau tunai ke bendahara.">
+  <meta name="robots" content="index,follow">
+  <title>Iuran Keanggotaan — GMPI DPD Sidoarjo</title>
+  <link rel="icon" href="assets/favicon.png">
+  <link rel="stylesheet" href="iuran.css">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="GMPI DPD Sidoarjo">
+  <meta property="og:title" content="Iuran Keanggotaan — GMPI DPD Sidoarjo">
+  <meta property="og:description" content="Bayar iuran anggota lewat QRIS, e-wallet, transfer bank, atau tunai. Nominal QRIS terisi otomatis, tinggal pindai dan konfirmasi.">
+  <meta property="og:image" content="https://www.gmpisidoarjo.com/assets/og-share.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+</head>
+<body class="dues-page">
+  <div class="dues-topbar">
+    <a class="dues-brand" href="index.html">
+      <img src="assets/logo-gmpi-sidoarjo-crop.webp" alt="Logo GMPI">
+      <span><b>GMPI</b><small>DPD SIDOARJO</small></span>
+    </a>
+    <a class="dues-back" href="index.html">← Beranda</a>
+  </div>
+
+  <main>
+    <div class="dues-page-title">
+      <div class="dues-eyebrow"><i></i>IURAN ANGGOTA</div>
+      <h1>Iuran <em>keanggotaan.</em></h1>
+      <p>Menjaga barisan butuh kas. Bayar iuran anggota dengan cara paling gampang: pindai QRIS (nominal sudah terisi otomatis), kirim lewat e-wallet, transfer bank, atau serahkan tunai ke bendahara. Setelah membayar, konfirmasi di halaman ini agar tercatat.</p>
+    </div>
+
+    <div class="dues-status-msg is-error" id="dues-config-warning" role="status" hidden></div>
+    <div class="dues-off" id="dues-closed" role="status" hidden></div>
+
+    <div class="dues-grid" id="dues-main">
+      <!-- KIRI: rincian tagihan -->
+      <section class="dues-card" aria-labelledby="dues-bill-title">
+        <div class="dues-card-kicker" id="dues-kicker">TAGIHAN ANGGOTA</div>
+        <h2 id="dues-bill-title" class="dues-amount"><span id="dues-nominal">Rp—</span> <small id="dues-unit">/ anggota</small></h2>
+        <ul class="dues-meta">
+          <li>Periode <b id="dues-period">—</b></li>
+          <li id="dues-due-item">Jatuh tempo <b id="dues-due">—</b></li>
+          <li id="dues-countdown" hidden>—</li>
+        </ul>
+        <p class="dues-note" id="dues-catatan">Memuat pengaturan iuran…</p>
+        <ol class="dues-steps">
+          <li><b>1</b><span><strong>Bayar.</strong> Pilih QRIS (paling cepat), e-wallet, transfer bank, atau tunai.</span></li>
+          <li><b>2</b><span><strong>Konfirmasi.</strong> Isi formulir di bawah — 30 detik, tanpa unggah berkas.</span></li>
+          <li><b>3</b><span><strong>Kirim bukti.</strong> Tombol WhatsApp otomatis menyiapkan pesan berisi rincian pembayaranmu.</span></li>
+        </ol>
+        <div class="dues-btn-row">
+          <a class="dues-btn is-gold" href="#bayar">Bayar sekarang <span aria-hidden="true">↓</span></a>
+          <a class="dues-btn is-outline" id="dues-wa-bendahara" href="https://wa.me/6281235911689" target="_blank" rel="noopener">Tanya bendahara</a>
+        </div>
+        <p class="dues-note" style="margin-top:14px">Pembayaran hanya ke kanal atas nama <b>GMPI DPD SIDOARJO</b>. Jangan pernah mengirim uang ke rekening pribadi yang bukan bendahara resmi.</p>
+      </section>
+
+      <!-- KANAN: cara bayar -->
+      <section class="dues-card is-dark" id="bayar" aria-labelledby="dues-pay-title">
+        <h2 id="dues-pay-title" class="dues-card-kicker" style="margin:0">PILIH CARA BAYAR</h2>
+        <div class="dues-methods" role="radiogroup" aria-label="Metode pembayaran">
+          <label><input type="radio" name="metode" value="qris" checked><span><i aria-hidden="true">▦</i>QRIS</span></label>
+          <label><input type="radio" name="metode" value="ewallet"><span><i aria-hidden="true">◉</i>E-wallet</span></label>
+          <label><input type="radio" name="metode" value="transfer"><span><i aria-hidden="true">▤</i>Transfer bank</span></label>
+          <label><input type="radio" name="metode" value="tunai"><span><i aria-hidden="true">✋</i>Tunai</span></label>
+        </div>
+
+        <div class="dues-qty">
+          <span class="label">Jumlah periode</span>
+          <button type="button" id="dues-qty-minus" aria-label="Kurangi jumlah periode">−</button>
+          <output id="dues-qty" aria-live="polite">1</output>
+          <button type="button" id="dues-qty-plus" aria-label="Tambah jumlah periode">+</button>
+          <span class="label">Total <b id="dues-total" style="color:#fffdf7">Rp—</b></span>
+        </div>
+
+        <div class="dues-panel" id="panel-qris">
+          <div class="dues-qris">
+            <span class="dues-qris-badge">QRIS · GMPI DPD SIDOARJO</span>
+            <div class="dues-qris-frame">
+              <canvas id="dues-qris-canvas" width="330" height="330" role="img" aria-label="Kode QRIS pembayaran iuran dengan nominal terisi otomatis"></canvas>
+            </div>
+            <p class="dues-qris-amount" id="dues-qris-amount">Nominal terisi otomatis</p>
+            <p class="dues-qris-hint">Buka m-banking atau e-wallet (DANA, OVO, GoPay, ShopeePay, BCA mobile, Livin', BRImo, dll.) → pilih <b>Scan / Bayar QRIS</b> → pindai kode di atas. Nominal sudah terisi, cukup cocokkan dan konfirmasi.</p>
+            <div class="dues-qris-actions">
+              <button type="button" class="dues-link-mini" id="dues-qris-zoom">Perbesar / simpan QRIS resmi</button>
+            </div>
+            <p class="dues-qris-hint" style="margin-top:10px">Aplikasi menolak kode di atas? Pakai QRIS resmi (nominal diketik manual) lewat tautan <em>Perbesar / simpan QRIS resmi</em>, lalu ketik total <b id="dues-qris-manual">Rp—</b>.</p>
+          </div>
+        </div>
+
+        <div class="dues-panel" id="panel-ewallet" hidden>
+          <div class="dues-field-list">
+            <div class="dues-kop">
+              <span>Nomor e-wallet / tujuan</span>
+              <b id="dues-ewallet-text">Belum diatur pengurus</b>
+              <button type="button" class="dues-copy" data-copy="dues-ewallet-text">Salin</button>
+            </div>
+            <p class="dues-help">Buka aplikasi DANA / OVO / GoPay / ShopeePay → <b>Kirim</b> → masukkan nomor di atas → isi nominal sesuai total → sertakan catatan <b>“iuran + nama kamu”</b>.</p>
+            <p class="dues-help">Belum ada nomor e-wallet resmi? Gunakan QRIS atau transfer bank agar dana masuk ke kas organisasi.</p>
+          </div>
+        </div>
+
+        <div class="dues-panel" id="panel-transfer" hidden>
+          <div class="dues-field-list">
+            <div class="dues-kop">
+              <span>Rekening organisasi</span>
+              <b id="dues-bank-text">Belum diatur pengurus</b>
+              <button type="button" class="dues-copy" data-copy="dues-bank-text">Salin</button>
+            </div>
+            <p class="dues-help">Transfer sebesar total di atas, lalu simpan bukti transfer. Rekening harus atas nama <b>GMPI DPD SIDOARJO</b>.</p>
+          </div>
+        </div>
+
+        <div class="dues-panel" id="panel-tunai" hidden>
+          <div class="dues-field-list">
+            <div class="dues-kop">
+              <span>Bayar tunai</span>
+              <b>Bendahara / sekretariat DPD</b>
+            </div>
+            <p class="dues-help">Serahkan iuran langsung ke bendahara saat rapat, kegiatan, atau di sekretariat (Perum Graha Bougenville Kav. Depag No.31, Kemiri, Sidoarjo). Minta dicatat, lalu tetap konfirmasi lewat formulir di bawah agar tercatat di sistem.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- BAWAH: konfirmasi pembayaran -->
+      <section class="dues-card" id="konfirmasi" aria-labelledby="dues-confirm-title" style="grid-column:1/-1">
+        <div class="dues-card-kicker">LANGKAH 2 — KONFIRMASI PEMBAYARAN</div>
+        <h2 id="dues-confirm-title" style="font:900 19px Arial,Helvetica,sans-serif;letter-spacing:.2px;margin:9px 0 4px;color:#fffdf7">Catat iuranmu di sini</h2>
+        <p class="dues-help" style="max-width:640px">Data ini dipakai bendahara untuk mencocokkan pembayaranmu. <b>Tidak perlu unggah foto KTP</b> — cukup nama, nomor WhatsApp, dan rincian pembayaran. Nama yang mengisi bisa berbeda dengan pemilik kartu (mis. satu anggota membayarkan untuk dua orang) — tulis di kolom catatan.</p>
+
+        <form class="dues-form" id="dues-form" novalidate>
+          <div class="dues-form-row">
+            <div>
+              <label for="f-nama">Nama lengkap anggota</label>
+              <input id="f-nama" name="nama" type="text" autocomplete="name" maxlength="120" placeholder="Nama sesuai kartu anggota" required>
+            </div>
+            <div>
+              <label for="f-nomor">Nomor anggota <span style="text-transform:none;letter-spacing:0;color:#7d7561">(opsional)</span></label>
+              <input id="f-nomor" name="nomor" type="text" maxlength="40" placeholder="cth: GMPI-SDA-2026-0001" autocomplete="off">
+              <p class="dues-help">Ada di kartu anggota. Menuliskan nomor mempercepat verifikasi.</p>
+            </div>
+          </div>
+          <div class="dues-form-row">
+            <div>
+              <label for="f-kecamatan">Kecamatan domisili</label>
+              <select id="f-kecamatan" name="kecamatan" required>
+                <option value="">Pilih kecamatan</option>
+                <option>Sidoarjo</option><option>Buduran</option><option>Gedangan</option><option>Waru</option>
+                <option>Sukodono</option><option>Taman</option><option>Krian</option><option>Balongbendo</option>
+                <option>Tarik</option><option>Prambon</option><option>Krembung</option><option>Porong</option>
+                <option>Jabon</option><option>Tanggulangin</option><option>Candi</option><option>Tulangan</option>
+                <option>Wonoayu</option><option>Sedati</option>
+              </select>
+            </div>
+            <div>
+              <label for="f-wa">Nomor WhatsApp aktif</label>
+              <input id="f-wa" name="wa" type="tel" inputmode="tel" autocomplete="tel" maxlength="20" placeholder="08xx xxxx xxxx" required>
+              <p class="dues-help">Dipakai bendahara untuk konfirmasi atau mengingatkan bila data kurang.</p>
+            </div>
+          </div>
+          <div class="dues-form-row">
+            <div>
+              <label for="f-metode">Cara bayar</label>
+              <select id="f-metode" name="metode" required>
+                <option value="qris">QRIS</option>
+                <option value="ewallet">E-wallet (DANA/OVO/GoPay/ShopeePay)</option>
+                <option value="transfer">Transfer bank</option>
+                <option value="tunai">Tunai ke bendahara</option>
+              </select>
+            </div>
+            <div>
+              <label for="f-periode">Periode iuran yang dibayar</label>
+              <select id="f-periode" name="periode" required></select>
+            </div>
+          </div>
+          <div class="dues-form-row">
+            <div>
+              <label for="f-jumlah">Jumlah dibayar (Rp)</label>
+              <input id="f-jumlah" name="jumlah" type="number" inputmode="numeric" min="1000" max="100000000" step="1000" required>
+              <p class="dues-help" id="dues-jumlah-help">Otomatis terisi dari total di atas. Ubah bila memang berbeda.</p>
+            </div>
+            <div>
+              <label for="f-tanggal">Tanggal pembayaran</label>
+              <input id="f-tanggal" name="tanggal" type="date" required>
+            </div>
+          </div>
+          <div>
+            <label for="f-catatan">Catatan <span style="text-transform:none;letter-spacing:0;color:#7d7561">(opsional)</span></label>
+            <textarea id="f-catatan" name="catatan" maxlength="300" placeholder="cth: bayar untuk 2 periode sekaligus / dibayarkan atas nama saudara"></textarea>
+          </div>
+          <p class="dues-status-msg" id="dues-form-msg" role="status" aria-live="polite" hidden></p>
+          <div class="dues-btn-row" style="margin-top:4px">
+            <button class="dues-btn is-gold" type="submit" id="dues-submit">Kirim konfirmasi pembayaran</button>
+            <a class="dues-btn is-outline" href="#cek">Sudah pernah bayar? Cek status</a>
+          </div>
+          <p class="dues-help">Dengan mengirim, kamu setuju nama, nomor anggota, kecamatan, dan nomor WhatsApp disimpan untuk keperluan kas organisasi GMPI DPD Sidoarjo. Data tidak dijual atau dibagikan ke pihak lain.</p>
+        </form>
+
+        <div class="dues-success" id="dues-success" hidden>
+          <div class="mark" aria-hidden="true">✓</div>
+          <h3>Konfirmasi terkirim. Terima kasih!</h3>
+          <p id="dues-success-text"></p>
+          <p class="dues-help" id="dues-success-note"></p>
+          <div class="dues-btn-row" style="justify-content:center">
+            <a class="dues-btn" id="dues-success-wa" href="#" target="_blank" rel="noopener">Kirim bukti via WhatsApp</a>
+            <button class="dues-btn is-outline" type="button" id="dues-success-again">Catat pembayaran lain</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Cek status -->
+      <section class="dues-card is-dark" id="cek" aria-labelledby="dues-check-title" style="grid-column:1/-1">
+        <div class="dues-card-kicker">LANGKAH 3 — CEK STATUS</div>
+        <h2 id="dues-check-title" style="font:900 19px Arial,Helvetica,sans-serif;letter-spacing:.2px;margin:9px 0 4px;color:#fffdf7">Sudah tercatat?</h2>
+        <p class="dues-help">Masukkan nomor anggota dan nama persis seperti di kartu anggota. Yang ditampilkan hanya periode dan status pembayaran — bukan data pribadi.</p>
+        <form class="dues-form" id="dues-check-form" novalidate>
+          <div class="dues-form-row">
+            <div>
+              <label for="c-nomor">Nomor anggota</label>
+              <input id="c-nomor" name="nomor" type="text" maxlength="40" placeholder="GMPI-SDA-2026-0001" autocomplete="off" required>
+            </div>
+            <div>
+              <label for="c-nama">Nama lengkap</label>
+              <input id="c-nama" name="nama" type="text" maxlength="120" autocomplete="name" placeholder="Nama sesuai kartu" required>
+            </div>
+          </div>
+          <p class="dues-status-msg" id="dues-check-msg" role="status" aria-live="polite" hidden></p>
+          <div class="dues-btn-row" style="margin-top:4px">
+            <button class="dues-btn is-outline" type="submit" id="dues-check-submit">Cek status iuran</button>
+          </div>
+        </form>
+        <div class="dues-check-result" id="dues-check-result" hidden></div>
+      </section>
+    </div>
+
+    <div class="dues-foot">
+      <p><b>Butuh bantuan?</b> Hubungi bendahara lewat WhatsApp <a id="dues-foot-wa" href="https://wa.me/6281235911689" target="_blank" rel="noopener">+62 812-3591-1689</a> atau datang ke sekretariat DPD Sidoarjo.</p>
+      <p>Kanal pembayaran resmi: QRIS NMID ID1026605146624 · a.n. GMPI DPD SIDOARJO. Halaman ini tidak menyimpan nomor kartu, PIN, atau kata sandi apa pun.</p>
+    </div>
+  </main>
+
+  <footer>
+    <a href="index.html">GMPI DPD SIDOARJO</a> · <a href="verifikasi.html">Verifikasi Kartu</a> · <a href="index.html#legalitas">Legalitas</a>
+  </footer>
+
+  <div class="dues-lightbox" id="dues-lightbox" role="dialog" aria-modal="true" aria-label="QRIS resmi GMPI DPD SIDOARJO" hidden>
+    <button type="button" id="dues-lightbox-close">Tutup ×</button>
+    <img src="assets/payment/qris-gmpi-dpd-sidoarjo.jpg" alt="QRIS resmi GMPI DPD SIDOARJO, NMID ID1026605146624">
+    <p>QRIS resmi (statis). Ketik nominal sesuai total iuran di aplikasi pembayaranmu.</p>
+  </div>
+
+  <script src="supabase-config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="vendor/qrcode-generator.js"></script>
+  <script src="iuran.js"></script>
+</body>
+</html>
