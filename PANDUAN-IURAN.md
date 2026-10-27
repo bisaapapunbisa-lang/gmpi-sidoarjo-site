@@ -11,7 +11,7 @@ Anggota cukup membuka **`/iuran`** dan mengikuti 3 langkah di halaman itu.
 | --- | --- |
 | Halaman **`/iuran`** | Tagihan (nominal, periode, jatuh tempo), QRIS otomatis, e-wallet, transfer bank, tunai, formulir konfirmasi, dan cek status. |
 | Bagian **Iuran Anggota** di beranda | Ringkasan nominal + QRIS yang bisa langsung dipindai. Otomatis disembunyikan bila pengurus belum mengisi pengaturan. |
-| Tab **Iuran** di Admin | Atur nominal/periode/kanal, verifikasi pembayaran, daftar anggota belum lunas, rekap CSV, dan pembuat teks pengumuman WhatsApp. |
+| Tab **Iuran** di Admin | **Tagihan** (draf → luncurkan → jadwalkan → tutup), pengaturan kanal pembayaran, verifikasi pembayaran, daftar anggota belum lunas, rekap CSV, dan pembuat teks pengumuman WhatsApp. |
 | Peran baru **Bendahara** | Bisa mengurus iuran **tanpa** akses NIK/KTP. |
 
 Cara bayar yang didukung (semua tanpa biaya tambahan, tanpa payment gateway):
@@ -27,8 +27,9 @@ Cara bayar yang didukung (semua tanpa biaya tambahan, tanpa payment gateway):
 ## 2. Aktivasi (sekali saja, ± 5 menit)
 
 1. **Jalankan SQL** — buka Supabase → **SQL Editor** → **New query**, salin seluruh isi
-   `supabase/migrations/202610270028_iuran_keanggotaan.sql`, lalu **Run**.
-   Muncul “Success” berarti tabel, pengaturan, dan fungsi iuran sudah dibuat.
+   `supabase/migrations/202610270028_iuran_keanggotaan.sql`, lalu **Run** → “Success”.
+   Lalu ulangi untuk `supabase/migrations/202610280029_tagihan_iuran.sql`
+   (menambahkan fitur tagihan draf/jadwal). Keduanya cukup sekali.
 2. **Unggah berkas** (bila belum lewat Vercel): `iuran.html`, `iuran.js`, `iuran.css`,
    `index.html`, `admin.js`, dan folder `supabase/migrations/`.
 3. **Beri peran Bendahara** (opsional, bila bendahara punya akun sendiri):
@@ -63,7 +64,60 @@ Cara bayar yang didukung (semua tanpa biaya tambahan, tanpa payment gateway):
 
 ---
 
-## 3. Alur harian bendahara
+## 3. Tagihan: draf, luncurkan kapan saja, atau jadwalkan
+
+Pengurus **tidak harus** menagih setiap bulan. Tagihan bisa disiapkan jauh hari
+dan baru dibuka setelah rapat memutuskan.
+
+**Alur di Admin → tab Iuran → kartu “Tagihan iuran”:**
+
+1. Klik **+ Buat tagihan baru**.
+2. Isi:
+   - **Nama tagihan** — mis. `Iuran Bulanan November 2026`
+   - **Periode** — bulan pertama, mis. `2026-11` (bisa juga `2026` untuk tahunan)
+   - **Jumlah bulan** — `1` bulanan, `3` triwulan, `12` setahun
+   - **Nominal per bulan** — mis. `10000` (total dihitung otomatis)
+   - **Jatuh tempo** (opsional) — mis. `2026-11-10`
+   - **Catatan untuk anggota** (opsional)
+3. Pilih salah satu tombol:
+
+| Tombol | Akibat |
+| --- | --- |
+| **Simpan sebagai draf** | Tersimpan, **tidak terlihat anggota**. Aman untuk bahan rapat. |
+| **Simpan & luncurkan sekarang** | Langsung tampil di `/iuran`, anggota bisa membayar detik itu juga. |
+| **Jadwalkan** | Tampil otomatis pada tanggal & jam yang Anda isi. Cocok untuk menagih tiap awal bulan tanpa perlu buka panel. |
+
+**Aturan penting:** hanya ada **satu tagihan berjalan** pada satu waktu. Saat tagihan
+baru diluncurkan, tagihan sebelumnya otomatis **DITUTUP** — ini mencegah anggota
+membayar dua kali untuk periode yang sama. Data pembayaran lama tetap tersimpan.
+
+Di tabel tagihan tersedia tombol **Luncurkan sekarang**, **Tutup tagihan**, **Ubah**,
+dan **Hapus** (khusus Pemilik). Tagihan yang sudah punya pembayaran tidak bisa dihapus.
+
+Selama **belum ada tagihan yang dibuka**, halaman `/iuran` hanya menampilkan
+“Belum ada tagihan iuran yang dibuka pengurus” + kolom cek status. Tidak ada
+tombol bayar, jadi tidak ada risiko anggota salah bayar.
+
+Saklar lama **“Status periode iuran”** (di kartu *Kanal pembayaran & pengaturan lama*)
+hanya dipakai bila organisasi belum pernah membuat tagihan sama sekali. Begitu Anda
+memakai tagihan, saklar itu diabaikan.
+
+**Contoh: iuran bulanan otomatis sepanjang tahun**
+
+Buat 12 tagihan sekaligus (Januari–Desember), masing-masing dijadwalkan pada
+tanggal 1 bulan bersangkutan. Anggota selalu melihat tagihan bulan berjalan tanpa
+pengurus perlu membuka panel.
+
+**Mengubah nominal di tengah jalan**
+
+Nominal pada tagihan yang **sudah diluncurkan** ikut berubah bila Anda menekan
+**Ubah** lalu menyimpan. Karena itu, tetapkan nominal final sebelum meluncurkan.
+Untuk perubahan resmi, sebaiknya tutup tagihan lama dan luncurkan tagihan baru
+dengan nominal baru agar jejak keputusan rapat tercatat.
+
+---
+
+## 4. Alur harian bendahara
 
 1. Anggota membayar (QRIS/e-wallet/transfer/tunai) lalu mengisi **formulir konfirmasi**
    di `/iuran`. Data masuk sebagai **Menunggu**.
@@ -82,7 +136,7 @@ Bila nama yang sama sudah lunas, sistem menolak verifikasi baris kedua.
 
 ---
 
-## 4. Yang dilihat anggota (tanpa login)
+## 5. Yang dilihat anggota (tanpa login)
 
 - Nominal, periode, dan jatuh tempo (dengan hitung mundur).
 - QRIS **dengan nominal otomatis**; jumlah periode bisa ditambah (1–6) sehingga
@@ -96,7 +150,7 @@ Bila nama yang sama sudah lunas, sistem menolak verifikasi baris kedua.
 
 ---
 
-## 5. Privasi & keamanan
+## 6. Privasi & keamanan
 
 - Anggota (publik) **tidak bisa membaca** tabel `dues_payments`. Data hanya masuk lewat
   fungsi `submit_dues_payment` dan hanya bisa dibaca akun berperan Pemilik/Registrasi/Bendahara.
@@ -107,7 +161,7 @@ Bila nama yang sama sudah lunas, sistem menolak verifikasi baris kedua.
 
 ---
 
-## 6. Mengganti QRIS organisasi
+## 7. Mengganti QRIS organisasi
 
 Kode QRIS “dinamis” dibuat dari teks payload QRIS statis organisasi yang tersimpan di
 `iuran.js` (konstanta `QRIS_STATIC_PAYLOAD`). Bila organisasi mengganti akun QRIS
@@ -127,7 +181,7 @@ Admin → Iuran; halaman otomatis meminta anggota mengetik jumlahnya.
 
 ---
 
-## 7. Bila ada masalah
+## 8. Bila ada masalah
 
 | Gejala | Penyebab & solusi |
 | --- | --- |
@@ -138,10 +192,14 @@ Admin → Iuran; halaman otomatis meminta anggota mengetik jumlahnya.
 | “Fitur iuran belum diaktifkan di server” saat anggota mengirim | Migrasi `202610270028_iuran_keanggotaan.sql` belum dijalankan. |
 | QRIS ditolak aplikasi pembayaran | Pakai tautan **Perbesar / simpan QRIS resmi** di halaman iuran (QRIS statis), lalu ketik nominal manual. |
 | Anggota bilang sudah bayar tapi tidak tercatat | Cek baris **Menunggu**; bila tidak ada, minta anggota mengisi formulir konfirmasi atau catat manual. |
+| Anggota bilang halaman iuran tidak ada tombol bayar | Belum ada tagihan yang diluncurkan. Buka Admin → Iuran → **Luncurkan sekarang** pada tagihan yang dimaksud. |
+| Tagihan yang lama hilang dari halaman | Normal: hanya satu tagihan berjalan. Tagihan lama berstatus **DITUTUP** dan masih terlihat di tabel Admin beserta pembayarannya. |
+| Tagihan berjadwal tidak muncul di jam yang diharapkan | Jam mengikuti waktu perangkat pengurus. Periksa kembali kolom **Jadwal peluncuran**, lalu simpan ulang. |
+| Mau membatalkan tagihan yang sudah telanjur diluncurkan | Klik **Tutup tagihan**. Anggota tidak bisa mengirim konfirmasi baru; pembayaran yang sudah masuk tetap ada. |
 
 ---
 
-## 8. Dasar aturan
+## 9. Dasar aturan
 
 Sesuai AD/ART GMPI 2021 Pasal 23, iuran anggota merupakan kewajiban anggota dan menjadi
 sumber kas organisasi; besaran serta periodisasinya ditetapkan pengurus melalui PO.

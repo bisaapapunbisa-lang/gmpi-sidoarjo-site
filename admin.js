@@ -1758,9 +1758,9 @@
   // ================= IURAN KEANGGOTAAN (tagihan + verifikasi pembayaran) =================
   const DUES_FIELDS = [
     {
-      key: 'iuran_aktif', label: 'Status periode iuran', type: 'select',
-      options: [['0', 'Tutup — halaman iuran hanya menampilkan rincian'], ['1', 'Buka — anggota bisa membayar & mengirim konfirmasi']],
-      help: 'Halaman /iuran tetap bisa dibuka saat status tutup; formulir pembayaran disembunyikan agar tidak ada salah bayar.'
+      key: 'iuran_aktif', label: 'Saklar lama (dipakai bila belum ada tagihan)', type: 'select',
+      options: [['0', 'Tutup — halaman iuran hanya menampilkan rincian'], ['1', 'Buka — anggota bisa membayar tanpa tagihan']],
+      help: 'Bila Anda sudah memakai kartu “Tagihan iuran” di atas, saklar ini diabaikan: tagihan yang menentukan buka/tutup.'
     },
     { key: 'iuran_nama', label: 'Nama iuran', type: 'text', placeholder: 'Iuran Keanggotaan 2026', help: 'Tampil sebagai judul tagihan di halaman iuran.' },
     { key: 'iuran_periode', label: 'Periode berjalan', type: 'text', placeholder: '2026 atau 2026-10', help: 'Tulis 4 digit tahun (iuran tahunan) atau YYYY-MM (iuran bulanan).' },
@@ -1843,12 +1843,16 @@
 
     workspace.replaceChildren(heading, make('div', 'table-empty', 'Memuat data iuran…'));
 
-    const [settingsRes, paymentsRes] = await Promise.all([
+    const [settingsRes, paymentsRes, invoicesRes] = await Promise.all([
       client.from('site_content').select('key,value').in('key', DUES_FIELDS.map(field => field.key)),
       client.from('dues_payments')
-        .select('id,created_at,member_name,member_number,district,phone,method,amount,period,paid_at,note,status,verified_at,verified_by,reject_reason,source')
+        .select('id,created_at,member_name,member_number,district,phone,method,amount,period,months,paid_at,note,status,verified_at,verified_by,reject_reason,source,invoice_id')
         .order('created_at', { ascending: false })
-        .limit(1000)
+        .limit(1000),
+      client.from('dues_invoices')
+        .select('id,title,period,months,nominal,due_date,note,status,publish_at,launched_at,closed_at,created_by,created_at')
+        .order('created_at', { ascending: false })
+        .limit(200)
     ]);
 
     if (settingsRes.error || paymentsRes.error) {
@@ -1875,16 +1879,364 @@
       if (style) node.style.cssText = style;
       return node;
     };
+    const usesInvoices = !invoicesRes.error && (invoicesRes.data || []).length > 0;
+    if (!usesInvoices) {
+      chips.append(
+        chip(isOpen ? 'PERIODE DIBUKA' : 'PERIODE TUTUP', isOpen ? 'background:#dff0d8;color:#2f5d2a' : 'background:#f7e0e0;color:#8a1f1f'),
+        chip(`PERIODE ${duesPeriodLabel(currentPeriod).toUpperCase()}`),
+        chip(`NOMINAL ${rupiahAdmin(nominal)}`)
+      );
+    }
     chips.append(
-      chip(isOpen ? 'PERIODE DIBUKA' : 'PERIODE TUTUP', isOpen ? 'background:#dff0d8;color:#2f5d2a' : 'background:#f7e0e0;color:#8a1f1f'),
-      chip(`PERIODE ${duesPeriodLabel(currentPeriod).toUpperCase()}`),
-      chip(`NOMINAL ${rupiahAdmin(nominal)}`),
       chip(`LUNAS ${currentPaid.length} ANGGOTA`),
       chip(`MENUNGGU VERIFIKASI: ${pendingRows.length}`),
       chip(`TERKUMPUL ${rupiahAdmin(totalVerified)}`),
       chip(`TERTUNDA ${rupiahAdmin(totalPending)}`)
     );
     chips.style.margin = '4px 0 16px';
+
+    // ---------- tagihan iuran (draf → diluncurkan → ditutup) ----------
+    // Fitur ini memungkinkan pengurus menyiapkan tagihan lebih dulu (masih DRAF,
+    // tidak terlihat anggota), lalu meluncurkannya kapan saja setelah rapat.
+    const invoiceFeature = !invoicesRes.error;
+    const invoiceList = (invoicesRes.data || []).slice().sort((a, b) =>
+      String(b.created_at || '').localeCompare(String(a.created_at || '')));
+
+    const INVOICE_STATUS = {
+      draf: { label: 'DRAF', style: 'background:#efe7d2;color:#6b5a2a' },
+      dibuka: { label: 'DIBUKA', style: 'background:#dff0d8;color:#2f5d2a' },
+      ditutup: { label: 'DITUTUP', style: 'background:#e8e3d9;color:#6d6961' }
+    };
+
+    function invoiceStatusView(inv) {
+      const scheduled = inv.status === 'draf' && inv.publish_at;
+      if (scheduled) return { label: 'TERJADWAL', style: 'background:#dde8f5;color:#1f4a72' };
+      return INVOICE_STATUS[inv.status] || { label: String(inv.status || '').toUpperCase(), style: '' };
+    }
+    function invoiceWhen(iso) {
+      if (!iso) return '';
+      const date = new Date(iso);
+      if (Number.isNaN(date.getTime())) return '';
+      return date.toLocaleString('id-ID', {
+        day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
+      });
+    }
+    function invoiceRange(inv) {
+      return duesPeriodLabel(inv.period) + (Number(inv.months) > 1 ? ` · ${inv.months} bulan` : '');
+    }
+    function localInputValue(date) {
+      const pad = n => String(n).padStart(2, '0');
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
+
+    const invoiceSection = make('section');
+    invoiceSection.style.cssText = 'border:1px solid #ded9ce;background:#fffdf7;padding:16px;margin:0 0 18px';
+    const invoiceHead = make('div', 'workspace-heading');
+    invoiceHead.style.cssText = 'margin:0 0 10px';
+    const invoiceHeadText = make('div');
+    invoiceHeadText.append(make('h3', '', 'Tagihan iuran'));
+    invoiceHeadText.append(make('p', '', 'Siapkan tagihan kapan pun, simpan sebagai DRAF bila keputusan rapat belum final, lalu LUNCURKAN saat sudah diputuskan — atau jadwalkan pada tanggal & jam tertentu. Anggota hanya melihat tagihan yang sudah diluncurkan.'));
+    invoiceHead.append(invoiceHeadText);
+    invoiceSection.append(invoiceHead);
+
+    if (!invoiceFeature) {
+      invoiceSection.append(make('div', 'table-empty',
+        'Fitur tagihan terjadiwal belum aktif. Minta Pemilik menjalankan migrasi 202610280029_tagihan_iuran.sql di Supabase SQL Editor, lalu muat ulang halaman ini. ' +
+        'Sementara itu, saklar “Status periode iuran” di bawah masih bisa dipakai seperti biasa.'));
+    } else {
+      const activeInvoice = invoiceList.find(inv => inv.status === 'dibuka') ||
+        invoiceList.find(inv => inv.status === 'draf' && inv.publish_at && new Date(inv.publish_at) <= new Date());
+
+      const summaryStrip = make('div', 'role-list');
+      summaryStrip.style.margin = '0 0 12px';
+      const stripChip = (text, style) => {
+        const chip = make('span', 'role-chip', text);
+        if (style) chip.style.cssText = style;
+        return chip;
+      };
+      if (activeInvoice) {
+        summaryStrip.append(stripChip(
+          `SEDANG BERJALAN: ${activeInvoice.title} · ${rupiahAdmin(activeInvoice.nominal * (activeInvoice.months || 1))}`,
+          'background:#dff0d8;color:#2f5d2a'));
+      } else {
+        summaryStrip.append(stripChip('BELUM ADA TAGIHAN BERJALAN — anggota belum bisa membayar',
+          'background:#f7e0e0;color:#8a1f1f'));
+      }
+      const draftCount = invoiceList.filter(inv => inv.status === 'draf' && !inv.publish_at).length;
+      const scheduledCount = invoiceList.filter(inv => inv.status === 'draf' && inv.publish_at).length;
+      summaryStrip.append(stripChip(`DRAF: ${draftCount}`), stripChip(`TERJADWAL: ${scheduledCount}`));
+      invoiceSection.append(summaryStrip);
+
+      // --- form tagihan ---
+      const editorWrap = make('div');
+      editorWrap.hidden = true;
+      const editorTitle = make('h4', '', '');
+      editorTitle.style.cssText = 'font:17px/1.3 Arial,Helvetica,sans-serif;margin:14px 0 8px';
+
+      const form = make('form', 'content-form');
+      form.style.display = 'grid';
+      form.style.gridTemplateColumns = 'repeat(auto-fit,minmax(200px,1fr))';
+      form.style.cssText += ';gap:12px;border:1px solid #ded9ce;background:#f7f4ec;padding:14px;margin:0 0 12px';
+
+      function fieldItem(labelText, inputNode, helpText, full) {
+        const group = make('div', 'content-field');
+        const label = make('label', '', labelText);
+        label.htmlFor = inputNode.id;
+        group.append(label, inputNode);
+        if (helpText) group.append(make('small', 'privacy-mini', helpText));
+        if (full) group.style.gridColumn = '1/-1';
+        return group;
+      }
+
+      const fTitle = make('input');
+      fTitle.type = 'text'; fTitle.id = 'inv-title'; fTitle.maxLength = 100;
+      fTitle.placeholder = 'Iuran Bulanan November 2026';
+
+      const fPeriod = make('input');
+      fPeriod.type = 'text'; fPeriod.id = 'inv-period'; fPeriod.placeholder = '2026-11';
+      fPeriod.pattern = '[0-9]{4}(-[0-9]{2})?';
+
+      const fMonths = make('input');
+      fMonths.type = 'number'; fMonths.id = 'inv-months'; fMonths.min = '1'; fMonths.max = '12'; fMonths.step = '1'; fMonths.value = '1';
+
+      const fNominal = make('input');
+      fNominal.type = 'number'; fNominal.id = 'inv-nominal'; fNominal.min = '1000'; fNominal.step = '1000';
+      fNominal.placeholder = '10000';
+
+      const fDue = make('input');
+      fDue.type = 'date'; fDue.id = 'inv-due';
+
+      const fNote = make('textarea');
+      fNote.id = 'inv-note'; fNote.rows = 2; fNote.maxLength = 400;
+      fNote.placeholder = 'Catatan singkat untuk anggota (opsional)';
+
+      const fPublish = make('input');
+      fPublish.type = 'datetime-local'; fPublish.id = 'inv-publish';
+
+      const totalPreview = make('p', 'privacy-mini', '');
+      totalPreview.style.cssText = 'grid-column:1/-1;margin:0;font-weight:800;color:#2f5d2a';
+
+      form.append(
+        fieldItem('Nama tagihan', fTitle, 'Tampil sebagai judul di halaman /iuran.', true),
+        fieldItem('Periode', fPeriod, 'Bulan pertama: 2026-11 (bulanan) atau 2026 (tahunan).'),
+        fieldItem('Jumlah bulan', fMonths, 'Isi 1 untuk bulanan, 3 untuk triwulan, 12 untuk setahun.'),
+        fieldItem('Nominal per bulan (Rp)', fNominal, 'Angka saja. Total dihitung otomatis.'),
+        fieldItem('Jatuh tempo', fDue, 'Opsional. Anggota melihat hitung mundur.'),
+        fieldItem('Jadwal peluncuran', fPublish, 'Diisi hanya bila memilih “Jadwalkan”. Pakai waktu setempat.'),
+        fieldItem('Catatan untuk anggota', fNote, '', true),
+        totalPreview
+      );
+
+      const actionRow = make('div', 'card-buttons');
+      actionRow.style.cssText = 'grid-column:1/-1;margin:2px 0 0';
+      const saveDraft = make('button', 'admin-button admin-button-outline', 'Simpan sebagai draf');
+      saveDraft.type = 'button';
+      const launchNow = make('button', 'admin-button admin-button-gold', 'Simpan & luncurkan sekarang');
+      launchNow.type = 'button';
+      const scheduleBtn = make('button', 'admin-button admin-button-outline', 'Jadwalkan');
+      scheduleBtn.type = 'button';
+      const cancelEdit = make('button', 'admin-button admin-button-outline', 'Batal');
+      cancelEdit.type = 'button';
+      actionRow.append(saveDraft, launchNow, scheduleBtn, cancelEdit);
+      form.append(actionRow);
+
+      let editingId = null;
+
+      function refreshPreview() {
+        const nominal = parseInt(fNominal.value, 10) || 0;
+        const months = Math.max(1, Math.min(12, parseInt(fMonths.value, 10) || 1));
+        totalPreview.textContent = nominal > 0
+          ? `Total dibayar anggota: ${rupiahAdmin(nominal * months)}${months > 1 ? ` (${nominal.toLocaleString('id-ID')} × ${months} bulan)` : ''}`
+          : 'Isi nominal untuk melihat total.';
+      }
+      [fNominal, fMonths].forEach(node => node.addEventListener('input', refreshPreview));
+
+      function openEditor(invoice) {
+        editingId = invoice ? invoice.id : null;
+        editorTitle.textContent = invoice ? `Ubah tagihan — ${invoice.title}` : 'Buat tagihan baru';
+        fTitle.value = invoice ? invoice.title : '';
+        fPeriod.value = invoice ? invoice.period : (currentPeriod || '');
+        fMonths.value = invoice ? String(invoice.months || 1) : '1';
+        fNominal.value = invoice ? String(invoice.nominal || '') : (nominal ? String(nominal) : '');
+        fDue.value = invoice && invoice.due_date ? String(invoice.due_date).slice(0, 10) : '';
+        fNote.value = invoice ? (invoice.note || '') : '';
+        fPublish.value = localInputValue(new Date(Date.now() + 24 * 3600 * 1000));
+        refreshPreview();
+        editorWrap.hidden = false;
+        fTitle.focus();
+        if (typeof editorWrap.scrollIntoView === 'function') {
+          editorWrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
+      cancelEdit.addEventListener('click', () => { editorWrap.hidden = true; editingId = null; });
+
+      const newButton = make('button', 'admin-button admin-button-gold', '+ Buat tagihan baru');
+      newButton.type = 'button';
+      newButton.addEventListener('click', () => openEditor(null));
+
+      async function saveInvoice(action) {
+        const title = fTitle.value.trim();
+        const period = fPeriod.value.trim();
+        const months = Math.max(1, Math.min(12, parseInt(fMonths.value, 10) || 1));
+        const value = parseInt(fNominal.value, 10) || 0;
+        if (title.length < 3) { setMessage('Nama tagihan minimal 3 huruf.', 'warning'); fTitle.focus(); return; }
+        if (!/^\d{4}(-\d{2})?$/.test(period)) { setMessage('Periode harus 2026-11 (bulanan) atau 2026 (tahunan).', 'warning'); fPeriod.focus(); return; }
+        if (value < 1000) { setMessage('Nominal minimal Rp1.000.', 'warning'); fNominal.focus(); return; }
+        let publishIso = null;
+        if (action === 'schedule') {
+          if (!fPublish.value) { setMessage('Isi tanggal & jam peluncuran untuk menjadwalkan.', 'warning'); fPublish.focus(); return; }
+          const parsed = new Date(fPublish.value);
+          if (Number.isNaN(parsed.getTime())) { setMessage('Tanggal jadwal tidak valid.', 'warning'); return; }
+          if (parsed.getTime() <= Date.now()) { setMessage('Jadwal harus di masa depan. Untuk meluncurkan sekarang, pakai tombol “Simpan & luncurkan sekarang”.', 'warning'); return; }
+          publishIso = parsed.toISOString();
+        }
+        if (action === 'launch' && !window.confirm(
+          'Luncurkan tagihan ini sekarang?\n\n' +
+          `Anggota langsung bisa membayar ${rupiahAdmin(value * months)} untuk ${title}.\n` +
+          'Tagihan lain yang masih berjalan akan otomatis DITUTUP.')) return;
+
+        const buttons = [saveDraft, launchNow, scheduleBtn];
+        buttons.forEach(button => { button.disabled = true; });
+        const { error } = await client.rpc('dues_save_invoice', {
+          p_id: editingId,
+          p_title: title,
+          p_period: period,
+          p_months: months,
+          p_nominal: value,
+          p_due_date: fDue.value || null,
+          p_note: fNote.value.trim() || null,
+          p_action: action,
+          p_publish_at: publishIso
+        });
+        buttons.forEach(button => { button.disabled = false; });
+        if (error) {
+          setMessage('Tagihan tidak tersimpan: ' + (error.message || 'periksa koneksi') + '. Pastikan migrasi tagihan sudah dijalankan dan peran Anda Bendahara/Pemilik.', 'error');
+          return;
+        }
+        setMessage(action === 'launch'
+          ? 'Tagihan diluncurkan. Anggota sekarang melihat tombol bayar di halaman /iuran.'
+          : action === 'schedule'
+            ? `Tagihan dijadwalkan pada ${invoiceWhen(publishIso)}. Anggota baru bisa membayar setelah waktu itu.`
+            : 'Tagihan disimpan sebagai draf. Anggota belum bisa melihatnya.');
+        renderDues();
+      }
+
+      saveDraft.addEventListener('click', () => saveInvoice('draf'));
+      launchNow.addEventListener('click', () => saveInvoice('launch'));
+      scheduleBtn.addEventListener('click', () => saveInvoice('schedule'));
+
+      editorWrap.append(editorTitle, form, make('p', 'privacy-mini',
+        'Draf tidak terlihat oleh anggota. Setelah diluncurkan, tagihan muncul sebagai kartu pembayaran di halaman /iuran beserta QRIS bernominal otomatis.'));
+      const newRow = make('div', 'card-buttons');
+      newRow.style.cssText = 'margin:0 0 10px';
+      newRow.append(newButton);
+      invoiceSection.append(newRow, editorWrap);
+
+      // --- tabel tagihan ---
+      if (!invoiceList.length) {
+        invoiceSection.append(make('div', 'table-empty',
+          'Belum ada tagihan. Klik “Buat tagihan baru”, isi nominal, lalu simpan sebagai draf — atau langsung luncurkan bila rapat sudah memutuskan.'));
+      } else {
+        const { wrap, body } = makeTable(['Tagihan', 'Periode', 'Nominal', 'Jatuh tempo', 'Status', 'Aksi']);
+        invoiceList.forEach(inv => {
+          const tr = make('tr');
+          tr.append(make('td', '', inv.title));
+          tr.append(make('td', '', invoiceRange(inv)));
+          const nominalCell = make('td');
+          nominalCell.append(make('b', '', rupiahAdmin(inv.nominal * (inv.months || 1))));
+          if (Number(inv.months) > 1) nominalCell.append(make('small', 'privacy-mini', `${rupiahAdmin(inv.nominal)} × ${inv.months} bulan`));
+          tr.append(nominalCell);
+          tr.append(make('td', '', inv.due_date ? duesDate(String(inv.due_date).slice(0, 10)) : '—'));
+
+          const statusCell = make('td');
+          const view = invoiceStatusView(inv);
+          const pill = make('span', 'status-pill', view.label);
+          pill.style.cssText = view.style;
+          statusCell.append(pill);
+          if (inv.status === 'draf' && inv.publish_at) {
+            statusCell.append(make('small', 'privacy-mini', invoiceWhen(inv.publish_at)));
+          } else if (inv.status === 'dibuka' && inv.launched_at) {
+            statusCell.append(make('small', 'privacy-mini', `diluncurkan ${invoiceWhen(inv.launched_at)}`));
+          } else if (inv.status === 'ditutup' && inv.closed_at) {
+            statusCell.append(make('small', 'privacy-mini', `ditutup ${invoiceWhen(inv.closed_at)}`));
+          }
+          tr.append(statusCell);
+
+          const actionCell = make('td', 'member-actions-cell');
+          const actions = make('div', 'card-buttons');
+          actions.style.cssText = 'margin:0;gap:6px;flex-direction:column;align-items:flex-start';
+
+          if (inv.status !== 'dibuka') {
+            const launch = make('button', 'admin-link-button', 'Luncurkan sekarang');
+            launch.type = 'button';
+            launch.style.cssText = 'color:#2f5d2a;font-weight:800';
+            launch.addEventListener('click', async () => {
+              if (!window.confirm(`Luncurkan “${inv.title}” sekarang?\n\nAnggota langsung bisa membayar. Tagihan lain yang masih berjalan akan ditutup otomatis.`)) return;
+              launch.disabled = true;
+              const { error } = await client.rpc('dues_launch_invoice', { p_id: inv.id, p_publish_at: null });
+              launch.disabled = false;
+              if (error) { setMessage('Tagihan gagal diluncurkan: ' + (error.message || 'coba lagi') + '.', 'error'); return; }
+              setMessage('Tagihan diluncurkan. Anggota sekarang bisa membayar di halaman /iuran.');
+              renderDues();
+            });
+            actions.append(launch);
+          } else {
+            const close = make('button', 'admin-link-button is-danger', 'Tutup tagihan');
+            close.type = 'button';
+            close.addEventListener('click', async () => {
+              if (!window.confirm('Tutup tagihan ini? Anggota tidak bisa lagi mengirim konfirmasi baru untuk tagihan ini. Data pembayaran tetap tersimpan.')) return;
+              close.disabled = true;
+              const { error } = await client.rpc('dues_close_invoice', { p_id: inv.id });
+              close.disabled = false;
+              if (error) { setMessage('Tagihan gagal ditutup: ' + (error.message || 'coba lagi') + '.', 'error'); return; }
+              setMessage('Tagihan ditutup.');
+              renderDues();
+            });
+            actions.append(close);
+          }
+
+          if (inv.status === 'draf' && inv.publish_at) {
+            const cancelSchedule = make('button', 'admin-link-button', 'Batalkan jadwal');
+            cancelSchedule.type = 'button';
+            cancelSchedule.addEventListener('click', () => {
+              openEditor(inv);
+              setMessage('Ubah bagian jadwal, atau simpan sebagai draf untuk membatalkan penjadwalan.', 'warning');
+            });
+            actions.append(cancelSchedule);
+          }
+
+          const edit = make('button', 'admin-link-button', 'Ubah');
+          edit.type = 'button';
+          edit.addEventListener('click', () => openEditor(inv));
+          actions.append(edit);
+
+          if (isOwner()) {
+            const remove = make('button', 'admin-link-button is-danger', 'Hapus');
+            remove.type = 'button';
+            remove.addEventListener('click', async () => {
+              if (!window.confirm(`Hapus tagihan “${inv.title}”? Tagihan yang sudah punya pembayaran tidak bisa dihapus.`)) return;
+              remove.disabled = true;
+              const { error } = await client.rpc('dues_delete_invoice', { p_id: inv.id });
+              remove.disabled = false;
+              if (error) { setMessage(error.message || 'Tagihan gagal dihapus.', 'error'); return; }
+              setMessage('Tagihan dihapus.');
+              renderDues();
+            });
+            actions.append(remove);
+          }
+
+          actionCell.append(actions);
+          tr.append(actionCell);
+          body.append(tr);
+        });
+        invoiceSection.append(wrap);
+      }
+
+      const invoiceNote = make('p', 'privacy-mini',
+        'Hanya satu tagihan yang berjalan pada satu waktu. Peluncuran otomatis menutup tagihan lain agar tidak ada dobel bayar. ' +
+        'Cek status & rekap pembayaran tetap memakai daftar di bawah.');
+      invoiceSection.append(invoiceNote);
+    }
 
     // ---------- pengaturan ----------
     const settingsCard = make('section', 'dues-admin-settings');
@@ -1894,7 +2246,7 @@
     const settingsTitleBlock = make('div');
     settingsTitleBlock.append(
       make('span', '', 'PENGATURAN TAGIHAN'),
-      make('h4', '', 'Nominal & kanal pembayaran')
+      make('h4', '', 'Kanal pembayaran & pengaturan lama')
     );
     settingsTitleBlock.firstChild.style.cssText = 'font-size:9px;font-weight:900;letter-spacing:2px;color:#9a2928';
     settingsTitleBlock.lastChild.style.cssText = 'font:20px/1.2 Arial,Helvetica,sans-serif;margin:5px 0 0';
@@ -2055,7 +2407,7 @@
         listBox.replaceChildren(make('div', 'table-empty', 'Tidak ada data dengan status ini.'));
         return;
       }
-      const { wrap, body } = makeTable(['Dikirim', 'Nama / nomor anggota', 'Kecamatan & WA', 'Metode', 'Periode', 'Jumlah', 'Tanggal bayar', 'Status', 'Aksi']);
+      const { wrap, body } = makeTable(['Dikirim', 'Nama / nomor anggota', 'Kecamatan & WA', 'Metode', 'Periode', 'Lama', 'Jumlah', 'Tanggal bayar', 'Status', 'Aksi']);
       shown.forEach(row => {
         const tr = make('tr');
         tr.append(make('td', '', sosTime(row.created_at)));
@@ -2070,6 +2422,7 @@
         tr.append(contactCell);
         tr.append(make('td', '', DUES_METHOD_LABELS[row.method] || row.method));
         tr.append(make('td', '', duesPeriodLabel(row.period)));
+        tr.append(make('td', '', `${Number(row.months) || 1} bln`));
         tr.append(make('td', '', rupiahAdmin(row.amount)));
         tr.append(make('td', '', duesDate(row.paid_at)));
         const statusCell = make('td');
@@ -2299,6 +2652,7 @@
     workspace.replaceChildren(
       heading,
       chips,
+      invoiceSection,
       settingsCard,
       listTitle,
       listHelp,
