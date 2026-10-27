@@ -236,7 +236,8 @@ Admin → Iuran; halaman otomatis meminta anggota mengetik jumlahnya.
 
 | Gejala | Penyebab & solusi |
 | --- | --- |
-| Halaman `/iuran` menulis “modul belum diaktifkan” | Migrasi belum dijalankan, atau pengaturan belum diisi. Ulangi langkah 2. |
+| Halaman `/iuran` menulis “modul belum diaktifkan” / “belum ada tagihan” | Normal bila belum ada tagihan yang diluncurkan. **Nominal tidak ditampilkan** sampai tagihan dibuka, agar tidak ada anggota yang membayar tanpa tagihan resmi. |
+| Dulu halaman menampilkan nominal besar padahal belum ada tagihan | Sudah diperbaiki: kartu tagihan hanya menampilkan angka setelah tagihan diluncurkan. Nominal yang tersimpan di pengaturan tidak lagi ditampilkan ke publik. |
 | Blok Iuran tidak muncul di beranda | Normal bila pengaturan iuran belum diisi pengurus (blok disembunyikan). |
 | Tab “Iuran” tidak ada di Admin | Akun belum berperan `owner`, `registrar`, atau `bendahara`. Minta Pemilik menambah peran, lalu keluar–masuk lagi. |
 | Pengaturan gagal disimpan | Akun bukan Pemilik/Editor Situs/Bendahara, atau migrasi belum jalan. |

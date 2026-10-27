@@ -278,3 +278,6 @@ body.dues-page {
 @media (max-width: 430px) {
   .dues-months-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* Elemen yang disembunyikan lewat atribut hidden (mis. saat belum ada tagihan) */
+.dues-card [hidden], .dues-section [hidden] { display: none !important; }

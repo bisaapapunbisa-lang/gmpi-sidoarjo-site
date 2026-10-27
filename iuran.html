@@ -29,7 +29,7 @@
     <div class="dues-page-title">
       <div class="dues-eyebrow"><i></i>IURAN ANGGOTA</div>
       <h1>Iuran <em>keanggotaan.</em></h1>
-      <p>Menjaga barisan butuh kas. Bayar iuran anggota dengan cara paling gampang: pindai QRIS (nominal sudah terisi otomatis), kirim lewat e-wallet, transfer bank, atau serahkan tunai ke bendahara. Setelah membayar, konfirmasi di halaman ini agar tercatat.</p>
+      <p id="dues-intro">Menjaga barisan butuh kas. Bayar iuran anggota dengan cara paling gampang: pindai QRIS (nominal sudah terisi otomatis), kirim lewat e-wallet, transfer bank, atau serahkan tunai ke bendahara. Setelah membayar, konfirmasi di halaman ini agar tercatat.</p>
     </div>
 
     <div class="dues-status-msg is-error" id="dues-config-warning" role="status" hidden></div>
@@ -37,22 +37,22 @@
 
     <div class="dues-grid" id="dues-main">
       <!-- KIRI: rincian tagihan -->
-      <section class="dues-card" aria-labelledby="dues-bill-title">
+      <section class="dues-card" id="dues-bill-card" aria-labelledby="dues-bill-amount">
         <div class="dues-card-kicker" id="dues-kicker">TAGIHAN ANGGOTA</div>
-        <h2 id="dues-bill-title" class="dues-amount"><span id="dues-nominal">Rp—</span> <small id="dues-unit">/ anggota</small></h2>
-        <ul class="dues-meta">
+        <h2 id="dues-bill-amount" class="dues-amount"><span id="dues-nominal">Rp—</span> <small id="dues-unit">/ anggota</small></h2>
+        <ul class="dues-meta" id="dues-bill-meta">
           <li>Periode <b id="dues-period">—</b></li>
           <li id="dues-due-item">Jatuh tempo <b id="dues-due">—</b></li>
           <li id="dues-countdown" hidden>—</li>
         </ul>
         <p class="dues-note" id="dues-catatan">Memuat pengaturan iuran…</p>
-        <ol class="dues-steps">
+        <ol class="dues-steps" id="dues-bill-steps">
           <li><b>1</b><span><strong>Bayar.</strong> Pilih bulan yang mau dibayar — boleh satu bulan saja — lalu bayar lewat QRIS, e-wallet, transfer bank, atau tunai.</span></li>
           <li><b>2</b><span><strong>Konfirmasi.</strong> Isi formulir di bawah — 30 detik, tanpa unggah berkas.</span></li>
           <li><b>3</b><span><strong>Kirim bukti.</strong> Tombol WhatsApp otomatis menyiapkan pesan berisi rincian pembayaranmu.</span></li>
         </ol>
         <div class="dues-btn-row">
-          <a class="dues-btn is-gold" href="#bayar">Bayar sekarang <span aria-hidden="true">↓</span></a>
+          <a class="dues-btn is-gold" href="#bayar" id="dues-bill-pay">Bayar sekarang <span aria-hidden="true">↓</span></a>
           <a class="dues-btn is-outline" id="dues-wa-bendahara" href="https://wa.me/6281235911689" target="_blank" rel="noopener">Tanya bendahara</a>
         </div>
         <p class="dues-note" style="margin-top:14px">Pembayaran hanya ke kanal atas nama <b>GMPI DPD SIDOARJO</b>. Jangan pernah mengirim uang ke rekening pribadi yang bukan bendahara resmi.</p>
