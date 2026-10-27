@@ -4,7 +4,6 @@
     ['penasihat', 'Dewan Penasihat'], ['penasihat', 'Dewan Penasihat'], ['penasihat', 'Dewan Penasihat'],
     ['pembina', 'Dewan Pembina'], ['pembina', 'Dewan Pembina'], ['pembina', 'Dewan Pembina'],
     ['ketua', 'Ketua DPD'],
-    ['wakil_ketua', 'Wakil Ketua'],
     ['sekretaris', 'Sekretaris'],
     ['ketua_harian', 'Ketua Harian I'], ['ketua_harian', 'Ketua Harian II'],
     ['humas', 'Kepala Humas'],
@@ -58,13 +57,10 @@
     by('ketua').forEach(r => top.append(person(r, photoUrl, 'lg')));
     chart.append(top, el('div', 'org-link'));
 
-    const wk = el('div', 'org-level org-group');
-    wk.append(el('h4', 'org-title', 'Wakil Ketua'), people(by('wakil_ketua'), photoUrl, 'md'));
-    chart.append(wk, el('div', 'org-link'));
-
     const branches = el('div', 'org-branches');
-    [['sekretaris', 'wakil_sekretaris', 'Sekretariat'], ['ketua_harian', '', 'Ketua Harian I & II'], ['humas', '', 'Humas'], ['bendahara', 'wakil_bendahara', 'Kebendaharaan']].forEach(([head, deputies, title]) => {
+    [['sekretaris', 'wakil_sekretaris', 'Sekretariat', 'sekretaris'], ['ketua_harian', '', 'Ketua Harian', 'ketua-harian'], ['humas', '', 'Humas', 'humas'], ['bendahara', 'wakil_bendahara', 'Kebendaharaan', 'bendahara']].forEach(([head, deputies, title, slug]) => {
       const br = el('div', 'org-branch');
+      br.dataset.branch = slug;
       br.append(el('h4', 'org-title', title));
       by(head).forEach(r => br.append(person(r, photoUrl, 'md')));
       br.append(people(by(deputies), photoUrl, 'sm'));

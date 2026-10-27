@@ -649,10 +649,43 @@
     const removed = [];
     const photoUrl = path => client.storage.from('site-assets').getPublicUrl(path).data.publicUrl;
     const SECTIONS = [
-      ['penasihat', 'Dewan Penasihat'], ['pembina', 'Dewan Pembina'], ['ketua', 'Ketua'], ['wakil_ketua', 'Wakil Ketua'],
-      ['sekretaris', 'Sekretaris'], ['ketua_harian', 'Ketua Harian'], ['humas', 'Humas'], ['bendahara', 'Bendahara'],
+      ['penasihat', 'Dewan Penasihat'], ['pembina', 'Dewan Pembina'], ['ketua', 'Ketua (satu orang, tetap)'],
+      ['sekretaris', 'Sekretaris'], ['wakil_sekretaris', 'Wakil Sekretaris'],
+      ['bendahara', 'Bendahara'], ['wakil_bendahara', 'Wakil Bendahara'],
+      ['ketua_harian', 'Ketua Harian'], ['humas', 'Humas'],
       ['departemen', 'Departemen (dipimpin Wakil Ketua Departemen)']
     ];
+    // Jabatan dasar saat menambah orang baru. Ketua tidak bisa ditambah.
+    const SECTION_DEFAULT = {
+      penasihat: 'Dewan Penasihat', pembina: 'Dewan Pembina',
+      sekretaris: 'Sekretaris', wakil_sekretaris: 'Wakil Sekretaris',
+      bendahara: 'Bendahara', wakil_bendahara: 'Wakil Bendahara',
+      ketua_harian: 'Ketua Harian', humas: 'Humas'
+    };
+    const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+    // Jabatan yang selalu bernomor (I, II, III…). Penasihat/Pembina boleh sama.
+    const NUMBERED = new Set(['ketua_harian', 'wakil_sekretaris', 'wakil_bendahara']);
+    function nextJabatan(key, current) {
+      const base = SECTION_DEFAULT[key] || 'Pengurus';
+      if (key === 'penasihat' || key === 'pembina') return base;
+      const used = new Set(current.map(x => (x.jabatan || '').trim().toLocaleLowerCase('id-ID')));
+      if (!NUMBERED.has(key) && !used.has(base.toLocaleLowerCase('id-ID'))) return base;
+      const start = Math.max(1, current.length + 1);
+      for (let n = start; n <= ROMAN.length; n += 1) {
+        const cand = `${base} ${ROMAN[n - 1]}`;
+        if (!used.has(cand.toLocaleLowerCase('id-ID'))) return cand;
+      }
+      return `${base} ${current.length + 1}`;
+    }
+    function addMember(key) {
+      const current = rows.filter(x => x.section === key);
+      const orders = current.map(x => Number(x.sort_order) || 0);
+      const sortOrder = orders.length ? Math.max(...orders) + 1 : 60;
+      rows.push({ section: key, jabatan: nextJabatan(key, current), department: null, person_name: '', photo_path: null, sort_order: sortOrder });
+      build(); refreshPreview();
+      const group = [...groupsHost.querySelectorAll('.org-admin-group')].find(x => x.querySelector('legend')?.textContent === SECTIONS.find(([k]) => k === key)[1]);
+      const last = group?.querySelector('.org-admin-row:last-of-type input[placeholder^="Nama lengkap"]'); if (last) last.focus();
+    }
     const layout = make('div', 'org-admin');
     const formEl = make('form', 'org-admin-form');
     const preview = make('div', 'org-admin-preview');
@@ -710,6 +743,15 @@
           rows = rows.filter(x => x !== r); build(); refreshPreview();
         });
         tools.append(del);
+      } else if (r.section !== 'ketua') {
+        // Semua jabatan (kecuali Ketua) boleh ditambah maupun dihapus.
+        const del = make('button', 'admin-link-button org-admin-del', 'Hapus posisi'); del.type = 'button';
+        del.addEventListener('click', () => {
+          if (!window.confirm(`Hapus posisi “${r.jabatan}” dari bagan?`)) return;
+          if (r.id) removed.push(r.id);
+          rows = rows.filter(x => x !== r); build(); refreshPreview();
+        });
+        tools.append(del);
       }
       return line;
     }
@@ -719,24 +761,8 @@
       groupsHost.replaceChildren(...SECTIONS.map(([key, label]) => {
         const fs = make('fieldset', 'org-admin-group');
         fs.append(make('legend', '', label));
-        rows.filter(r => r.section === key).forEach(r => fs.append(rowEditor(r)));
-        if (key === 'ketua_harian') {
-          const add = make('button', 'admin-button admin-button-outline', '＋ Tambah posisi Ketua Harian I/II'); add.type = 'button';
-          add.addEventListener('click', () => {
-            const current = rows.filter(x => x.section === 'ketua_harian');
-            const labels = new Set(current.map(x => (x.jabatan || '').trim().toLocaleLowerCase('id-ID')));
-            const label = ['Ketua Harian I', 'Ketua Harian II'].find(x => !labels.has(x.toLocaleLowerCase('id-ID'))) || `Ketua Harian ${current.length + 1}`;
-            const orders = current.map(x => Number(x.sort_order) || 0);
-            const sortOrder = label === 'Ketua Harian I'
-              ? (orders.length ? Math.min(...orders) - 1 : 59)
-              : (orders.length ? Math.max(...orders) + 1 : 60);
-            rows.push({ section: 'ketua_harian', jabatan: label, department: null, person_name: '', photo_path: null, sort_order: sortOrder });
-            build(); refreshPreview();
-            const group = [...groupsHost.querySelectorAll('.org-admin-group')].find(x => x.querySelector('legend')?.textContent === 'Ketua Harian');
-            const last = group?.querySelector('.org-admin-row:last-of-type input[placeholder^="Nama lengkap"]'); if (last) last.focus();
-          });
-          fs.append(add);
-        }
+        const mine = rows.filter(r => r.section === key);
+        mine.forEach(r => fs.append(rowEditor(r)));
         if (key === 'departemen') {
           const add = make('button', 'admin-button admin-button-outline', '＋ Tambah departemen'); add.type = 'button';
           add.addEventListener('click', () => {
@@ -746,6 +772,13 @@
             const last = groupsHost.querySelector('.org-admin-group:last-child .org-admin-row:last-of-type input'); if (last) last.focus();
           });
           fs.append(add);
+        } else if (key !== 'ketua') {
+          const add = make('button', 'admin-button admin-button-outline', `＋ Tambah ${SECTION_DEFAULT[key] || 'pengurus'}`); add.type = 'button';
+          add.setAttribute('aria-label', `Tambah ${SECTION_DEFAULT[key] || 'pengurus'}`);
+          add.addEventListener('click', () => addMember(key));
+          fs.append(add);
+        } else if (!mine.length) {
+          fs.append(make('p', 'privacy-mini', 'Ketua wajib ada. Bila nama belum diisi, bagan menampilkan “Segera diisi”.'));
         }
         return fs;
       }));
@@ -757,6 +790,7 @@
     formEl.append(groupsHost, btnRow);
     formEl.addEventListener('submit', async event => {
       event.preventDefault();
+      rows = rows.filter(r => SECTIONS.some(([key]) => key === r.section));
       const bad = rows.find(r => (r.jabatan || '').trim().length < 2 || (r.section === 'departemen' && !(r.department || '').trim()));
       if (bad) { setMessage(bad.section === 'departemen' ? 'Isi nama setiap departemen (atau hapus departemen yang kosong).' : 'Jabatan tidak boleh kosong.', 'error'); return; }
       const pick = r => ({ section: r.section, jabatan: r.jabatan.trim(), department: r.section === 'departemen' ? (r.department || '').trim() : null, person_name: (r.person_name || '').trim() || null, photo_path: r.photo_path || null, sort_order: r.sort_order || 0 });
@@ -3684,7 +3718,7 @@
   const DISTRICTS = ['Sidoarjo','Buduran','Gedangan','Waru','Sukodono','Taman','Krian','Balongbendo','Tarik','Prambon','Krembung','Porong','Jabon','Tanggulangin','Candi','Tulangan','Wonoayu','Sedati'];
   const JABATAN_GROUPS = [
     ['Dewan DPD', ['Dewan Penasihat DPD', 'Dewan Pembina DPD']],
-    ['Pengurus harian DPD', ['Ketua DPD', 'Wakil Ketua DPD', 'Sekretaris DPD', 'Ketua Harian DPD', 'Kepala Humas DPD', 'Bendahara DPD']],
+    ['Pengurus harian DPD', ['Ketua DPD', 'Sekretaris DPD', 'Ketua Harian DPD', 'Kepala Humas DPD', 'Bendahara DPD']],
     ['Departemen DPD', ['Wakil Ketua Departemen DPD', 'Pengurus Departemen DPD']],
     ['Ranting (desa)', ['Korja Ranting', 'Wakil Korja Ranting', 'Sekretaris Ranting']],
     ['Organisasi otonom', ['LBH GMPI', 'Squad Militansi', 'MPI Sidoarjo', 'SB GMPI', 'Tagana']],

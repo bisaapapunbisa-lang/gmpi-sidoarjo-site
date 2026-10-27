@@ -38,8 +38,13 @@
 .org-dept-name{font:18px/1.05 Impact,'Arial Narrow',sans-serif;text-transform:uppercase;letter-spacing:.3px;text-align:center;color:#171715}
 .org-dept.is-placeholder{grid-column:1/-1;color:#8a8478;font-size:12px;font-style:italic;border-style:dashed;text-align:center}
 .struktur-note{max-width:1180px;margin:16px auto 0;font-size:10px;line-height:1.6;color:#7a766e;text-align:center}
+/* Urutan tampil di HP: Ketua → Sekretaris → Bendahara → Ketua Harian → Humas */
 @media(max-width:760px){
   .org-advisors,.org-branches{grid-template-columns:1fr}
+  .org-branch[data-branch="sekretaris"]{order:1}
+  .org-branch[data-branch="bendahara"]{order:2}
+  .org-branch[data-branch="ketua-harian"]{order:3}
+  .org-branch[data-branch="humas"]{order:4}
   .org-branches{padding-top:0;gap:28px}
   .org-branches:before{display:none}
   .org-branch:before{top:-28px;height:28px}
