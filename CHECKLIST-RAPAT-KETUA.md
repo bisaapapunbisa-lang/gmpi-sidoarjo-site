@@ -67,7 +67,7 @@
 ## I. Struktur organisasi DPD (baru)
 Bagan di beranda sudah siap. Susunan mengikuti AD/ART Pasal 9 ayat 2, ditambah keputusan kita soal jumlah dewan dan wakil. Yang perlu dibawa pulang dari rapat:
 - [ ] Nama lengkap + gelar: **Dewan Penasihat** (3 orang) dan **Dewan Pembina** (3 orang)
-- [ ] **Ketua DPD** dan **Wakil Ketua I, II, III**
+- [ ] **Ketua DPD**
 - [ ] **Sekretaris** dan **Wakil Sekretaris I, II, III**
 - [ ] **Bendahara** dan **Wakil Bendahara I, II, III**
 - [ ] Daftar **Departemen** beserta nama Wakil Ketua Departemen masing-masing
