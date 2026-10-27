@@ -73,6 +73,26 @@
     if (/^\d{4}$/.test(text)) return `Tahun ${text}`;
     return text || '—';
   }
+  // Daftar label bulan yang dicakup sebuah tagihan, contoh: ['Oktober 2026','November 2026'].
+  function periodRangeLabels(period, months) {
+    const count = Math.max(1, Math.min(12, Number(months) || 1));
+    if (count === 1) return [periodLabel(period)];
+    if (!/^\d{4}-\d{2}$/.test(String(period || ''))) return [periodLabel(period)];
+    let [year, month] = period.split('-').map(Number);
+    const labels = [];
+    for (let i = 0; i < count; i++) {
+      labels.push(`${MONTHS[month - 1]} ${year}`);
+      month += 1;
+      if (month === 13) { month = 1; year += 1; }
+    }
+    return labels;
+  }
+  function periodRangeShort(period, months) {
+    const labels = periodRangeLabels(period, months);
+    if (labels.length === 1) return labels[0];
+    return `${labels[0]} – ${labels[labels.length - 1]}`;
+  }
+
   function daysUntil(iso) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(String(iso || ''))) return null;
     const target = new Date(`${iso}T23:59:59`);
@@ -233,6 +253,34 @@
     };
   }
 
+  // Status tagihan yang diluncurkan pengurus (migration 202610280029).
+  // Mengembalikan { hasInvoices, active } atau null bila fitur belum ada.
+  async function loadInvoiceStatus() {
+    const supabase = ensureClient();
+    if (!supabase) return null;
+    try {
+      const { data, error } = await supabase.rpc('dues_public_status');
+      if (error) return null;
+      const payload = data && typeof data === 'object' ? data : null;
+      if (!payload) return null;
+      const active = payload.active || null;
+      return {
+        hasInvoices: Boolean(payload.has_invoices),
+        active: active && active.id ? {
+          id: active.id,
+          title: String(active.title || '').trim(),
+          period: String(active.period || '').trim(),
+          months: Math.max(1, Math.min(12, Number(active.months) || 1)),
+          nominal: parseDigits(active.nominal),
+          dueDate: /^\d{4}-\d{2}-\d{2}/.test(String(active.due_date || '')) ? String(active.due_date).slice(0, 10) : '',
+          note: String(active.note || '').trim()
+        } : null
+      };
+    } catch (error) {
+      return null;
+    }
+  }
+
   function waLink(number, message) {
     const digits = String(number || '').replace(/[^0-9]/g, '');
     const target = digits ? `https://wa.me/${digits}` : 'https://wa.me/';
@@ -246,44 +294,96 @@
     const field = name => $(`[data-dues-field="${name}"]`, root);
     const canvas = $('[data-dues-qr]', root);
     const cta = $('[data-dues-cta]', root);
-    const statusChip = field('status');
 
-    function paint(settings) {
+    function paint(model) {
       const nominalNode = field('nominal');
       const periodNode = field('period');
       const dueNode = field('due');
       const noteNode = field('note');
-      if (nominalNode) nominalNode.textContent = settings.nominal > 0 ? rupiah(settings.nominal) : 'Sesuai ketetapan';
-      if (periodNode) periodNode.textContent = periodLabel(settings.periode);
-      if (dueNode) dueNode.textContent = settings.jatuhTempo ? prettyDate(settings.jatuhTempo) : 'Sesuai pengumuman';
-      if (noteNode) {
-        noteNode.textContent = settings.aktif
-          ? `${settings.nama} sudah dibuka. Bayar lewat QRIS — nominal terisi otomatis, tinggal pindai.`
-          : `${settings.nama} belum dibuka — pantau pengumuman grup WhatsApp anggota.`;
-      }
+      const statusChip = field('status');
+
+      if (nominalNode) nominalNode.textContent = model.nominal > 0 ? rupiah(model.nominal) : 'Sesuai ketetapan';
+      if (periodNode) periodNode.textContent = model.periodText;
+      if (dueNode) dueNode.textContent = model.dueDate ? prettyDate(model.dueDate) : 'Sesuai pengumuman';
+      if (noteNode) noteNode.textContent = model.note;
       if (statusChip) {
-        statusChip.textContent = settings.aktif ? 'DIBUKA' : 'BELUM DIBUKA';
-        statusChip.classList.toggle('is-open', settings.aktif);
+        statusChip.textContent = model.open ? 'DIBUKA' : 'BELUM DIBUKA';
+        statusChip.classList.toggle('is-open', model.open);
       }
-      if (cta) {
-        cta.textContent = settings.aktif ? 'Bayar iuran sekarang' : 'Lihat rincian iuran';
-      }
+      if (cta) cta.textContent = model.open ? 'Bayar iuran sekarang' : 'Lihat rincian iuran';
       if (canvas) {
-        const payload = settings.nominal > 0 ? qrisWithAmount(settings.nominal) : null;
+        const payload = model.open && model.nominal > 0 ? qrisWithAmount(model.nominal) : null;
         const ok = payload ? drawQris(canvas, payload) : false;
         canvas.hidden = !ok;
         const fallback = $('[data-dues-qr-fallback]', root);
         if (fallback) fallback.hidden = ok;
       }
+      const qrNote = $('[data-dues-qr-note]', root);
+      if (qrNote) {
+        qrNote.textContent = model.open
+          ? 'Nominal terisi otomatis · semua e-wallet & m-banking'
+          : 'QRIS muncul saat tagihan diluncurkan pengurus';
+      }
     }
 
-    paint(normalizeSettings(FALLBACK));
-    loadSettings().then(({ settings, online, configured }) => {
-      // Modul belum dijalankan/diisi pengurus: jangan tampilkan blok kosong di beranda.
-      if (!configured) { root.hidden = true; return; }
-      paint(normalizeSettings(settings));
+    function modelFromSettings(settings) {
+      return {
+        open: settings.aktif,
+        nominal: settings.nominal,
+        periodText: periodLabel(settings.periode),
+        dueDate: settings.jatuhTempo,
+        note: settings.aktif
+          ? `${settings.nama} sudah dibuka. Bayar lewat QRIS — nominal terisi otomatis, tinggal pindai.`
+          : `${settings.nama} belum dibuka — pantau pengumuman grup WhatsApp anggota.`
+      };
+    }
+
+    function modelFromInvoice(invoice) {
+      const months = invoice.months;
+      return {
+        open: true,
+        nominal: invoice.nominal > 0 ? invoice.nominal * months : 0,
+        periodText: periodRangeShort(invoice.period, months),
+        dueDate: invoice.dueDate,
+        note: months > 1
+          ? `${invoice.title} — ${months} bulan sekaligus (${periodRangeShort(invoice.period, months)}).`
+          : `${invoice.title} sudah dibuka. Bayar lewat QRIS — nominal terisi otomatis, tinggal pindai.`
+      };
+    }
+
+    paint(modelFromSettings(normalizeSettings(FALLBACK)));
+
+    Promise.all([loadSettings(), loadInvoiceStatus()]).then(([settingsRes, inv]) => {
+      const settings = normalizeSettings(settingsRes.settings);
+
+      if (inv && inv.hasInvoices) {
+        // Pengurus memakai fitur Tagihan: tagihan yang menentukan.
+        if (inv.active) {
+          paint(modelFromInvoice(inv.active));
+          const warn = $('[data-dues-teaser-warning]', root);
+          if (warn) warn.hidden = true;
+          return;
+        }
+        paint({
+          open: false,
+          nominal: 0,
+          periodText: 'Menunggu keputusan pengurus',
+          dueDate: '',
+          note: 'Belum ada tagihan iuran yang dibuka. Tagihan muncul setelah pengurus rapat memutuskan dan meluncurkannya.'
+        });
+        const warn = $('[data-dues-teaser-warning]', root);
+        if (warn) warn.hidden = true;
+        return;
+      }
+
+      if (!inv && !settingsRes.configured) {
+        root.hidden = true;
+        return;
+      }
+
+      paint(modelFromSettings(settings));
       const warn = $('[data-dues-teaser-warning]', root);
-      if (warn) warn.hidden = online;
+      if (warn) warn.hidden = settingsRes.online;
     });
   }
 
@@ -308,6 +408,8 @@
       qty: 1,
       method: 'qris',
       configured: false,
+      invoice: null,        // tagihan yang sedang diluncurkan pengurus
+      hasInvoices: false,   // sudah ada tagihan dibuat (mode tagihan aktif)
       lastSubmit: null
     };
 
@@ -325,9 +427,19 @@
       checkMsg.classList.toggle('is-ok', type === 'ok');
     }
 
+    // Jumlah bulan yang dibayar: mengikuti tagihan bila ada, atau pilihan anggota.
+    function effectiveMonths() {
+      return state.invoice ? state.invoice.months : state.qty;
+    }
+    function effectiveNominal() {
+      return state.invoice ? state.invoice.nominal : state.settings.nominal;
+    }
+    function effectivePeriod() {
+      return state.invoice ? state.invoice.period : state.settings.periode;
+    }
     function total() {
-      const nominal = state.settings.nominal;
-      const result = nominal > 0 ? nominal * state.qty : 0;
+      const nominal = effectiveNominal();
+      const result = nominal > 0 ? nominal * effectiveMonths() : 0;
       return result > 0 ? result : 0;
     }
 
@@ -354,6 +466,16 @@
     function renderPeriodSelect() {
       const select = $('#f-periode');
       if (!select) return;
+      if (state.invoice) {
+        // Periode ditentukan pengurus lewat tagihan, bukan dipilih anggota.
+        const option = document.createElement('option');
+        option.value = state.invoice.period;
+        option.textContent = periodRangeShort(state.invoice.period, state.invoice.months);
+        select.replaceChildren(option);
+        select.disabled = true;
+        return;
+      }
+      select.disabled = false;
       const previous = select.value;
       const options = periodOptions();
       select.replaceChildren(...options.map(period => {
@@ -368,7 +490,9 @@
     // ---------- tangkapan informasi tagihan ----------
     function paintBill() {
       const s = state.settings;
+      const inv = state.invoice;
       const nominalNode = $('#dues-nominal');
+      const unitNode = $('#dues-unit');
       const periodNode = $('#dues-period');
       const dueNode = $('#dues-due');
       const dueItem = $('#dues-due-item');
@@ -376,22 +500,36 @@
       const kicker = $('#dues-kicker');
       const catatan = $('#dues-catatan');
 
-      if (nominalNode) nominalNode.textContent = s.nominal > 0 ? rupiah(s.nominal) : 'Sesuai ketetapan';
-      if (periodNode) periodNode.textContent = periodLabel(s.periode);
+      const nominal = inv ? inv.nominal : s.nominal;
+      const period = inv ? inv.period : s.periode;
+      const months = inv ? inv.months : 1;
+      const dueDate = inv ? inv.dueDate : s.jatuhTempo;
+
+      const waiting = state.hasInvoices && !inv;
+      if (nominalNode) {
+        nominalNode.textContent = waiting
+          ? 'Belum ada tagihan'
+          : (nominal > 0 ? rupiah(nominal) : 'Sesuai ketetapan');
+      }
+      if (unitNode) unitNode.textContent = waiting ? '' : (months > 1 ? `/ bulan · ${months} bulan` : '/ anggota');
+      if (periodNode) periodNode.textContent = waiting ? 'Menunggu peluncuran' : periodRangeShort(period, months);
       if (kicker) {
-        const name = s.nama.toUpperCase();
-        const period = periodLabel(s.periode).toUpperCase();
-        kicker.textContent = (name.includes(String(s.periode)) ? name : `${name} · ${period}`).slice(0, 70);
+        const name = (inv ? inv.title : s.nama).toUpperCase();
+        const periodText = periodRangeShort(period, months).toUpperCase();
+        const alreadyMentions = name.includes(periodText) ||
+          name.includes(periodLabel(period).toUpperCase()) ||
+          (period && name.includes(String(period).slice(0, 4)));
+        kicker.textContent = (alreadyMentions ? name : `${name} · ${periodText}`).slice(0, 70);
       }
       if (catatan) {
-        catatan.textContent = s.catatan ||
+        catatan.textContent = (inv && inv.note) || s.catatan ||
           'Iuran dipakai untuk kas organisasi: advokasi warga, kegiatan sosial, dan operasional sekretariat DPD.';
       }
 
-      const days = s.jatuhTempo ? daysUntil(s.jatuhTempo) : null;
+      const days = !waiting && dueDate ? daysUntil(dueDate) : null;
       if (dueNode && dueItem) {
-        if (s.jatuhTempo) {
-          dueNode.textContent = prettyDate(s.jatuhTempo);
+        if (!waiting && dueDate) {
+          dueNode.textContent = prettyDate(dueDate);
           dueItem.hidden = false;
         } else {
           dueItem.hidden = true;
@@ -412,12 +550,12 @@
 
       const waNode = $('#dues-wa-bendahara');
       if (waNode) {
-        const message = `Assalamualaikum, saya anggota GMPI DPD Sidoarjo. Saya ingin menanyakan ${s.nama} periode ${periodLabel(s.periode)}.`;
+        const message = `Assalamualaikum, saya anggota GMPI DPD Sidoarjo. Saya ingin menanyakan ${inv ? inv.title : s.nama} periode ${periodRangeShort(period, months)}.`;
         waNode.href = waLink(s.wa, message);
       }
       const footWa = $('#dues-foot-wa');
       if (footWa && s.wa) {
-        footWa.href = waLink(s.wa, `Assalamualaikum, saya ingin menanyakan ${s.nama}.`);
+        footWa.href = waLink(s.wa, `Assalamualaikum, saya ingin menanyakan ${inv ? inv.title : s.nama}.`);
       }
 
       const ewalletNode = $('#dues-ewallet-text');
@@ -425,19 +563,32 @@
       const bankNode = $('#dues-bank-text');
       if (bankNode) bankNode.textContent = s.bank || 'Belum diatur pengurus.';
 
-      // Status buka/tutup
+      // Status buka/tutup.
+      // Bila pengurus sudah memakai fitur Tagihan, tagihan yang menentukan —
+      // bukan saklar lama iuran_aktif. Tanpa tagihan sama sekali, saklar lama dipakai.
       const main = $('#bayar');
       const konfirmasi = $('#konfirmasi');
-      if (!s.aktif) {
+      const open = state.hasInvoices ? Boolean(state.invoice) : s.aktif;
+      if (!open) {
         if (main) main.hidden = true;
         if (konfirmasi) konfirmasi.hidden = true;
         if (closedBox) {
           closedBox.hidden = false;
-          closedBox.textContent = (!state.configured
-            ? 'Modul iuran belum diaktifkan pengurus. '
-            : '') + `${s.nama} periode ${periodLabel(s.periode)} belum dibuka pengurus. ` +
-            'Halaman ini otomatis bisa dipakai begitu bendahara membuka periode iuran. ' +
-            'Sementara itu, cek status pembayaran sebelumnya di bawah atau hubungi bendahara.';
+          if (!state.online) {
+            closedBox.textContent = 'Pengaturan iuran belum bisa dimuat dari server. Muat ulang halaman sebentar lagi, ' +
+              'atau hubungi bendahara lewat WhatsApp untuk mengetahui tagihan yang sedang berjalan.';
+          } else if (state.hasInvoices) {
+            closedBox.textContent = 'Belum ada tagihan iuran yang dibuka pengurus. ' +
+              'Tagihan hanya muncul setelah pengurus rapat memutuskan dan menekan tombol “Luncurkan tagihan”. ' +
+              'Sementara itu, cek status pembayaran sebelumnya di bawah atau hubungi bendahara.';
+          } else if (!state.configured) {
+            closedBox.textContent = 'Modul iuran belum diaktifkan pengurus. ' +
+              'Halaman ini otomatis bisa dipakai begitu bendahara menyiapkan tagihan.';
+          } else {
+            closedBox.textContent = `${s.nama} periode ${periodLabel(s.periode)} belum dibuka pengurus. ` +
+              'Halaman ini otomatis bisa dipakai begitu bendahara membuka periode iuran atau meluncurkan tagihan. ' +
+              'Sementara itu, cek status pembayaran sebelumnya di bawah atau hubungi bendahara.';
+          }
         }
       } else {
         if (main) main.hidden = false;
@@ -449,24 +600,28 @@
     // ---------- QRIS ----------
     function paintQris() {
       const amount = total();
+      const months = effectiveMonths();
+      const fixedByInvoice = Boolean(state.invoice);
       const amountNode = $('#dues-qris-amount');
       const manualNode = $('#dues-qris-manual');
       const qtyNode = $('#dues-qty');
+      const qtyLabel = $('#dues-qty-label');
       const totalNode = $('#dues-total');
 
-      if (qtyNode) qtyNode.textContent = String(state.qty);
+      if (qtyNode) qtyNode.textContent = String(months);
+      if (qtyLabel) qtyLabel.textContent = fixedByInvoice ? 'Jumlah bulan' : 'Jumlah periode';
       if (totalNode) totalNode.textContent = amount > 0 ? rupiah(amount) : 'sesuai ketetapan';
       if (manualNode) manualNode.textContent = amount > 0 ? rupiah(amount) : 'sesuai ketetapan';
       if (amountNode) {
         amountNode.textContent = amount > 0
-          ? `Nominal otomatis: ${rupiah(amount)}`
+          ? `Nominal otomatis: ${rupiah(amount)}${months > 1 ? ` (${months} bulan)` : ''}`
           : 'Nominal diketik manual di aplikasi pembayaran';
       }
 
       const minus = $('#dues-qty-minus');
       const plus = $('#dues-qty-plus');
-      if (minus) minus.disabled = state.qty <= 1;
-      if (plus) plus.disabled = state.qty >= 6;
+      if (minus) { minus.hidden = fixedByInvoice; minus.disabled = state.qty <= 1; }
+      if (plus) { plus.hidden = fixedByInvoice; plus.disabled = state.qty >= 6; }
 
       if (!canvas) return;
       const payload = amount > 0 ? qrisWithAmount(amount) : null;
@@ -483,9 +638,14 @@
 
       const jumlahHelp = $('#dues-jumlah-help');
       if (jumlahHelp) {
-        jumlahHelp.textContent = state.qty > 1
-          ? `Total ${state.qty} periode${amount > 0 ? ` (${rupiah(amount)})` : ''}. Tulis periode mana saja yang dibayar di kolom catatan agar bendahara mencatat dengan benar.`
-          : 'Otomatis terisi dari total di atas. Ubah bila memang berbeda.';
+        if (fixedByInvoice) {
+          jumlahHelp.textContent = `Tagihan ini mencakup ${months} bulan: ${periodRangeShort(effectivePeriod(), months)}. ` +
+            `Total ${rupiah(amount)} sudah dihitung otomatis.`;
+        } else if (state.qty > 1) {
+          jumlahHelp.textContent = `Total ${state.qty} periode${amount > 0 ? ` (${rupiah(amount)})` : ''}. Tulis periode mana saja yang dibayar di kolom catatan agar bendahara mencatat dengan benar.`;
+        } else {
+          jumlahHelp.textContent = 'Otomatis terisi dari total di atas. Ubah bila memang berbeda.';
+        }
       }
     }
 
@@ -507,7 +667,7 @@
         `Nama: ${payload.nama}`,
         payload.nomor ? `No. anggota: ${payload.nomor}` : 'No. anggota: —',
         `Kecamatan: ${payload.kecamatan}`,
-        `Periode: ${periodLabel(payload.periode)}`,
+        `Periode: ${periodRangeShort(payload.periode, payload.months)}${payload.months > 1 ? ` (${payload.months} bulan)` : ''}`,
         `Jumlah: ${rupiah(payload.jumlah)}`,
         `Cara bayar: ${({ qris: 'QRIS', ewallet: 'E-wallet', transfer: 'Transfer bank', tunai: 'Tunai' })[payload.metode]}`,
         `Tanggal bayar: ${prettyDate(payload.tanggal)}`,
@@ -523,7 +683,7 @@
       successPanel.hidden = false;
       const text = $('#dues-success-text');
       if (text) {
-        text.textContent = `Iuran ${periodLabel(payload.periode)} sebesar ${rupiah(payload.jumlah)} ` +
+        text.textContent = `Iuran ${periodRangeShort(payload.periode, payload.months)} sebesar ${rupiah(payload.jumlah)} ` +
           `atas nama ${payload.nama} sudah masuk daftar tunggu verifikasi bendahara.`;
       }
       const note = $('#dues-success-note');
@@ -553,7 +713,8 @@
         kecamatan: String(form.elements.kecamatan.value || '').trim(),
         wa: String(form.elements.wa.value || '').replace(/[^0-9]/g, ''),
         metode: String(form.elements.metode.value || 'qris'),
-        periode: String(form.elements.periode.value || ''),
+        periode: String(form.elements.periode.value || effectivePeriod() || ''),
+        months: effectiveMonths(),
         jumlah: parseDigits(form.elements.jumlah.value),
         tanggal: String(form.elements.tanggal.value || ''),
         catatan: String(form.elements.catatan.value || '').trim()
@@ -581,7 +742,9 @@
           p_amount: payload.jumlah,
           p_period: payload.periode,
           p_paid_at: payload.tanggal,
-          p_note: payload.catatan || null
+          p_note: payload.catatan || null,
+          p_months: payload.months,
+          p_invoice_id: state.invoice ? state.invoice.id : null
         });
         if (error) throw error;
         const result = data && typeof data === 'object' ? data : {};
@@ -594,6 +757,8 @@
         let message = 'Konfirmasi gagal dikirim. Periksa koneksi lalu coba lagi.';
         if (/function .*submit_dues_payment|does not exist|schema cache/i.test(raw)) {
           message = 'Fitur iuran belum diaktifkan di server. Minta Pemilik menjalankan migrasi 202610270028_iuran_keanggotaan.sql di Supabase, lalu muat ulang halaman ini.';
+        } else if (/Tagihan ini belum dibuka|Tagihan tidak ditemukan/i.test(raw)) {
+          message = raw.replace(/^.*?:\s*/, '') + ' Muat ulang halaman untuk melihat tagihan terbaru.';
         } else if (/Nama wajib|Kecamatan|Nomor WhatsApp|Jumlah|Periode|Tanggal|Nomor anggota|Alasan/i.test(raw)) {
           message = raw.replace(/^.*?:\s*/, '');
         }
@@ -636,7 +801,7 @@
         table.className = 'dues-check-table';
         const thead = document.createElement('thead');
         const headRow = document.createElement('tr');
-        ['Periode', 'Jumlah', 'Status', 'Tanggal bayar'].forEach(title => {
+        ['Periode', 'Lama', 'Jumlah', 'Status', 'Tanggal bayar'].forEach(title => {
           const th = document.createElement('th');
           th.textContent = title;
           headRow.append(th);
@@ -646,7 +811,9 @@
         rows.forEach(row => {
           const tr = document.createElement('tr');
           const period = document.createElement('td');
-          period.textContent = periodLabel(row.period);
+          period.textContent = periodRangeShort(row.period, row.months);
+          const length = document.createElement('td');
+          length.textContent = `${Number(row.months) || 1} bulan`;
           const amount = document.createElement('td');
           amount.textContent = rupiah(row.amount);
           const status = document.createElement('td');
@@ -657,18 +824,22 @@
           status.append(pill);
           const paid = document.createElement('td');
           paid.textContent = prettyDate(row.paid_at);
-          tr.append(period, amount, status, paid);
+          tr.append(period, length, amount, status, paid);
           tbody.append(tr);
         });
         table.append(thead, tbody);
         wrap.append(table);
         const summary = document.createElement('p');
         summary.className = 'dues-help';
-        const verifiedPeriods = rows.filter(row => row.status === 'terverifikasi').map(row => row.period);
-        const currentPaid = verifiedPeriods.includes(state.settings.periode);
+        const targetPeriod = effectivePeriod();
+        const currentPaid = rows.some(row => {
+          if (row.status !== 'terverifikasi') return false;
+          const covered = periodRangeLabels(row.period, row.months).map(label => label);
+          return covered.includes(periodLabel(targetPeriod)) || row.period === targetPeriod;
+        });
         summary.textContent = currentPaid
-          ? `Terima kasih — iuran ${periodLabel(state.settings.periode)} sudah lunas.`
-          : `Iuran ${periodLabel(state.settings.periode)} belum tercatat lunas. Bila sudah membayar, isi formulir konfirmasi di atas.`;
+          ? `Terima kasih — iuran ${periodRangeShort(targetPeriod, effectiveMonths())} sudah lunas.`
+          : `Iuran ${periodRangeShort(targetPeriod, effectiveMonths())} belum tercatat lunas. Bila sudah membayar, isi formulir konfirmasi di atas.`;
         checkResult.replaceChildren(summary, wrap);
         checkResult.hidden = false;
       } catch (error) {
@@ -758,8 +929,10 @@
     }
 
     applySettings(state.settings, false, false);
-    loadSettings().then(({ settings, online, configured }) => {
-      applySettings(normalizeSettings(settings), online, configured);
+    Promise.all([loadSettings(), loadInvoiceStatus()]).then(([settingsRes, inv]) => {
+      state.invoice = inv && inv.active ? inv.active : null;
+      state.hasInvoices = Boolean(inv && inv.hasInvoices);
+      applySettings(normalizeSettings(settingsRes.settings), settingsRes.online, settingsRes.configured);
     });
 
     $$('input[name="metode"]').forEach(radio => {

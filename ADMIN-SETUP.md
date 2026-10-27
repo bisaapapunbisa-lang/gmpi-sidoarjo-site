@@ -136,7 +136,8 @@ Batas wilayah kecamatan: data GeoJSON publik 35.15 Sidoarjo (repo GitHub sigittt
 
 Fitur ini menagih iuran anggota lewat halaman publik `/iuran` dan memverifikasinya di panel Admin.
 
-1. Jalankan sekali `supabase/migrations/202610270028_iuran_keanggotaan.sql` di Supabase SQL Editor.
+1. Jalankan sekali `supabase/migrations/202610270028_iuran_keanggotaan.sql`, lalu
+   `supabase/migrations/202610280029_tagihan_iuran.sql`, di Supabase SQL Editor.
 2. Opsional: beri peran `bendahara` kepada akun bendahara (tanpa akses NIK/KTP):
 
 ```sql
@@ -147,9 +148,13 @@ where lower(email) = lower('EMAIL-BENDAHARA@CONTOH.ID')
 on conflict (email, role) do update set active = true;
 ```
 
-3. Masuk Admin → tab **Iuran** (Pemilik, Registrasi, atau Bendahara). Isi nama iuran, periode
-   (`2026` tahunan atau `2026-10` bulanan), nominal, jatuh tempo, nomor e-wallet, rekening bank,
-   dan WhatsApp bendahara. Ubah **Status periode iuran** menjadi *Buka* bila semuanya sudah benar.
+3. Masuk Admin → tab **Iuran** (Pemilik, Registrasi, atau Bendahara).
+   - Isi kartu **Tagihan iuran** → **+ Buat tagihan baru** (nama, periode, jumlah bulan, nominal,
+     jatuh tempo) lalu pilih **Simpan sebagai draf** (belum terlihat anggota), **Simpan & luncurkan
+     sekarang**, atau **Jadwalkan** pada tanggal & jam tertentu. Hanya satu tagihan berjalan; tagihan
+     lain otomatis ditutup saat tagihan baru diluncurkan.
+   - Isi kartu **Kanal pembayaran & pengaturan lama**: nomor e-wallet, rekening bank, dan WhatsApp
+     bendahara. Saklar lama *Status periode iuran* hanya dipakai bila belum pernah ada tagihan.
 4. Bagikan `https://www.gmpisidoarjo.com/iuran` + teks dari tombol **Buat teks pengumuman WhatsApp**.
 5. Anggota mengirim konfirmasi dari halaman itu → muncul sebagai *Menunggu* → cocokkan dengan mutasi
    QRIS/rekening → **Verifikasi**.
