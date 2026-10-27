@@ -136,8 +136,9 @@ Batas wilayah kecamatan: data GeoJSON publik 35.15 Sidoarjo (repo GitHub sigittt
 
 Fitur ini menagih iuran anggota lewat halaman publik `/iuran` dan memverifikasinya di panel Admin.
 
-1. Jalankan sekali `supabase/migrations/202610270028_iuran_keanggotaan.sql`, lalu
-   `supabase/migrations/202610280029_tagihan_iuran.sql`, di Supabase SQL Editor.
+1. Jalankan sekali, berurutan, di Supabase SQL Editor:
+   `202610270028_iuran_keanggotaan.sql` → `202610280029_tagihan_iuran.sql` →
+   `202610290030_iuran_per_bulan.sql`.
 2. Opsional: beri peran `bendahara` kepada akun bendahara (tanpa akses NIK/KTP):
 
 ```sql
@@ -162,7 +163,14 @@ on conflict (email, role) do update set active = true;
    dengan nominal terisi otomatis dan checksum CRC16 dihitung ulang. Bila organisasi mengganti akun
    QRIS, ganti konstanta `QRIS_STATIC_PAYLOAD` di `iuran.js` — langkah rincinya ada di
    `PANDUAN-IURAN.md`.
-7. Publik tidak bisa membaca tabel `dues_payments`. Cek status anggota hanya membalas bila nomor
+7. **Bayar per bulan.** Anggota tidak wajib melunasi sekaligus: di `/iuran` ia mencentang bulan
+   yang ingin dibayar (satu bulan pun sah), dan sistem menyimpan daftar bulan tersebut
+   (`dues_payments.periods`). Anti-dobel-bayar memakai irisan bulan, jadi tidak ada bulan
+   yang terbayar dua kali.
+8. **Rekap kedisiplinan.** Admin → Iuran → *Rekap bulanan & kedisiplinan anggota* menampilkan
+   matriks anggota × bulan (✓ lunas, ⏳ menunggu, · belum, – belum jatuh tempo), jumlah tunggakan
+   yang sudah jatuh tempo, dan tombol pengingat WhatsApp per anggota.
+9. Publik tidak bisa membaca tabel `dues_payments`. Cek status anggota hanya membalas bila nomor
    anggota + nama cocok dengan kartu anggota. Hanya Pemilik yang dapat menghapus catatan.
 
 Panduan lengkap untuk pengurus: **`PANDUAN-IURAN.md`**. Teks pengumuman siap pakai: **`wa-iuran.txt`**.

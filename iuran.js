@@ -93,6 +93,31 @@
     return `${labels[0]} – ${labels[labels.length - 1]}`;
   }
 
+  // Daftar bulan (YYYY-MM) yang dicakup sebuah tagihan.
+  function invoiceMonths(period, months) {
+    const count = Math.max(1, Math.min(12, Number(months) || 1));
+    if (!/^\d{4}-\d{2}$/.test(String(period || ''))) {
+      // Periode tahunan '2026' → Januari..Desember.
+      if (/^\d{4}$/.test(String(period || ''))) {
+        return Array.from({ length: 12 }, (_, i) => `${period}-${String(i + 1).padStart(2, '0')}`);
+      }
+      return [String(period || '')];
+    }
+    let [year, month] = String(period).split('-').map(Number);
+    const list = [];
+    for (let i = 0; i < count; i++) {
+      list.push(`${year}-${String(month).padStart(2, '0')}`);
+      month += 1;
+      if (month === 13) { month = 1; year += 1; }
+    }
+    return list;
+  }
+  function monthShortLabel(monthKey) {
+    const [year, month] = String(monthKey).split('-').map(Number);
+    if (!year || !month) return monthKey;
+    return `${MONTHS[month - 1].slice(0, 3)} ${year}`;
+  }
+
   function daysUntil(iso) {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(String(iso || ''))) return null;
     const target = new Date(`${iso}T23:59:59`);
@@ -410,6 +435,7 @@
       configured: false,
       invoice: null,        // tagihan yang sedang diluncurkan pengurus
       hasInvoices: false,   // sudah ada tagihan dibuat (mode tagihan aktif)
+      selectedMonths: [],   // bulan yang dipilih anggota (mode tagihan)
       lastSubmit: null
     };
 
@@ -429,7 +455,11 @@
 
     // Jumlah bulan yang dibayar: mengikuti tagihan bila ada, atau pilihan anggota.
     function effectiveMonths() {
-      return state.invoice ? state.invoice.months : state.qty;
+      if (!state.invoice) return state.qty;
+      return Math.max(1, state.selectedMonths.length);
+    }
+    function selectedPeriods() {
+      return state.invoice ? state.selectedMonths.slice().sort() : null;
     }
     function effectiveNominal() {
       return state.invoice ? state.invoice.nominal : state.settings.nominal;
@@ -597,6 +627,83 @@
       }
     }
 
+    // ---------- pemilih bulan (iuran boleh dicicil per bulan) ----------
+    function renderMonthPicker() {
+      const wrap = $('#dues-months');
+      const grid = $('#dues-months-grid');
+      const qtyWrap = $('#dues-qty-wrap');
+      if (!wrap || !grid) return;
+      if (!state.invoice) {
+        wrap.hidden = true;
+        if (qtyWrap) qtyWrap.hidden = false;
+        state.selectedMonths = [];
+        return;
+      }
+
+      const months = invoiceMonths(state.invoice.period, state.invoice.months);
+      // Bawaan: bulan berjalan bila termasuk tagihan, kalau tidak bulan pertama.
+      if (!state.selectedMonths.length) {
+        const now = new Date();
+        const current = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        state.selectedMonths = [months.includes(current) ? current : months[0]].filter(Boolean);
+      }
+      state.selectedMonths = state.selectedMonths.filter(m => months.includes(m));
+      if (!state.selectedMonths.length) state.selectedMonths = [months[0]];
+
+      grid.replaceChildren(...months.map(monthKey => {
+        const label = document.createElement('label');
+        const input = document.createElement('input');
+        input.type = 'checkbox';
+        input.value = monthKey;
+        input.checked = state.selectedMonths.includes(monthKey);
+        input.addEventListener('change', () => {
+          if (input.checked) {
+            if (!state.selectedMonths.includes(monthKey)) state.selectedMonths.push(monthKey);
+          } else {
+            state.selectedMonths = state.selectedMonths.filter(m => m !== monthKey);
+          }
+          // Minimal satu bulan harus dipilih.
+          if (!state.selectedMonths.length) {
+            state.selectedMonths = [monthKey];
+            input.checked = true;
+            setFormMessage('Pilih minimal satu bulan. Boleh satu bulan saja.', 'error');
+            return;
+          }
+          setFormMessage('');
+          paintQris();
+        });
+        const box = document.createElement('span');
+        const [year, month] = monthKey.split('-');
+        box.append(document.createTextNode(MONTHS[Number(month) - 1] || monthKey));
+        const small = document.createElement('small');
+        small.textContent = year;
+        box.append(small);
+        label.append(input, box);
+        return label;
+      }));
+
+      wrap.hidden = false;
+      if (qtyWrap) qtyWrap.hidden = true;
+
+      const help = $('#dues-months-help');
+      if (help) {
+        help.textContent = months.length > 1
+          ? `Tagihan ini berlaku ${months.length} bulan (${periodRangeShort(state.invoice.period, state.invoice.months)}). ` +
+            'Pilih bulan yang ingin dibayar sekarang — satu bulan pun tidak apa-apa, sisanya bisa menyusul kapan saja.'
+          : 'Pilih bulan yang dibayar. Boleh satu bulan saja.';
+      }
+      const allButton = $('#dues-months-all');
+      if (allButton) {
+        allButton.hidden = months.length < 2;
+        allButton.textContent = state.selectedMonths.length === months.length ? 'Kosongkan' : 'Pilih semua';
+        allButton.onclick = () => {
+          state.selectedMonths = state.selectedMonths.length === months.length ? [months[0]] : months.slice();
+          renderMonthPicker();
+          paintQris();
+        };
+      }
+    }
+
     // ---------- QRIS ----------
     function paintQris() {
       const amount = total();
@@ -623,12 +730,20 @@
       if (minus) { minus.hidden = fixedByInvoice; minus.disabled = state.qty <= 1; }
       if (plus) { plus.hidden = fixedByInvoice; plus.disabled = state.qty >= 6; }
 
+      const monthsTotal = $('#dues-months-total');
+      if (monthsTotal && fixedByInvoice) {
+        monthsTotal.textContent = amount > 0
+          ? `${rupiah(amount)} · ${months} bulan`
+          : 'Rp—';
+      }
+
       if (!canvas) return;
       const payload = amount > 0 ? qrisWithAmount(amount) : null;
       const drawn = payload ? drawQris(canvas, payload) : false;
       canvas.hidden = !drawn;
+      const pickedLabel = fixedByInvoice && selectedPeriods() ? selectedPeriods().map(monthShortLabel).join(', ') : '';
       canvas.setAttribute('aria-label', amount > 0
-        ? `QRIS pembayaran iuran sebesar ${rupiah(amount)}`
+        ? `QRIS pembayaran iuran sebesar ${rupiah(amount)}${pickedLabel ? ` untuk ${pickedLabel}` : ''}`
         : 'QRIS pembayaran iuran');
       const fallback = $('#dues-qris-fallback');
       if (fallback) fallback.hidden = drawn;
@@ -639,8 +754,12 @@
       const jumlahHelp = $('#dues-jumlah-help');
       if (jumlahHelp) {
         if (fixedByInvoice) {
-          jumlahHelp.textContent = `Tagihan ini mencakup ${months} bulan: ${periodRangeShort(effectivePeriod(), months)}. ` +
-            `Total ${rupiah(amount)} sudah dihitung otomatis.`;
+          const picked = selectedPeriods() || [];
+          const list = picked.map(monthShortLabel).join(', ');
+          jumlahHelp.textContent = picked.length
+            ? `Membayar ${picked.length} bulan: ${list}. Total ${rupiah(amount)}. ` +
+              'Bisa juga membayar satu bulan dulu — sisa bulan menyusul kapan saja dan tetap tercatat.'
+            : 'Pilih bulan yang ingin dibayar di atas.';
         } else if (state.qty > 1) {
           jumlahHelp.textContent = `Total ${state.qty} periode${amount > 0 ? ` (${rupiah(amount)})` : ''}. Tulis periode mana saja yang dibayar di kolom catatan agar bendahara mencatat dengan benar.`;
         } else {
@@ -667,7 +786,7 @@
         `Nama: ${payload.nama}`,
         payload.nomor ? `No. anggota: ${payload.nomor}` : 'No. anggota: —',
         `Kecamatan: ${payload.kecamatan}`,
-        `Periode: ${periodRangeShort(payload.periode, payload.months)}${payload.months > 1 ? ` (${payload.months} bulan)` : ''}`,
+        `Bulan dibayar: ${(payload.periods && payload.periods.length ? payload.periods : [payload.periode]).map(monthShortLabel).join(', ')}`,
         `Jumlah: ${rupiah(payload.jumlah)}`,
         `Cara bayar: ${({ qris: 'QRIS', ewallet: 'E-wallet', transfer: 'Transfer bank', tunai: 'Tunai' })[payload.metode]}`,
         `Tanggal bayar: ${prettyDate(payload.tanggal)}`,
@@ -683,8 +802,12 @@
       successPanel.hidden = false;
       const text = $('#dues-success-text');
       if (text) {
-        text.textContent = `Iuran ${periodRangeShort(payload.periode, payload.months)} sebesar ${rupiah(payload.jumlah)} ` +
-          `atas nama ${payload.nama} sudah masuk daftar tunggu verifikasi bendahara.`;
+        const monthsText = (payload.periods && payload.periods.length
+          ? payload.periods.map(monthShortLabel).join(', ')
+          : periodRangeShort(payload.periode, payload.months));
+        text.textContent = `Iuran ${monthsText} sebesar ${rupiah(payload.jumlah)} ` +
+          `atas nama ${payload.nama} sudah masuk daftar tunggu verifikasi bendahara. ` +
+          'Bulan lain bisa dibayar menyusul kapan saja — tidak harus sekaligus.';
       }
       const note = $('#dues-success-note');
       if (note) {
@@ -715,6 +838,7 @@
         metode: String(form.elements.metode.value || 'qris'),
         periode: String(form.elements.periode.value || effectivePeriod() || ''),
         months: effectiveMonths(),
+        periods: selectedPeriods(),
         jumlah: parseDigits(form.elements.jumlah.value),
         tanggal: String(form.elements.tanggal.value || ''),
         catatan: String(form.elements.catatan.value || '').trim()
@@ -724,6 +848,9 @@
       if (!DISTRICT_LIST.includes(payload.kecamatan)) return setFormMessage('Pilih kecamatan domisili terlebih dulu.', 'error');
       if (payload.wa.length < 9 || payload.wa.length > 15) return setFormMessage('Nomor WhatsApp belum benar. Contoh: 081234567890.', 'error');
       if (!payload.periode) return setFormMessage('Periode iuran belum dipilih.', 'error');
+      if (state.invoice && !(payload.periods && payload.periods.length)) {
+        return setFormMessage('Pilih minimal satu bulan yang ingin dibayar.', 'error');
+      }
       if (payload.jumlah < 1000) return setFormMessage('Jumlah pembayaran minimal Rp1.000.', 'error');
       if (!payload.tanggal) return setFormMessage('Tanggal pembayaran wajib diisi.', 'error');
       if (payload.tanggal > todayIso()) return setFormMessage('Tanggal pembayaran tidak boleh di masa depan.', 'error');
@@ -744,7 +871,8 @@
           p_paid_at: payload.tanggal,
           p_note: payload.catatan || null,
           p_months: payload.months,
-          p_invoice_id: state.invoice ? state.invoice.id : null
+          p_invoice_id: state.invoice ? state.invoice.id : null,
+          p_periods: payload.periods
         });
         if (error) throw error;
         const result = data && typeof data === 'object' ? data : {};
@@ -831,15 +959,48 @@
         wrap.append(table);
         const summary = document.createElement('p');
         summary.className = 'dues-help';
-        const targetPeriod = effectivePeriod();
-        const currentPaid = rows.some(row => {
-          if (row.status !== 'terverifikasi') return false;
-          const covered = periodRangeLabels(row.period, row.months).map(label => label);
-          return covered.includes(periodLabel(targetPeriod)) || row.period === targetPeriod;
+        // Kumpulkan bulan yang sudah lunas / menunggu dari semua baris.
+        const paidMonths = [];
+        const pendingMonths = [];
+        rows.forEach(row => {
+          const list = Array.isArray(row.periods) && row.periods.length
+            ? row.periods
+            : invoiceMonths(row.period, row.months);
+          list.forEach(month => {
+            if (row.status === 'terverifikasi' && !paidMonths.includes(month)) paidMonths.push(month);
+            if (row.status !== 'terverifikasi' && !pendingMonths.includes(month)) pendingMonths.push(month);
+          });
         });
-        summary.textContent = currentPaid
-          ? `Terima kasih — iuran ${periodRangeShort(targetPeriod, effectiveMonths())} sudah lunas.`
-          : `Iuran ${periodRangeShort(targetPeriod, effectiveMonths())} belum tercatat lunas. Bila sudah membayar, isi formulir konfirmasi di atas.`;
+
+        if (state.invoice) {
+          const target = invoiceMonths(state.invoice.period, state.invoice.months);
+          const now = new Date();
+          const nowKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+          const dueTarget = target.filter(month => month <= nowKey);
+          const paidHere = dueTarget.filter(month => paidMonths.includes(month));
+          const pendingHere = dueTarget.filter(month => pendingMonths.includes(month) && !paidMonths.includes(month));
+          const missing = dueTarget.filter(month => !paidMonths.includes(month) && !pendingMonths.includes(month));
+          const laterUnpaid = target.filter(month => month > nowKey && !paidMonths.includes(month));
+          if (dueTarget.length && !missing.length && !pendingHere.length) {
+            summary.textContent = `Luar biasa — seluruh ${dueTarget.length} bulan yang sudah jatuh tempo pada ${state.invoice.title} sudah lunas. ` +
+              (laterUnpaid.length ? `${laterUnpaid.length} bulan berikutnya belum jatuh tempo. ` : '') +
+              'Terima kasih atas kedisiplinan Anda.';
+          } else {
+            const parts = [
+              `${paidHere.length} dari ${dueTarget.length} bulan (jatuh tempo) sudah lunas`,
+              pendingHere.length ? `${pendingHere.length} bulan menunggu verifikasi` : '',
+              missing.length ? `belum dibayar: ${missing.map(monthShortLabel).join(', ')}` : '',
+              laterUnpaid.length ? `${laterUnpaid.length} bulan belum jatuh tempo` : ''
+            ].filter(Boolean);
+            summary.textContent = `${state.invoice.title}: ${parts.join(' · ')}. Boleh membayar satu bulan dulu — tidak harus sekaligus.`;
+          }
+        } else {
+          const targetPeriod = effectivePeriod();
+          const currentPaid = paidMonths.includes(targetPeriod);
+          summary.textContent = currentPaid
+            ? `Terima kasih — iuran ${periodRangeShort(targetPeriod, effectiveMonths())} sudah lunas.`
+            : `Iuran ${periodRangeShort(targetPeriod, effectiveMonths())} belum tercatat lunas. Bila sudah membayar, isi formulir konfirmasi di atas.`;
+        }
         checkResult.replaceChildren(summary, wrap);
         checkResult.hidden = false;
       } catch (error) {
@@ -912,6 +1073,7 @@
       state.configured = configured;
       paintBill();
       renderPeriodSelect();
+      renderMonthPicker();
       paintQris();
       if (configWarning) {
         if (!online) {
@@ -975,6 +1137,8 @@
       form.hidden = false;
       setFormMessage('');
       state.qty = 1;
+      state.selectedMonths = [];
+      renderMonthPicker();
       paintQris();
       form.elements.nama.focus();
     });

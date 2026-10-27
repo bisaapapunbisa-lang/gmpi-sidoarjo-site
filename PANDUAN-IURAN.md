@@ -9,9 +9,9 @@ Anggota cukup membuka **`/iuran`** dan mengikuti 3 langkah di halaman itu.
 
 | Bagian | Fungsi |
 | --- | --- |
-| Halaman **`/iuran`** | Tagihan (nominal, periode, jatuh tempo), QRIS otomatis, e-wallet, transfer bank, tunai, formulir konfirmasi, dan cek status. |
+| Halaman **`/iuran`** | Tagihan (nominal, periode, jatuh tempo), **pilihan bulan yang dibayar (boleh satu bulan saja)**, QRIS otomatis, e-wallet, transfer bank, tunai, formulir konfirmasi, dan cek status. |
 | Bagian **Iuran Anggota** di beranda | Ringkasan nominal + QRIS yang bisa langsung dipindai. Otomatis disembunyikan bila pengurus belum mengisi pengaturan. |
-| Tab **Iuran** di Admin | **Tagihan** (draf → luncurkan → jadwalkan → tutup), pengaturan kanal pembayaran, verifikasi pembayaran, daftar anggota belum lunas, rekap CSV, dan pembuat teks pengumuman WhatsApp. |
+| Tab **Iuran** di Admin | **Tagihan** (draf → luncurkan → jadwalkan → tutup), pengaturan kanal pembayaran, verifikasi pembayaran, daftar anggota belum lunas, **rekap bulanan & kedisiplinan anggota**, rekap CSV, dan pembuat teks pengumuman WhatsApp. |
 | Peran baru **Bendahara** | Bisa mengurus iuran **tanpa** akses NIK/KTP. |
 
 Cara bayar yang didukung (semua tanpa biaya tambahan, tanpa payment gateway):
@@ -29,7 +29,8 @@ Cara bayar yang didukung (semua tanpa biaya tambahan, tanpa payment gateway):
 1. **Jalankan SQL** — buka Supabase → **SQL Editor** → **New query**, salin seluruh isi
    `supabase/migrations/202610270028_iuran_keanggotaan.sql`, lalu **Run** → “Success”.
    Lalu ulangi untuk `supabase/migrations/202610280029_tagihan_iuran.sql`
-   (menambahkan fitur tagihan draf/jadwal). Keduanya cukup sekali.
+   (tagihan draf/jadwal) dan `supabase/migrations/202610290030_iuran_per_bulan.sql`
+   (pembayaran boleh dicicil per bulan + rekap bulanan). Semuanya cukup sekali.
 2. **Unggah berkas** (bila belum lewat Vercel): `iuran.html`, `iuran.js`, `iuran.css`,
    `index.html`, `admin.js`, dan folder `supabase/migrations/`.
 3. **Beri peran Bendahara** (opsional, bila bendahara punya akun sendiri):
@@ -117,7 +118,57 @@ dengan nominal baru agar jejak keputusan rapat tercatat.
 
 ---
 
-## 4. Alur harian bendahara
+## 4. Bayar per bulan (tidak wajib sekaligus)
+
+Aturan penting: **anggota tidak diwajibkan melunasi sekaligus.** Satu tagihan boleh
+berjalan beberapa bulan (mis. 12 bulan), tetapi anggota bebas membayar berapa bulan
+pun setiap kali — **satu bulan pun sah**.
+
+**Di halaman `/iuran`, anggota:**
+
+1. Melihat daftar bulan pada tagihan berjalan (mis. Januari–Desember 2026).
+2. Mencentang bulan yang ingin dibayar sekarang — bisa satu bulan, bisa beberapa.
+   Total dan QRIS menyesuaikan otomatis (mis. 1 bulan → Rp10.000, 3 bulan → Rp30.000).
+3. Mengirim konfirmasi. Sistem mencatat **bulan-bulan** yang dibayar, bukan sekadar
+   "sudah bayar".
+
+**Yang perlu dijaga pengurus:**
+
+- Satu pembayaran yang sudah **diverifikasi** tidak bisa menabrak bulan yang sudah
+  lunas. Bila ada anggota membayar bulan yang sama dua kali, verifikasi kedua akan
+  ditolak dengan pesan bulan mana yang bentrok.
+- Anggota yang membayar 3 bulan sekaligus tetap tercatat per bulan, jadi
+  rekap bulanan tetap rapi.
+- Bulan yang belum jatuh tempo tidak dihitung sebagai tunggakan.
+
+---
+
+## 5. Menilai kesungguhan anggota
+
+Admin → tab Iuran → **Rekap bulanan & kedisiplinan anggota**.
+
+- Tabel **anggota × bulan**: ✓ lunas, ⏳ menunggu verifikasi, · belum dibayar,
+  – belum jatuh tempo.
+- Kolom **Lunas** (mis. `3/10`) dan **Tunggakan** (mis. `7 bulan · Rp70.000`)
+  hanya menghitung bulan yang sudah jatuh tempo.
+- Urutan tabel dimulai dari **yang paling sedikit membayar**, sehingga yang perlu
+  ditegur langsung terlihat di atas.
+- Tombol **Ingatkan via WA** mengirim pesan pribadi berisi daftar bulan yang belum
+  dibayar + perkiraan nominal + tautan pembayaran. Untuk yang sudah rutin, tombol
+  berubah menjadi **WA apresiasi**.
+- Filter **Hanya yang menunggak**, pilihan **rentang bulan**, dan **Salin rekap**
+  (tempel ke Excel/WhatsApp) untuk laporan rapat.
+
+Anggota sendiri bisa melihat rekornya di `/iuran` bagian **Cek status iuran**:
+"3 dari 10 bulan (jatuh tempo) sudah lunas · bulan Mei–Oktober belum dibayar".
+
+> Catatan: data yang dipakai adalah pembayaran yang sudah **diverifikasi**. Selama
+> bendahara belum memverifikasi, bulan tersebut tampil sebagai ⏳ (menunggu), bukan
+> lunas — jadi lakukan verifikasi rutin agar penilaian akurat.
+
+---
+
+## 6. Alur harian bendahara
 
 1. Anggota membayar (QRIS/e-wallet/transfer/tunai) lalu mengisi **formulir konfirmasi**
    di `/iuran`. Data masuk sebagai **Menunggu**.
@@ -136,7 +187,7 @@ Bila nama yang sama sudah lunas, sistem menolak verifikasi baris kedua.
 
 ---
 
-## 5. Yang dilihat anggota (tanpa login)
+## 7. Yang dilihat anggota (tanpa login)
 
 - Nominal, periode, dan jatuh tempo (dengan hitung mundur).
 - QRIS **dengan nominal otomatis**; jumlah periode bisa ditambah (1–6) sehingga
@@ -150,7 +201,7 @@ Bila nama yang sama sudah lunas, sistem menolak verifikasi baris kedua.
 
 ---
 
-## 6. Privasi & keamanan
+## 8. Privasi & keamanan
 
 - Anggota (publik) **tidak bisa membaca** tabel `dues_payments`. Data hanya masuk lewat
   fungsi `submit_dues_payment` dan hanya bisa dibaca akun berperan Pemilik/Registrasi/Bendahara.
@@ -161,7 +212,7 @@ Bila nama yang sama sudah lunas, sistem menolak verifikasi baris kedua.
 
 ---
 
-## 7. Mengganti QRIS organisasi
+## 9. Mengganti QRIS organisasi
 
 Kode QRIS “dinamis” dibuat dari teks payload QRIS statis organisasi yang tersimpan di
 `iuran.js` (konstanta `QRIS_STATIC_PAYLOAD`). Bila organisasi mengganti akun QRIS
@@ -181,7 +232,7 @@ Admin → Iuran; halaman otomatis meminta anggota mengetik jumlahnya.
 
 ---
 
-## 8. Bila ada masalah
+## 10. Bila ada masalah
 
 | Gejala | Penyebab & solusi |
 | --- | --- |
@@ -196,10 +247,14 @@ Admin → Iuran; halaman otomatis meminta anggota mengetik jumlahnya.
 | Tagihan yang lama hilang dari halaman | Normal: hanya satu tagihan berjalan. Tagihan lama berstatus **DITUTUP** dan masih terlihat di tabel Admin beserta pembayarannya. |
 | Tagihan berjadwal tidak muncul di jam yang diharapkan | Jam mengikuti waktu perangkat pengurus. Periksa kembali kolom **Jadwal peluncuran**, lalu simpan ulang. |
 | Mau membatalkan tagihan yang sudah telanjur diluncurkan | Klik **Tutup tagihan**. Anggota tidak bisa mengirim konfirmasi baru; pembayaran yang sudah masuk tetap ada. |
+| Anggota mengeluh diminta bayar setahun sekaligus | Tidak perlu. Di `/iuran` ia tinggal mencentang **satu bulan** saja. Bila di layarnya tidak ada pilihan bulan, pastikan migrasi `202610290030` sudah dijalankan. |
+| Rekap bulanan kosong / “belum bisa dimuat” | Migrasi `202610290030_iuran_per_bulan.sql` belum dijalankan, atau belum ada kartu anggota aktif. |
+| Anggota membayar bulan yang sama dua kali | Verifikasi kedua ditolak sistem dengan menyebut bulan yang bentrok. Tolak catatan duplikatnya agar rekap bersih. |
+| Angka “Tunggakan” terasa terlalu besar | Hanya bulan yang sudah jatuh tempo yang dihitung. Bulan mendatang bertanda – dan tidak masuk tunggakan. |
 
 ---
 
-## 9. Dasar aturan
+## 11. Dasar aturan
 
 Sesuai AD/ART GMPI 2021 Pasal 23, iuran anggota merupakan kewajiban anggota dan menjadi
 sumber kas organisasi; besaran serta periodisasinya ditetapkan pengurus melalui PO.
