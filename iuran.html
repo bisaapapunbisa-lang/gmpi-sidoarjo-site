@@ -47,7 +47,7 @@
         </ul>
         <p class="dues-note" id="dues-catatan">Memuat pengaturan iuran…</p>
         <ol class="dues-steps">
-          <li><b>1</b><span><strong>Bayar.</strong> Pilih QRIS (paling cepat), e-wallet, transfer bank, atau tunai.</span></li>
+          <li><b>1</b><span><strong>Bayar.</strong> Pilih bulan yang mau dibayar — boleh satu bulan saja — lalu bayar lewat QRIS, e-wallet, transfer bank, atau tunai.</span></li>
           <li><b>2</b><span><strong>Konfirmasi.</strong> Isi formulir di bawah — 30 detik, tanpa unggah berkas.</span></li>
           <li><b>3</b><span><strong>Kirim bukti.</strong> Tombol WhatsApp otomatis menyiapkan pesan berisi rincian pembayaranmu.</span></li>
         </ol>
@@ -68,7 +68,20 @@
           <label><input type="radio" name="metode" value="tunai"><span><i aria-hidden="true">✋</i>Tunai</span></label>
         </div>
 
-        <div class="dues-qty">
+        <div class="dues-months" id="dues-months" hidden>
+          <div class="dues-months-head">
+            <span class="label">Pilih bulan yang dibayar</span>
+            <button type="button" class="dues-link-mini" id="dues-months-all">Pilih semua</button>
+          </div>
+          <div class="dues-months-grid" id="dues-months-grid" role="group" aria-label="Pilih bulan iuran yang dibayar"></div>
+          <p class="dues-help" id="dues-months-help">Boleh satu bulan saja. Bayar per bulan tidak apa-apa — yang penting tercatat.</p>
+          <div class="dues-months-total">
+            <span class="label">Total bayar</span>
+            <b id="dues-months-total">Rp—</b>
+          </div>
+        </div>
+
+        <div class="dues-qty" id="dues-qty-wrap">
           <span class="label" id="dues-qty-label">Jumlah periode</span>
           <button type="button" id="dues-qty-minus" aria-label="Kurangi jumlah periode">−</button>
           <output id="dues-qty" aria-live="polite">1</output>

@@ -1864,6 +1864,7 @@
     const payments = paymentsRes.data || [];
     const currentPeriod = settingValues.get('iuran_periode') || String(new Date().getFullYear());
     const nominal = parseInt(settingValues.get('iuran_nominal') || '0', 10) || 0;
+    const nominalValue = nominal;
     const isOpen = settingValues.get('iuran_aktif') === '1';
 
     // ---------- ringkasan angka ----------
@@ -2019,7 +2020,7 @@
       form.append(
         fieldItem('Nama tagihan', fTitle, 'Tampil sebagai judul di halaman /iuran.', true),
         fieldItem('Periode', fPeriod, 'Bulan pertama: 2026-11 (bulanan) atau 2026 (tahunan).'),
-        fieldItem('Jumlah bulan', fMonths, 'Isi 1 untuk bulanan, 3 untuk triwulan, 12 untuk setahun.'),
+        fieldItem('Jumlah bulan', fMonths, 'Isi 1 untuk bulanan, 3 untuk triwulan, 12 untuk setahun. Anggota tetap boleh membayar per bulan, tidak harus sekaligus.'),
         fieldItem('Nominal per bulan (Rp)', fNominal, 'Angka saja. Total dihitung otomatis.'),
         fieldItem('Jatuh tempo', fDue, 'Opsional. Anggota melihat hitung mundur.'),
         fieldItem('Jadwal peluncuran', fPublish, 'Diisi hanya bila memilih “Jadwalkan”. Pakai waktu setempat.'),
@@ -2046,7 +2047,8 @@
         const nominal = parseInt(fNominal.value, 10) || 0;
         const months = Math.max(1, Math.min(12, parseInt(fMonths.value, 10) || 1));
         totalPreview.textContent = nominal > 0
-          ? `Total dibayar anggota: ${rupiahAdmin(nominal * months)}${months > 1 ? ` (${nominal.toLocaleString('id-ID')} × ${months} bulan)` : ''}`
+          ? `Jika lunas penuh: ${rupiahAdmin(nominal * months)}${months > 1 ? ` (${nominal.toLocaleString('id-ID')} × ${months} bulan)` : ''}. ` +
+            (months > 1 ? 'Anggota boleh mencicil per bulan, jadi tagihan ini tetap sah walau dibayar satu bulan dulu.' : '')
           : 'Isi nominal untuk melihat total.';
       }
       [fNominal, fMonths].forEach(node => node.addEventListener('input', refreshPreview));
@@ -2126,7 +2128,9 @@
       scheduleBtn.addEventListener('click', () => saveInvoice('schedule'));
 
       editorWrap.append(editorTitle, form, make('p', 'privacy-mini',
-        'Draf tidak terlihat oleh anggota. Setelah diluncurkan, tagihan muncul sebagai kartu pembayaran di halaman /iuran beserta QRIS bernominal otomatis.'));
+        'Draf tidak terlihat oleh anggota. Setelah diluncurkan, tagihan muncul di halaman /iuran bersama QRIS bernominal otomatis. ' +
+        'Tagihan berjalan beberapa bulan (mis. 12 bulan) tetap bisa dibayar per bulan oleh anggota — setiap pembayaran dicatat bulan-bulannya, ' +
+        'sehingga kelihatan siapa yang rutin dan siapa yang menunggak.'));
       const newRow = make('div', 'card-buttons');
       newRow.style.cssText = 'margin:0 0 10px';
       newRow.append(newButton);
@@ -2407,7 +2411,7 @@
         listBox.replaceChildren(make('div', 'table-empty', 'Tidak ada data dengan status ini.'));
         return;
       }
-      const { wrap, body } = makeTable(['Dikirim', 'Nama / nomor anggota', 'Kecamatan & WA', 'Metode', 'Periode', 'Lama', 'Jumlah', 'Tanggal bayar', 'Status', 'Aksi']);
+      const { wrap, body } = makeTable(['Dikirim', 'Nama / nomor anggota', 'Kecamatan & WA', 'Metode', 'Bulan dibayar', 'Jumlah', 'Tanggal bayar', 'Status', 'Aksi']);
       shown.forEach(row => {
         const tr = make('tr');
         tr.append(make('td', '', sosTime(row.created_at)));
@@ -2421,8 +2425,17 @@
         contactCell.append(make('small', 'privacy-mini', phone || '—'));
         tr.append(contactCell);
         tr.append(make('td', '', DUES_METHOD_LABELS[row.method] || row.method));
-        tr.append(make('td', '', duesPeriodLabel(row.period)));
-        tr.append(make('td', '', `${Number(row.months) || 1} bln`));
+        const monthsCell = make('td');
+        const paidMonths = Array.isArray(row.periods) && row.periods.length ? row.periods : [];
+        if (paidMonths.length) {
+          monthsCell.append(make('span', '', paidMonths.slice(0, 3).map(monthShort).join(', ')));
+          if (paidMonths.length > 3) monthsCell.append(make('small', 'privacy-mini', `+${paidMonths.length - 3} bulan lain`));
+          if (paidMonths.length > 1) monthsCell.append(make('small', 'privacy-mini', `${paidMonths.length} bulan`));
+        } else {
+          monthsCell.append(make('span', '', duesPeriodLabel(row.period)));
+          if (Number(row.months) > 1) monthsCell.append(make('small', 'privacy-mini', `${row.months} bulan`));
+        }
+        tr.append(monthsCell);
         tr.append(make('td', '', rupiahAdmin(row.amount)));
         tr.append(make('td', '', duesDate(row.paid_at)));
         const statusCell = make('td');
@@ -2549,10 +2562,11 @@
     csvButton.type = 'button';
     csvButton.addEventListener('click', () => {
       const esc = value => `"${String(value == null ? '' : value).replace(/"/g, '""')}"`;
-      const head = 'Dikirim;Nama;Nomor anggota;Kecamatan;WhatsApp;Metode;Periode;Jumlah;Tanggal bayar;Status;Diverifikasi oleh;Catatan;Alasan ditolak';
+      const head = 'Dikirim;Nama;Nomor anggota;Kecamatan;WhatsApp;Metode;Bulan dibayar;Jumlah;Tanggal bayar;Status;Diverifikasi oleh;Catatan;Alasan ditolak';
       const lines = payments.map(row => [
         sosTime(row.created_at), row.member_name, row.member_number || '', row.district, row.phone || '',
-        DUES_METHOD_LABELS[row.method] || row.method, duesPeriodLabel(row.period), row.amount,
+        DUES_METHOD_LABELS[row.method] || row.method,
+        (Array.isArray(row.periods) && row.periods.length ? row.periods.join(' ') : duesPeriodLabel(row.period)), row.amount,
         row.paid_at, DUES_STATUS_LABELS[row.status] || row.status, row.verified_by || '', row.note || '', row.reject_reason || ''
       ].map(esc).join(';'));
       const blob = new Blob([`\ufeff${head}\n${lines.join('\n')}`], { type: 'text/csv;charset=utf-8' });
@@ -2566,6 +2580,289 @@
     toolsBar.append(csvButton);
 
     renderRows();
+
+    // ---------- rekap bulanan per anggota (menilai kedisiplinan) ----------
+    // Sumber: RPC dues_members_ledger — satu baris per anggota aktif + daftar
+    // bulan yang sudah lunas / masih menunggu verifikasi.
+    const ledgerSection = make('section');
+    ledgerSection.style.cssText = 'margin-top:26px;border:1px solid #ded9ce;background:#fffdf7;padding:16px';
+
+    const ledgerTitle = make('h4', '', 'Rekap bulanan & kedisiplinan anggota');
+    ledgerTitle.style.cssText = 'font:20px/1.2 Arial,Helvetica,sans-serif;margin:0 0 4px';
+    const ledgerHelp = make('p', '', 'Anggota boleh membayar per bulan. Tabel ini menunjukkan siapa yang rutin dan siapa yang menunggak, diurutkan dari yang paling sedikit membayar. Gunakan tombol “Ingatkan” untuk mengirim pesan pribadi berisi bulan yang belum dibayar.');
+    ledgerHelp.className = 'privacy-mini';
+    ledgerHelp.style.margin = '0 0 10px';
+
+    const ledgerBar = make('div', 'card-buttons');
+    ledgerBar.style.cssText = 'flex-wrap:wrap;gap:8px;align-items:flex-end;margin:0 0 12px';
+
+    function monthKeyList(fromKey, toKey) {
+      const list = [];
+      if (!/^\d{4}-\d{2}$/.test(fromKey) || !/^\d{4}-\d{2}$/.test(toKey)) return list;
+      let [year, month] = fromKey.split('-').map(Number);
+      const endYear = Number(toKey.slice(0, 4));
+      const endMonth = Number(toKey.slice(5, 7));
+      let guard = 0;
+      while (guard < 60) {
+        list.push(`${year}-${String(month).padStart(2, '0')}`);
+        if (year === endYear && month === endMonth) break;
+        month += 1;
+        if (month === 13) { month = 1; year += 1; }
+        guard += 1;
+      }
+      return list;
+    }
+    function monthKeyFromInvoice(invoice) {
+      if (!invoice) return null;
+      if (/^\d{4}-\d{2}$/.test(String(invoice.period))) return String(invoice.period);
+      if (/^\d{4}$/.test(String(invoice.period))) return `${invoice.period}-01`;
+      return null;
+    }
+    function monthKeyForDate(date) {
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    }
+    function monthShort(key) {
+      const [year, month] = String(key).split('-').map(Number);
+      if (!year || !month) return key;
+      return `${DUES_MONTHS[month - 1].slice(0, 3)} ${String(year).slice(2)}`;
+    }
+    function monthLong(key) {
+      const [year, month] = String(key).split('-').map(Number);
+      if (!year || !month) return key;
+      return `${DUES_MONTHS[month - 1]} ${year}`;
+    }
+
+    const activeInvoiceForLedger = invoiceFeature
+      ? (invoiceList.find(inv => inv.status === 'dibuka') ||
+         invoiceList.find(inv => inv.status === 'draf' && inv.publish_at && new Date(inv.publish_at) <= new Date()))
+      : null;
+
+    const defaultRange = (() => {
+      const activeStart = monthKeyFromInvoice(activeInvoiceForLedger);
+      if (activeStart) {
+        const span = Math.max(1, Number(activeInvoiceForLedger.months) || 1);
+        const list = monthKeyList(activeStart, activeStart);
+        const startDate = new Date(`${activeStart}-01T00:00:00`);
+        const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + span - 1, 1);
+        return {
+          from: list[0],
+          to: `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}`
+        };
+      }
+      const now = new Date();
+      return { from: `${now.getFullYear()}-01`, to: `${now.getFullYear()}-12` };
+    })();
+
+    const ledgerFrom = make('input');
+    ledgerFrom.type = 'month';
+    ledgerFrom.value = defaultRange.from;
+    ledgerFrom.style.cssText = 'padding:9px 10px;border:1px solid #cbc5b8;background:#fff;font-size:12px';
+    ledgerFrom.setAttribute('aria-label', 'Bulan awal rekap');
+    const ledgerTo = make('input');
+    ledgerTo.type = 'month';
+    ledgerTo.value = defaultRange.to;
+    ledgerTo.style.cssText = ledgerFrom.style.cssText;
+    ledgerTo.setAttribute('aria-label', 'Bulan akhir rekap');
+
+    const ledgerBox = make('div');
+    ledgerBox.append(make('div', 'table-empty', 'Memuat rekap bulanan…'));
+
+    let ledgerRows = [];
+    let ledgerMonths = [];
+    let onlyUnpaid = false;
+
+    function unpaidInRange(row) {
+      return ledgerMonths.filter(month => !(row.paid_months || []).includes(month));
+    }
+    function futureMonths() {
+      const now = (typeof currentMonthKey === 'function') ? currentMonthKey() : '';
+      return ledgerMonths.filter(month => month > now);
+    }
+    function monthListText(list, max = 5) {
+      if (list.length <= max) return list.map(monthLong).join(', ');
+      return `${list.slice(0, max).map(monthLong).join(', ')}, dan ${list.length - max} bulan lainnya`;
+    }
+    // Bulan yang sudah jatuh tempo saja (bukan bulan mendatang).
+    function currentMonthKey() {
+      return monthKeyForDate(new Date());
+    }
+    function dueMonthsInRange() {
+      const now = currentMonthKey();
+      return ledgerMonths.filter(month => month <= now);
+    }
+    function dueUnpaid(row) {
+      return dueMonthsInRange().filter(month => !(row.paid_months || []).includes(month));
+    }
+
+    function reminderForRow(row) {
+      const missing = dueUnpaid(row);
+      const later = unpaidInRange(row).filter(month => month > currentMonthKey());
+      const nominal = activeInvoiceForLedger
+        ? Number(activeInvoiceForLedger.nominal) || nominalValue
+        : nominalValue;
+      const money = nominal && missing.length ? `sekitar ${rupiahAdmin(nominal * missing.length)}` : '';
+      const status = missing.length
+        ? `Bulan yang belum tercatat: ${monthListText(missing)} (${missing.length} bulan${money ? `, ${money}` : ''}).`
+        : 'Seluruh bulan yang sudah jatuh tempo sudah tercatat lunas. Terima kasih.';
+      return [
+        `Assalamualaikum ${row.full_name},`,
+        '',
+        `Kami dari Bendahara GMPI DPD Sidoarjo mengingatkan iuran keanggotaan periode ${monthLong(ledgerMonths[0])} – ${monthLong(ledgerMonths[ledgerMonths.length - 1])}.`,
+        status,
+        later.length ? `Bulan ${monthListText(later, 3)} belum jatuh tempo, bisa menyusul.` : '',
+        '',
+        'Boleh dibayar per bulan — tidak harus sekaligus. Paling mudah lewat QRIS (nominal terisi otomatis):',
+        'https://www.gmpisidoarjo.com/iuran',
+        '',
+        'Sudah membayar? Isi formulir konfirmasi singkat di halaman yang sama agar segera tercatat.',
+        'Terima kasih. — Bendahara GMPI DPD Sidoarjo'
+      ].filter(line => line !== '').join('\n').replace(/\n{3,}/g, '\n\n');
+    }
+
+    function renderLedger() {
+      if (!ledgerRows.length) {
+        ledgerBox.replaceChildren(make('div', 'table-empty',
+          'Belum bisa menampilkan rekap. Pastikan migrasi 202610290030_iuran_per_bulan.sql sudah dijalankan dan sudah ada kartu anggota aktif.'));
+        return;
+      }
+      const rows = onlyUnpaid ? ledgerRows.filter(row => dueUnpaid(row).length > 0) : ledgerRows;
+      if (!rows.length) {
+        ledgerBox.replaceChildren(make('div', 'table-empty', 'Semua tagihan yang sudah jatuh tempo pada rentang ini sudah lunas. Luar biasa.'));
+        return;
+      }
+      const dueList = dueMonthsInRange();
+      const headers = ['Anggota', ...ledgerMonths.map(monthShort), 'Lunas', 'Tunggakan', 'Terakhir bayar', 'Aksi'];
+      const { wrap, body } = makeTable(headers);
+      rows.forEach(row => {
+        const tr = make('tr');
+        const nameCell = make('td');
+        nameCell.append(make('b', '', row.full_name));
+        nameCell.append(make('small', 'privacy-mini', `${row.member_number} · ${row.district}`));
+        tr.append(nameCell);
+
+        ledgerMonths.forEach(month => {
+          const cell = make('td');
+          cell.style.cssText = 'text-align:center;font-weight:800';
+          if ((row.paid_months || []).includes(month)) {
+            cell.textContent = '✓';
+            cell.style.cssText += ';color:#2f5d2a;background:#eef7ea';
+            cell.title = `${monthLong(month)}: lunas`;
+          } else if ((row.pending_months || []).includes(month)) {
+            cell.textContent = '⏳';
+            cell.style.cssText += ';color:#8a6a1f;background:#fdf6e4';
+            cell.title = `${monthLong(month)}: menunggu verifikasi`;
+          } else if (month > currentMonthKey()) {
+            cell.textContent = '–';
+            cell.style.cssText += ';color:#cfc9bc;background:#faf8f3';
+            cell.title = `${monthLong(month)}: belum jatuh tempo`;
+          } else {
+            cell.textContent = '·';
+            cell.style.cssText += ';color:#c2bcae';
+            cell.title = `${monthLong(month)}: belum dibayar`;
+          }
+          tr.append(cell);
+        });
+
+        const paidDue = dueList.filter(month => (row.paid_months || []).includes(month)).length;
+        const paidCell = make('td');
+        paidCell.append(make('b', '', `${paidDue}/${dueList.length}`));
+        paidCell.append(make('small', 'privacy-mini', `dari ${ledgerMonths.length} bulan`));
+        tr.append(paidCell);
+
+        const missing = dueUnpaid(row);
+        const dueCell = make('td');
+        if (missing.length) {
+          dueCell.append(make('b', '', `${missing.length} bulan`));
+          dueCell.append(make('small', 'privacy-mini', nominalValue ? rupiahAdmin(nominalValue * missing.length) : '—'));
+        } else {
+          dueCell.append(make('span', 'status-pill', 'LUNAS'));
+          dueCell.firstChild.style.cssText = 'background:#dff0d8;color:#2f5d2a';
+        }
+        tr.append(dueCell);
+        tr.append(make('td', '', row.last_paid ? duesDate(String(row.last_paid).slice(0, 10)) : '—'));
+
+        const actionCell = make('td', 'member-actions-cell');
+        const actions = make('div', 'card-buttons');
+        actions.style.cssText = 'margin:0;gap:6px;flex-direction:column;align-items:flex-start';
+        const wa = duesWa(row.phone);
+        if (wa) {
+          const link = make('a', 'admin-link-button', missing.length ? 'Ingatkan via WA' : 'WA apresiasi');
+          link.href = `https://wa.me/${wa}?text=${encodeURIComponent(reminderForRow(row))}`;
+          link.target = '_blank';
+          link.rel = 'noopener';
+          actions.append(link);
+        } else {
+          actions.append(make('small', 'privacy-mini', 'Nomor WA belum ada'));
+        }
+        actionCell.append(actions);
+        tr.append(actionCell);
+        body.append(tr);
+      });
+      const legend = make('p', 'privacy-mini',
+        `Keterangan: ✓ lunas · ⏳ menunggu verifikasi · · belum dibayar · – belum jatuh tempo. ` +
+        `Rentang ${monthLong(ledgerMonths[0])} – ${monthLong(ledgerMonths[ledgerMonths.length - 1])}; ` +
+        `kolom “Lunas” dan “Tunggakan” hanya menghitung bulan yang sudah jatuh tempo (${dueList.length} bulan). ` +
+        'Anggota yang belum pernah membayar juga tampil di sini.');
+      ledgerBox.replaceChildren(legend, wrap);
+    }
+
+    async function loadLedger() {
+      ledgerMonths = monthKeyList(ledgerFrom.value, ledgerTo.value);
+      if (!ledgerMonths.length) {
+        ledgerBox.replaceChildren(make('div', 'table-empty', 'Rentang bulan belum benar.'));
+        return;
+      }
+      ledgerBox.replaceChildren(make('div', 'table-empty', 'Memuat rekap bulanan…'));
+      try {
+        const { data, error } = await client.rpc('dues_members_ledger', {
+          p_from: ledgerFrom.value,
+          p_to: ledgerTo.value
+        });
+        if (error) throw error;
+        ledgerRows = Array.isArray(data) ? data : [];
+        renderLedger();
+      } catch (error) {
+        ledgerBox.replaceChildren(make('div', 'table-empty',
+          'Rekap bulanan belum bisa dimuat. Minta Pemilik menjalankan migrasi 202610290030_iuran_per_bulan.sql di Supabase SQL Editor, lalu muat ulang halaman ini.'));
+      }
+    }
+
+    const ledgerRefresh = make('button', 'admin-button admin-button-outline', 'Tampilkan');
+    ledgerRefresh.type = 'button';
+    ledgerRefresh.addEventListener('click', () => loadLedger());
+
+    const ledgerOnlyUnpaid = make('button', 'admin-button admin-button-outline', 'Hanya yang menunggak');
+    ledgerOnlyUnpaid.type = 'button';
+    ledgerOnlyUnpaid.addEventListener('click', () => {
+      onlyUnpaid = !onlyUnpaid;
+      ledgerOnlyUnpaid.style.cssText = onlyUnpaid ? 'background:#171715;color:#fff' : '';
+      renderLedger();
+    });
+
+    const ledgerCopy = duesCopyButton('Salin rekap (teks)', () => {
+      const head = ['Anggota', ...ledgerMonths.map(monthShort), 'Lunas', 'Tunggakan'].join('\t');
+      const lines = ledgerRows.map(row => {
+        const paidCount = ledgerMonths.filter(month => (row.paid_months || []).includes(month)).length;
+        const cells = ledgerMonths.map(month => (row.paid_months || []).includes(month) ? '✓'
+          : ((row.pending_months || []).includes(month) ? '⏳' : '·'));
+        const paidDue = dueMonthsInRange().filter(month => (row.paid_months || []).includes(month)).length;
+        const missing = dueUnpaid(row).length;
+        return [row.full_name, ...cells, `${paidDue}/${dueMonthsInRange().length}`, `${missing} bulan`].join('\t');
+      });
+      return [head, ...lines].join('\n');
+    });
+
+    const fromLabel = make('label', '', 'Dari');
+    fromLabel.style.cssText = 'display:grid;gap:4px;font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:#6d6961';
+    fromLabel.append(ledgerFrom);
+    const toLabel = make('label', '', 'Sampai');
+    toLabel.style.cssText = fromLabel.style.cssText;
+    toLabel.append(ledgerTo);
+
+    ledgerBar.append(fromLabel, toLabel, ledgerRefresh, ledgerOnlyUnpaid, ledgerCopy);
+    ledgerSection.append(ledgerTitle, ledgerHelp, ledgerBar, ledgerBox);
+
+    loadLedger();
 
     // ---------- anggota belum membayar ----------
     const unpaidSection = make('section');
@@ -2659,6 +2956,7 @@
       toolsBar,
       filterBar,
       listBox,
+      ledgerSection,
       unpaidSection,
       privacyNote
     );
