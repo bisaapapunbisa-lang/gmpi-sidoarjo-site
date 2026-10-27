@@ -276,3 +276,15 @@
 .member-list-tab{border:1px solid #cbc5b8;background:#fffdf7;padding:8px 11px;color:#57534d;font-size:10px;font-weight:800;cursor:pointer}
 .member-list-tab:hover,.member-list-tab.is-active{background:#171715;color:#fff;border-color:#171715}
 .member-list-hint{margin:6px 0 12px}
+
+/* Filter & cetak massal kartu */
+.card-tools{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 12px;padding:10px 12px;background:#faf7ef;border:1px solid #e6ded0}
+.card-tool-check{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;color:#45423d;cursor:pointer;order:1}
+.card-tool-check input{accent-color:#e51c24;margin:0;width:15px;height:15px}
+.card-tool-info{font-size:11px;color:#7a766e;flex:1;min-width:130px;order:2}
+.card-tools .admin-link-button{order:3;font-size:11px;font-weight:800;color:#7a5a12;padding:0;white-space:nowrap}
+.card-tools .admin-button{order:4;padding:8px 14px;font-size:11px;min-height:0;white-space:nowrap}
+.card-tools .admin-button:disabled{opacity:.45;cursor:not-allowed}
+.card-pick-cell{width:44px;text-align:center}
+.card-pick-cell input{width:16px;height:16px;accent-color:#e51c24;cursor:pointer}
+@media(max-width:760px){.card-tools{gap:9px}.card-tool-info{order:5;flex-basis:100%}.card-tools .admin-button,.card-tools .admin-link-button{flex:1 1 auto;text-align:center}}

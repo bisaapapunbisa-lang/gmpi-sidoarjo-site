@@ -54,6 +54,14 @@ Hanya peran Pemilik dan Editor Situs yang boleh mengganti logo. Bucket `site-ass
 
 Contoh kartu di beranda memakai kode `CONTOH` dan ditandai sebagai kartu contoh di halaman verifikasi.
 
+### Daftar kartu: sembunyikan yang dicabut & cetak massal
+
+- Di **Admin → Kartu anggota → Daftar kartu** ada centang **“Sembunyikan kartu dicabut & ditolak”** (aktif secara bawaan). Kartu yang dicabut/ditolak tetap tersimpan dan bisa dimunculkan kembali kapan saja — pilihannya diingat per penjelajah.
+- Setiap kartu berstatus **Aktif** punya kotak centang. Setelah memilih beberapa kartu (atau menekan **Pilih semua yang aktif**):
+  - **Cetak terpilih** membuka jendela cetak berisi sisi depan + belakang tiap kartu pada ukuran asli **54 × 85,6 mm** (dua kolom per lembar A4). Tekan **Cetak sekarang**, pilih skala **100%** (jangan *fit to page*), lalu cetak di kertas PVC/art carton.
+  - **Unduh PNG terpilih** mengunduh berkas PNG per kartu (depan & belakang) bila ingin dicetak di tempat lain.
+- Foto profil diambil otomatis dari pendaftar terkait. Kartu tanpa foto tetap tercetak; hanya Pemilik/Petugas Registrasi yang dapat membaca dokumen pendaftar, jadi peran lain sebaiknya meminta kartu dicetak oleh mereka.
+
 ### Sisi belakang kartu
 - Di tab **Kartu anggota**, klik pratinjau (atau tombol **Depan/Belakang**) untuk membalik kartu.
 - Buka **Pengaturan sisi belakang** untuk mengisi nama & jabatan penanda tangan (diingat di browser) dan, bila perlu, tanda tangan PNG transparan (tidak diunggah).
