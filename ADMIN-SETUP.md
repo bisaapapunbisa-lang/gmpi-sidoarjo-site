@@ -191,4 +191,5 @@ on conflict (email, role) do update set active = true;
 9. Publik tidak bisa membaca tabel `dues_payments`. Cek status anggota hanya membalas bila nomor
    anggota + nama cocok dengan kartu anggota. Hanya Pemilik yang dapat menghapus catatan.
 
-Panduan lengkap untuk pengurus: **`PANDUAN-IURAN.md`**. Teks pengumuman siap pakai: **`wa-iuran.txt`**.
+Panduan lengkap untuk pengurus: **`PANDUAN-IURAN.md`**. Teks pengumuman WhatsApp dibuat
+otomatis lewat tombol **Buat teks pengumuman WhatsApp** di Admin → Iuran.
