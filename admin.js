@@ -21,8 +21,7 @@
     registrar: 'Petugas registrasi (data sensitif)',
     media_partner: 'Mitra media (berita)',
     card_approver: 'Penyetuju kartu anggota',
-    siaga: 'Tim Siaga (darurat)',
-    bendahara: 'Bendahara (iuran anggota)'
+    siaga: 'Tim Siaga (darurat)'
   };
   const REPORT_STATUSES = ['diterima', 'ditinjau', 'ditindaklanjuti', 'ditutup'];
   const MEMBER_STATUSES = ['menunggu_verifikasi', 'ditinjau', 'diterima', 'ditolak'];
@@ -55,7 +54,6 @@
   function canEditSebaran() { return roles.includes('owner') || roles.includes('content_editor') || roles.includes('registrar'); }
   function canSeeSiaga() { return roles.includes('owner') || roles.includes('siaga'); }
   function canSeeRsvp() { return roles.includes('owner') || roles.includes('content_editor') || roles.includes('registrar') || roles.includes('siaga'); }
-  function canSeeDues() { return roles.includes('owner') || roles.includes('registrar') || roles.includes('bendahara'); }
   function myEmail() { return String(currentUser?.email || '').toLowerCase(); }
 
   if (!config.url || !config.publishableKey) {
@@ -147,7 +145,6 @@
     if (canEditContent()) tabs.push(['struktur', 'Struktur']);
     if (canEditSebaran()) tabs.push(['sebaran', 'Sebaran']);
     if (canSeeRsvp()) tabs.push(['rsvp', 'Kehadiran']);
-    if (canSeeDues()) tabs.push(['dues', 'Iuran']);
     if (canManageNews()) tabs.push(['news', 'Berita']);
     if (canSeeReports()) tabs.push(['reports', 'Aduan LBH']);
     if (canSeeMembers()) tabs.push(['members', 'Pendaftaran anggota']);
@@ -178,7 +175,6 @@
     if (key === 'struktur' && canEditContent()) return renderStruktur();
     if (key === 'sebaran' && canEditSebaran()) return renderSebaran();
     if (key === 'rsvp' && canSeeRsvp()) return renderRsvp();
-    if (key === 'dues' && canSeeDues()) return renderDues();
     if (key === 'news' && canManageNews()) return renderNews();
     if (key === 'reports' && canSeeReports()) return renderReports();
     if (key === 'members' && canSeeMembers()) return renderMembers();
@@ -649,43 +645,10 @@
     const removed = [];
     const photoUrl = path => client.storage.from('site-assets').getPublicUrl(path).data.publicUrl;
     const SECTIONS = [
-      ['penasihat', 'Dewan Penasihat'], ['pembina', 'Dewan Pembina'], ['ketua', 'Ketua (satu orang, tetap)'],
-      ['sekretaris', 'Sekretaris'], ['wakil_sekretaris', 'Wakil Sekretaris'],
-      ['bendahara', 'Bendahara'], ['wakil_bendahara', 'Wakil Bendahara'],
-      ['ketua_harian', 'Ketua Harian'], ['humas', 'Humas'],
+      ['penasihat', 'Dewan Penasihat'], ['pembina', 'Dewan Pembina'], ['ketua', 'Ketua'], ['wakil_ketua', 'Wakil Ketua'],
+      ['sekretaris', 'Sekretaris'], ['ketua_harian', 'Ketua Harian'], ['humas', 'Humas'], ['bendahara', 'Bendahara'],
       ['departemen', 'Departemen (dipimpin Wakil Ketua Departemen)']
     ];
-    // Jabatan dasar saat menambah orang baru. Ketua tidak bisa ditambah.
-    const SECTION_DEFAULT = {
-      penasihat: 'Dewan Penasihat', pembina: 'Dewan Pembina',
-      sekretaris: 'Sekretaris', wakil_sekretaris: 'Wakil Sekretaris',
-      bendahara: 'Bendahara', wakil_bendahara: 'Wakil Bendahara',
-      ketua_harian: 'Ketua Harian', humas: 'Humas'
-    };
-    const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
-    // Jabatan yang selalu bernomor (I, II, III…). Penasihat/Pembina boleh sama.
-    const NUMBERED = new Set(['ketua_harian', 'wakil_sekretaris', 'wakil_bendahara']);
-    function nextJabatan(key, current) {
-      const base = SECTION_DEFAULT[key] || 'Pengurus';
-      if (key === 'penasihat' || key === 'pembina') return base;
-      const used = new Set(current.map(x => (x.jabatan || '').trim().toLocaleLowerCase('id-ID')));
-      if (!NUMBERED.has(key) && !used.has(base.toLocaleLowerCase('id-ID'))) return base;
-      const start = Math.max(1, current.length + 1);
-      for (let n = start; n <= ROMAN.length; n += 1) {
-        const cand = `${base} ${ROMAN[n - 1]}`;
-        if (!used.has(cand.toLocaleLowerCase('id-ID'))) return cand;
-      }
-      return `${base} ${current.length + 1}`;
-    }
-    function addMember(key) {
-      const current = rows.filter(x => x.section === key);
-      const orders = current.map(x => Number(x.sort_order) || 0);
-      const sortOrder = orders.length ? Math.max(...orders) + 1 : 60;
-      rows.push({ section: key, jabatan: nextJabatan(key, current), department: null, person_name: '', photo_path: null, sort_order: sortOrder });
-      build(); refreshPreview();
-      const group = [...groupsHost.querySelectorAll('.org-admin-group')].find(x => x.querySelector('legend')?.textContent === SECTIONS.find(([k]) => k === key)[1]);
-      const last = group?.querySelector('.org-admin-row:last-of-type input[placeholder^="Nama lengkap"]'); if (last) last.focus();
-    }
     const layout = make('div', 'org-admin');
     const formEl = make('form', 'org-admin-form');
     const preview = make('div', 'org-admin-preview');
@@ -743,15 +706,6 @@
           rows = rows.filter(x => x !== r); build(); refreshPreview();
         });
         tools.append(del);
-      } else if (r.section !== 'ketua') {
-        // Semua jabatan (kecuali Ketua) boleh ditambah maupun dihapus.
-        const del = make('button', 'admin-link-button org-admin-del', 'Hapus posisi'); del.type = 'button';
-        del.addEventListener('click', () => {
-          if (!window.confirm(`Hapus posisi “${r.jabatan}” dari bagan?`)) return;
-          if (r.id) removed.push(r.id);
-          rows = rows.filter(x => x !== r); build(); refreshPreview();
-        });
-        tools.append(del);
       }
       return line;
     }
@@ -761,8 +715,24 @@
       groupsHost.replaceChildren(...SECTIONS.map(([key, label]) => {
         const fs = make('fieldset', 'org-admin-group');
         fs.append(make('legend', '', label));
-        const mine = rows.filter(r => r.section === key);
-        mine.forEach(r => fs.append(rowEditor(r)));
+        rows.filter(r => r.section === key).forEach(r => fs.append(rowEditor(r)));
+        if (key === 'ketua_harian') {
+          const add = make('button', 'admin-button admin-button-outline', '＋ Tambah posisi Ketua Harian I/II'); add.type = 'button';
+          add.addEventListener('click', () => {
+            const current = rows.filter(x => x.section === 'ketua_harian');
+            const labels = new Set(current.map(x => (x.jabatan || '').trim().toLocaleLowerCase('id-ID')));
+            const label = ['Ketua Harian I', 'Ketua Harian II'].find(x => !labels.has(x.toLocaleLowerCase('id-ID'))) || `Ketua Harian ${current.length + 1}`;
+            const orders = current.map(x => Number(x.sort_order) || 0);
+            const sortOrder = label === 'Ketua Harian I'
+              ? (orders.length ? Math.min(...orders) - 1 : 59)
+              : (orders.length ? Math.max(...orders) + 1 : 60);
+            rows.push({ section: 'ketua_harian', jabatan: label, department: null, person_name: '', photo_path: null, sort_order: sortOrder });
+            build(); refreshPreview();
+            const group = [...groupsHost.querySelectorAll('.org-admin-group')].find(x => x.querySelector('legend')?.textContent === 'Ketua Harian');
+            const last = group?.querySelector('.org-admin-row:last-of-type input[placeholder^="Nama lengkap"]'); if (last) last.focus();
+          });
+          fs.append(add);
+        }
         if (key === 'departemen') {
           const add = make('button', 'admin-button admin-button-outline', '＋ Tambah departemen'); add.type = 'button';
           add.addEventListener('click', () => {
@@ -772,13 +742,6 @@
             const last = groupsHost.querySelector('.org-admin-group:last-child .org-admin-row:last-of-type input'); if (last) last.focus();
           });
           fs.append(add);
-        } else if (key !== 'ketua') {
-          const add = make('button', 'admin-button admin-button-outline', `＋ Tambah ${SECTION_DEFAULT[key] || 'pengurus'}`); add.type = 'button';
-          add.setAttribute('aria-label', `Tambah ${SECTION_DEFAULT[key] || 'pengurus'}`);
-          add.addEventListener('click', () => addMember(key));
-          fs.append(add);
-        } else if (!mine.length) {
-          fs.append(make('p', 'privacy-mini', 'Ketua wajib ada. Bila nama belum diisi, bagan menampilkan “Segera diisi”.'));
         }
         return fs;
       }));
@@ -790,7 +753,6 @@
     formEl.append(groupsHost, btnRow);
     formEl.addEventListener('submit', async event => {
       event.preventDefault();
-      rows = rows.filter(r => SECTIONS.some(([key]) => key === r.section));
       const bad = rows.find(r => (r.jabatan || '').trim().length < 2 || (r.section === 'departemen' && !(r.department || '').trim()));
       if (bad) { setMessage(bad.section === 'departemen' ? 'Isi nama setiap departemen (atau hapus departemen yang kosong).' : 'Jabatan tidak boleh kosong.', 'error'); return; }
       const pick = r => ({ section: r.section, jabatan: r.jabatan.trim(), department: r.section === 'departemen' ? (r.department || '').trim() : null, person_name: (r.person_name || '').trim() || null, photo_path: r.photo_path || null, sort_order: r.sort_order || 0 });
@@ -1789,1213 +1751,6 @@
     workspace.replaceChildren(heading, chips, bar, listBox, note);
   }
 
-  // ================= IURAN KEANGGOTAAN (tagihan + verifikasi pembayaran) =================
-  const DUES_FIELDS = [
-    {
-      key: 'iuran_aktif', label: 'Saklar lama (dipakai bila belum ada tagihan)', type: 'select',
-      options: [['0', 'Tutup — halaman iuran hanya menampilkan rincian'], ['1', 'Buka — anggota bisa membayar tanpa tagihan']],
-      help: 'Bila Anda sudah memakai kartu “Tagihan iuran” di atas, saklar ini diabaikan: tagihan yang menentukan buka/tutup.'
-    },
-    { key: 'iuran_nama', label: 'Nama iuran', type: 'text', placeholder: 'Iuran Keanggotaan 2026', help: 'Tampil sebagai judul tagihan di halaman iuran.' },
-    { key: 'iuran_periode', label: 'Periode berjalan', type: 'text', placeholder: '2026 atau 2026-10', help: 'Tulis 4 digit tahun (iuran tahunan) atau YYYY-MM (iuran bulanan).' },
-    { key: 'iuran_nominal', label: 'Nominal per anggota (Rp)', type: 'text', inputmode: 'numeric', placeholder: '60000', help: 'Hanya angka. Nominal ini langsung dipakai pada QRIS otomatis di halaman iuran.' },
-    { key: 'iuran_jatuh_tempo', label: 'Jatuh tempo', type: 'date', help: 'Halaman iuran menampilkan hitung mundur. Kosongkan bila belum ditetapkan.' },
-    { key: 'iuran_ewallet', label: 'Nomor e-wallet resmi', type: 'text', placeholder: 'DANA/OVO/GoPay · 0812-3456-7890 · a.n. Bendahara GMPI Sidoarjo', help: 'Tampil sebagai alternatif QRIS. Pastikan nomor ini benar-benar milik bendahara resmi.' },
-    { key: 'iuran_bank', label: 'Rekening bank organisasi', type: 'text', placeholder: 'Bank bjb · 0163336219100 · a.n. GMPI DPD SIDOARJO', help: 'Hanya rekening atas nama organisasi.' },
-    { key: 'iuran_wa', label: 'WhatsApp bendahara (format 62…)', type: 'text', placeholder: '6281235911689', help: 'Tombol "Tanya bendahara" dan pengiriman bukti bayar mengarah ke nomor ini.' },
-    { key: 'iuran_catatan', label: 'Catatan untuk anggota', type: 'textarea', placeholder: 'Iuran dipakai untuk kas organisasi: advokasi warga, kegiatan sosial, dan operasional sekretariat DPD.', help: 'Satu atau dua kalimat. Hindari janji yang belum disetujui pengurus.' }
-  ];
-  const DUES_METHOD_LABELS = { qris: 'QRIS', ewallet: 'E-wallet', transfer: 'Transfer bank', tunai: 'Tunai' };
-  const DUES_STATUS_LABELS = { menunggu: 'Menunggu', terverifikasi: 'Terverifikasi', ditolak: 'Ditolak' };
-  const DUES_MONTHS = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-
-  function duesDate(iso) {
-    if (!iso) return '—';
-    const text = String(iso).slice(0, 10);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return '—';
-    const [y, m, d] = text.split('-').map(Number);
-    return `${d} ${DUES_MONTHS[m - 1]} ${y}`;
-  }
-  function duesPeriodLabel(period) {
-    const text = String(period || '');
-    if (/^\d{4}-\d{2}$/.test(text)) {
-      const [y, m] = text.split('-').map(Number);
-      return `${DUES_MONTHS[m - 1]} ${y}`;
-    }
-    if (/^\d{4}$/.test(text)) return `Tahun ${text}`;
-    return text || '—';
-  }
-  function duesWa(phone) {
-    const digits = String(phone || '').replace(/[^0-9]/g, '');
-    if (!digits) return '';
-    if (digits.startsWith('62')) return digits;
-    if (digits.startsWith('0')) return `62${digits.slice(1)}`;
-    if (digits.startsWith('8')) return `62${digits}`;
-    return digits;
-  }
-  async function duesCopy(text) {
-    try {
-      if (navigator.clipboard && window.isSecureContext) {
-        await navigator.clipboard.writeText(text);
-        return true;
-      }
-      const area = make('textarea');
-      area.value = text;
-      area.style.position = 'fixed';
-      area.style.opacity = '0';
-      document.body.append(area);
-      area.select();
-      document.execCommand('copy');
-      area.remove();
-      return true;
-    } catch (error) {
-      return false;
-    }
-  }
-  function duesCopyButton(label, getText) {
-    const button = make('button', 'admin-link-button', label);
-    button.type = 'button';
-    button.addEventListener('click', async () => {
-      const original = button.textContent;
-      const ok = await duesCopy(getText());
-      button.textContent = ok ? 'Tersalin ✓' : 'Gagal salin';
-      setTimeout(() => { button.textContent = original; }, 1800);
-    });
-    return button;
-  }
-
-  async function renderDues() {
-    const heading = make('div', 'workspace-heading');
-    const titleBlock = make('div');
-    titleBlock.append(make('h3', '', 'Iuran keanggotaan'));
-    titleBlock.append(make('p', '', 'Atur nominal dan periode, lalu verifikasi pembayaran yang masuk dari halaman /iuran. Anggota bisa membayar lewat QRIS (nominal terisi otomatis), e-wallet, transfer bank, atau tunai. Halaman publik tidak pernah menampilkan NIK atau daftar anggota.'));
-    const openLink = make('a', 'admin-link-button', 'Buka halaman iuran ↗');
-    openLink.href = 'iuran.html';
-    openLink.target = '_blank';
-    openLink.rel = 'noopener';
-    heading.append(titleBlock, openLink);
-
-    workspace.replaceChildren(heading, make('div', 'table-empty', 'Memuat data iuran…'));
-
-    const [settingsRes, paymentsRes, invoicesRes] = await Promise.all([
-      client.from('site_content').select('key,value').in('key', DUES_FIELDS.map(field => field.key)),
-      client.from('dues_payments')
-        .select('id,created_at,member_name,member_number,district,phone,method,amount,period,months,paid_at,note,status,verified_at,verified_by,reject_reason,source,invoice_id')
-        .order('created_at', { ascending: false })
-        .limit(1000),
-      client.from('dues_invoices')
-        .select('id,title,period,months,nominal,due_date,note,status,publish_at,launched_at,closed_at,created_by,created_at')
-        .order('created_at', { ascending: false })
-        .limit(200)
-    ]);
-
-    if (settingsRes.error || paymentsRes.error) {
-      workspace.replaceChildren(heading, make('div', 'table-empty', 'Modul iuran belum siap. Minta Pemilik menjalankan migrasi 202610270028_iuran_keanggotaan.sql di Supabase SQL Editor, lalu muat ulang halaman ini.'));
-      return;
-    }
-
-    const settingValues = new Map((settingsRes.data || []).map(row => [row.key, (row.value && row.value.text) || '']));
-    const payments = paymentsRes.data || [];
-    const currentPeriod = settingValues.get('iuran_periode') || String(new Date().getFullYear());
-    const nominal = parseInt(settingValues.get('iuran_nominal') || '0', 10) || 0;
-    const nominalValue = nominal;
-    const isOpen = settingValues.get('iuran_aktif') === '1';
-
-    // ---------- ringkasan angka ----------
-    const pendingRows = payments.filter(row => row.status === 'menunggu');
-    const verifiedRows = payments.filter(row => row.status === 'terverifikasi');
-    const rejectedRows = payments.filter(row => row.status === 'ditolak');
-    const totalVerified = verifiedRows.reduce((sum, row) => sum + (row.amount || 0), 0);
-    const totalPending = pendingRows.reduce((sum, row) => sum + (row.amount || 0), 0);
-    const currentPaid = verifiedRows.filter(row => row.period === currentPeriod);
-    const chips = make('div', 'role-list');
-    const chip = (text, style) => {
-      const node = make('span', 'role-chip', text);
-      if (style) node.style.cssText = style;
-      return node;
-    };
-    const usesInvoices = !invoicesRes.error && (invoicesRes.data || []).length > 0;
-    if (!usesInvoices) {
-      chips.append(
-        chip(isOpen ? 'PERIODE DIBUKA' : 'PERIODE TUTUP', isOpen ? 'background:#dff0d8;color:#2f5d2a' : 'background:#f7e0e0;color:#8a1f1f'),
-        chip(`PERIODE ${duesPeriodLabel(currentPeriod).toUpperCase()}`),
-        chip(`NOMINAL ${rupiahAdmin(nominal)}`)
-      );
-    }
-    chips.append(
-      chip(`LUNAS ${currentPaid.length} ANGGOTA`),
-      chip(`MENUNGGU VERIFIKASI: ${pendingRows.length}`),
-      chip(`TERKUMPUL ${rupiahAdmin(totalVerified)}`),
-      chip(`TERTUNDA ${rupiahAdmin(totalPending)}`)
-    );
-    chips.style.margin = '4px 0 16px';
-
-    // ---------- tagihan iuran (draf → diluncurkan → ditutup) ----------
-    // Fitur ini memungkinkan pengurus menyiapkan tagihan lebih dulu (masih DRAF,
-    // tidak terlihat anggota), lalu meluncurkannya kapan saja setelah rapat.
-    const invoiceFeature = !invoicesRes.error;
-    const invoiceList = (invoicesRes.data || []).slice().sort((a, b) =>
-      String(b.created_at || '').localeCompare(String(a.created_at || '')));
-
-    const INVOICE_STATUS = {
-      draf: { label: 'DRAF', style: 'background:#efe7d2;color:#6b5a2a' },
-      dibuka: { label: 'DIBUKA', style: 'background:#dff0d8;color:#2f5d2a' },
-      ditutup: { label: 'DITUTUP', style: 'background:#e8e3d9;color:#6d6961' }
-    };
-
-    function invoiceStatusView(inv) {
-      const scheduled = inv.status === 'draf' && inv.publish_at;
-      if (scheduled) return { label: 'TERJADWAL', style: 'background:#dde8f5;color:#1f4a72' };
-      return INVOICE_STATUS[inv.status] || { label: String(inv.status || '').toUpperCase(), style: '' };
-    }
-    function invoiceWhen(iso) {
-      if (!iso) return '';
-      const date = new Date(iso);
-      if (Number.isNaN(date.getTime())) return '';
-      return date.toLocaleString('id-ID', {
-        day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
-      });
-    }
-    function invoiceRange(inv) {
-      return duesPeriodLabel(inv.period) + (Number(inv.months) > 1 ? ` · ${inv.months} bulan` : '');
-    }
-    function localInputValue(date) {
-      const pad = n => String(n).padStart(2, '0');
-      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-    }
-
-    const invoiceSection = make('section');
-    invoiceSection.style.cssText = 'border:1px solid #ded9ce;background:#fffdf7;padding:16px;margin:0 0 18px';
-    const invoiceHead = make('div', 'workspace-heading');
-    invoiceHead.style.cssText = 'margin:0 0 10px';
-    const invoiceHeadText = make('div');
-    invoiceHeadText.append(make('h3', '', 'Tagihan iuran'));
-    invoiceHeadText.append(make('p', '', 'Siapkan tagihan kapan pun, simpan sebagai DRAF bila keputusan rapat belum final, lalu LUNCURKAN saat sudah diputuskan — atau jadwalkan pada tanggal & jam tertentu. Anggota hanya melihat tagihan yang sudah diluncurkan.'));
-    invoiceHead.append(invoiceHeadText);
-    invoiceSection.append(invoiceHead);
-
-    if (!invoiceFeature) {
-      invoiceSection.append(make('div', 'table-empty',
-        'Fitur tagihan terjadiwal belum aktif. Minta Pemilik menjalankan migrasi 202610280029_tagihan_iuran.sql di Supabase SQL Editor, lalu muat ulang halaman ini. ' +
-        'Sementara itu, saklar “Status periode iuran” di bawah masih bisa dipakai seperti biasa.'));
-    } else {
-      const activeInvoice = invoiceList.find(inv => inv.status === 'dibuka') ||
-        invoiceList.find(inv => inv.status === 'draf' && inv.publish_at && new Date(inv.publish_at) <= new Date());
-
-      const summaryStrip = make('div', 'role-list');
-      summaryStrip.style.margin = '0 0 12px';
-      const stripChip = (text, style) => {
-        const chip = make('span', 'role-chip', text);
-        if (style) chip.style.cssText = style;
-        return chip;
-      };
-      if (activeInvoice) {
-        summaryStrip.append(stripChip(
-          `SEDANG BERJALAN: ${activeInvoice.title} · ${rupiahAdmin(activeInvoice.nominal * (activeInvoice.months || 1))}`,
-          'background:#dff0d8;color:#2f5d2a'));
-      } else {
-        summaryStrip.append(stripChip('BELUM ADA TAGIHAN BERJALAN — anggota belum bisa membayar',
-          'background:#f7e0e0;color:#8a1f1f'));
-      }
-      const draftCount = invoiceList.filter(inv => inv.status === 'draf' && !inv.publish_at).length;
-      const scheduledCount = invoiceList.filter(inv => inv.status === 'draf' && inv.publish_at).length;
-      summaryStrip.append(stripChip(`DRAF: ${draftCount}`), stripChip(`TERJADWAL: ${scheduledCount}`));
-      invoiceSection.append(summaryStrip);
-
-      // --- form tagihan ---
-      const editorWrap = make('div');
-      editorWrap.hidden = true;
-      const editorTitle = make('h4', '', '');
-      editorTitle.style.cssText = 'font:17px/1.3 Arial,Helvetica,sans-serif;margin:14px 0 8px';
-
-      const form = make('form', 'content-form');
-      form.style.display = 'grid';
-      form.style.gridTemplateColumns = 'repeat(auto-fit,minmax(200px,1fr))';
-      form.style.cssText += ';gap:12px;border:1px solid #ded9ce;background:#f7f4ec;padding:14px;margin:0 0 12px';
-
-      function fieldItem(labelText, inputNode, helpText, full) {
-        const group = make('div', 'content-field');
-        const label = make('label', '', labelText);
-        label.htmlFor = inputNode.id;
-        group.append(label, inputNode);
-        if (helpText) group.append(make('small', 'privacy-mini', helpText));
-        if (full) group.style.gridColumn = '1/-1';
-        return group;
-      }
-
-      const fTitle = make('input');
-      fTitle.type = 'text'; fTitle.id = 'inv-title'; fTitle.maxLength = 100;
-      fTitle.placeholder = 'Iuran Bulanan November 2026';
-
-      const fPeriod = make('input');
-      fPeriod.type = 'text'; fPeriod.id = 'inv-period'; fPeriod.placeholder = '2026-11';
-      fPeriod.pattern = '[0-9]{4}(-[0-9]{2})?';
-
-      const fMonths = make('input');
-      fMonths.type = 'number'; fMonths.id = 'inv-months'; fMonths.min = '1'; fMonths.max = '12'; fMonths.step = '1'; fMonths.value = '1';
-
-      const fNominal = make('input');
-      fNominal.type = 'number'; fNominal.id = 'inv-nominal'; fNominal.min = '1000'; fNominal.step = '1000';
-      fNominal.placeholder = '10000';
-
-      const fDue = make('input');
-      fDue.type = 'date'; fDue.id = 'inv-due';
-
-      const fNote = make('textarea');
-      fNote.id = 'inv-note'; fNote.rows = 2; fNote.maxLength = 400;
-      fNote.placeholder = 'Catatan singkat untuk anggota (opsional)';
-
-      const fPublish = make('input');
-      fPublish.type = 'datetime-local'; fPublish.id = 'inv-publish';
-
-      const totalPreview = make('p', 'privacy-mini', '');
-      totalPreview.style.cssText = 'grid-column:1/-1;margin:0;font-weight:800;color:#2f5d2a';
-
-      form.append(
-        fieldItem('Nama tagihan', fTitle, 'Tampil sebagai judul di halaman /iuran.', true),
-        fieldItem('Periode', fPeriod, 'Bulan pertama: 2026-11 (bulanan) atau 2026 (tahunan).'),
-        fieldItem('Jumlah bulan', fMonths, 'Isi 1 untuk bulanan, 3 untuk triwulan, 12 untuk setahun. Anggota tetap boleh membayar per bulan, tidak harus sekaligus.'),
-        fieldItem('Nominal per bulan (Rp)', fNominal, 'Angka saja. Total dihitung otomatis.'),
-        fieldItem('Jatuh tempo', fDue, 'Opsional. Anggota melihat hitung mundur.'),
-        fieldItem('Jadwal peluncuran', fPublish, 'Diisi hanya bila memilih “Jadwalkan”. Pakai waktu setempat.'),
-        fieldItem('Catatan untuk anggota', fNote, '', true),
-        totalPreview
-      );
-
-      const actionRow = make('div', 'card-buttons');
-      actionRow.style.cssText = 'grid-column:1/-1;margin:2px 0 0';
-      const saveDraft = make('button', 'admin-button admin-button-outline', 'Simpan sebagai draf');
-      saveDraft.type = 'button';
-      const launchNow = make('button', 'admin-button admin-button-gold', 'Simpan & luncurkan sekarang');
-      launchNow.type = 'button';
-      const scheduleBtn = make('button', 'admin-button admin-button-outline', 'Jadwalkan');
-      scheduleBtn.type = 'button';
-      const cancelEdit = make('button', 'admin-button admin-button-outline', 'Batal');
-      cancelEdit.type = 'button';
-      actionRow.append(saveDraft, launchNow, scheduleBtn, cancelEdit);
-      form.append(actionRow);
-
-      let editingId = null;
-
-      function refreshPreview() {
-        const nominal = parseInt(fNominal.value, 10) || 0;
-        const months = Math.max(1, Math.min(12, parseInt(fMonths.value, 10) || 1));
-        totalPreview.textContent = nominal > 0
-          ? `Jika lunas penuh: ${rupiahAdmin(nominal * months)}${months > 1 ? ` (${nominal.toLocaleString('id-ID')} × ${months} bulan)` : ''}. ` +
-            (months > 1 ? 'Anggota boleh mencicil per bulan, jadi tagihan ini tetap sah walau dibayar satu bulan dulu.' : '')
-          : 'Isi nominal untuk melihat total.';
-      }
-      [fNominal, fMonths].forEach(node => node.addEventListener('input', refreshPreview));
-
-      function openEditor(invoice) {
-        editingId = invoice ? invoice.id : null;
-        editorTitle.textContent = invoice ? `Ubah tagihan — ${invoice.title}` : 'Buat tagihan baru';
-        fTitle.value = invoice ? invoice.title : '';
-        fPeriod.value = invoice ? invoice.period : (currentPeriod || '');
-        fMonths.value = invoice ? String(invoice.months || 1) : '1';
-        fNominal.value = invoice ? String(invoice.nominal || '') : (nominal ? String(nominal) : '');
-        fDue.value = invoice && invoice.due_date ? String(invoice.due_date).slice(0, 10) : '';
-        fNote.value = invoice ? (invoice.note || '') : '';
-        fPublish.value = localInputValue(new Date(Date.now() + 24 * 3600 * 1000));
-        refreshPreview();
-        editorWrap.hidden = false;
-        fTitle.focus();
-        if (typeof editorWrap.scrollIntoView === 'function') {
-          editorWrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-      }
-      cancelEdit.addEventListener('click', () => { editorWrap.hidden = true; editingId = null; });
-
-      const newButton = make('button', 'admin-button admin-button-gold', '+ Buat tagihan baru');
-      newButton.type = 'button';
-      newButton.addEventListener('click', () => openEditor(null));
-
-      async function saveInvoice(action) {
-        const title = fTitle.value.trim();
-        const period = fPeriod.value.trim();
-        const months = Math.max(1, Math.min(12, parseInt(fMonths.value, 10) || 1));
-        const value = parseInt(fNominal.value, 10) || 0;
-        if (title.length < 3) { setMessage('Nama tagihan minimal 3 huruf.', 'warning'); fTitle.focus(); return; }
-        if (!/^\d{4}(-\d{2})?$/.test(period)) { setMessage('Periode harus 2026-11 (bulanan) atau 2026 (tahunan).', 'warning'); fPeriod.focus(); return; }
-        if (value < 1000) { setMessage('Nominal minimal Rp1.000.', 'warning'); fNominal.focus(); return; }
-        let publishIso = null;
-        if (action === 'schedule') {
-          if (!fPublish.value) { setMessage('Isi tanggal & jam peluncuran untuk menjadwalkan.', 'warning'); fPublish.focus(); return; }
-          const parsed = new Date(fPublish.value);
-          if (Number.isNaN(parsed.getTime())) { setMessage('Tanggal jadwal tidak valid.', 'warning'); return; }
-          if (parsed.getTime() <= Date.now()) { setMessage('Jadwal harus di masa depan. Untuk meluncurkan sekarang, pakai tombol “Simpan & luncurkan sekarang”.', 'warning'); return; }
-          publishIso = parsed.toISOString();
-        }
-        if (action === 'launch' && !window.confirm(
-          'Luncurkan tagihan ini sekarang?\n\n' +
-          `Anggota langsung bisa membayar ${rupiahAdmin(value * months)} untuk ${title}.\n` +
-          'Tagihan lain yang masih berjalan akan otomatis DITUTUP.')) return;
-
-        const buttons = [saveDraft, launchNow, scheduleBtn];
-        buttons.forEach(button => { button.disabled = true; });
-        const { error } = await client.rpc('dues_save_invoice', {
-          p_id: editingId,
-          p_title: title,
-          p_period: period,
-          p_months: months,
-          p_nominal: value,
-          p_due_date: fDue.value || null,
-          p_note: fNote.value.trim() || null,
-          p_action: action,
-          p_publish_at: publishIso
-        });
-        buttons.forEach(button => { button.disabled = false; });
-        if (error) {
-          setMessage('Tagihan tidak tersimpan: ' + (error.message || 'periksa koneksi') + '. Pastikan migrasi tagihan sudah dijalankan dan peran Anda Bendahara/Pemilik.', 'error');
-          return;
-        }
-        setMessage(action === 'launch'
-          ? 'Tagihan diluncurkan. Anggota sekarang melihat tombol bayar di halaman /iuran.'
-          : action === 'schedule'
-            ? `Tagihan dijadwalkan pada ${invoiceWhen(publishIso)}. Anggota baru bisa membayar setelah waktu itu.`
-            : 'Tagihan disimpan sebagai draf. Anggota belum bisa melihatnya.');
-        renderDues();
-      }
-
-      saveDraft.addEventListener('click', () => saveInvoice('draf'));
-      launchNow.addEventListener('click', () => saveInvoice('launch'));
-      scheduleBtn.addEventListener('click', () => saveInvoice('schedule'));
-
-      editorWrap.append(editorTitle, form, make('p', 'privacy-mini',
-        'Draf tidak terlihat oleh anggota. Setelah diluncurkan, tagihan muncul di halaman /iuran bersama QRIS bernominal otomatis. ' +
-        'Tagihan berjalan beberapa bulan (mis. 12 bulan) tetap bisa dibayar per bulan oleh anggota — setiap pembayaran dicatat bulan-bulannya, ' +
-        'sehingga kelihatan siapa yang rutin dan siapa yang menunggak.'));
-      const newRow = make('div', 'card-buttons');
-      newRow.style.cssText = 'margin:0 0 10px';
-      newRow.append(newButton);
-      invoiceSection.append(newRow, editorWrap);
-
-      // --- tabel tagihan ---
-      if (!invoiceList.length) {
-        invoiceSection.append(make('div', 'table-empty',
-          'Belum ada tagihan. Klik “Buat tagihan baru”, isi nominal, lalu simpan sebagai draf — atau langsung luncurkan bila rapat sudah memutuskan.'));
-      } else {
-        const { wrap, body } = makeTable(['Tagihan', 'Periode', 'Nominal', 'Jatuh tempo', 'Status', 'Aksi']);
-        invoiceList.forEach(inv => {
-          const tr = make('tr');
-          tr.append(make('td', '', inv.title));
-          tr.append(make('td', '', invoiceRange(inv)));
-          const nominalCell = make('td');
-          nominalCell.append(make('b', '', rupiahAdmin(inv.nominal * (inv.months || 1))));
-          if (Number(inv.months) > 1) nominalCell.append(make('small', 'privacy-mini', `${rupiahAdmin(inv.nominal)} × ${inv.months} bulan`));
-          tr.append(nominalCell);
-          tr.append(make('td', '', inv.due_date ? duesDate(String(inv.due_date).slice(0, 10)) : '—'));
-
-          const statusCell = make('td');
-          const view = invoiceStatusView(inv);
-          const pill = make('span', 'status-pill', view.label);
-          pill.style.cssText = view.style;
-          statusCell.append(pill);
-          if (inv.status === 'draf' && inv.publish_at) {
-            statusCell.append(make('small', 'privacy-mini', invoiceWhen(inv.publish_at)));
-          } else if (inv.status === 'dibuka' && inv.launched_at) {
-            statusCell.append(make('small', 'privacy-mini', `diluncurkan ${invoiceWhen(inv.launched_at)}`));
-          } else if (inv.status === 'ditutup' && inv.closed_at) {
-            statusCell.append(make('small', 'privacy-mini', `ditutup ${invoiceWhen(inv.closed_at)}`));
-          }
-          tr.append(statusCell);
-
-          const actionCell = make('td', 'member-actions-cell');
-          const actions = make('div', 'card-buttons');
-          actions.style.cssText = 'margin:0;gap:6px;flex-direction:column;align-items:flex-start';
-
-          if (inv.status !== 'dibuka') {
-            const launch = make('button', 'admin-link-button', 'Luncurkan sekarang');
-            launch.type = 'button';
-            launch.style.cssText = 'color:#2f5d2a;font-weight:800';
-            launch.addEventListener('click', async () => {
-              if (!window.confirm(`Luncurkan “${inv.title}” sekarang?\n\nAnggota langsung bisa membayar. Tagihan lain yang masih berjalan akan ditutup otomatis.`)) return;
-              launch.disabled = true;
-              const { error } = await client.rpc('dues_launch_invoice', { p_id: inv.id, p_publish_at: null });
-              launch.disabled = false;
-              if (error) { setMessage('Tagihan gagal diluncurkan: ' + (error.message || 'coba lagi') + '.', 'error'); return; }
-              setMessage('Tagihan diluncurkan. Anggota sekarang bisa membayar di halaman /iuran.');
-              renderDues();
-            });
-            actions.append(launch);
-          } else {
-            const close = make('button', 'admin-link-button is-danger', 'Tutup tagihan');
-            close.type = 'button';
-            close.addEventListener('click', async () => {
-              if (!window.confirm('Tutup tagihan ini? Anggota tidak bisa lagi mengirim konfirmasi baru untuk tagihan ini. Data pembayaran tetap tersimpan.')) return;
-              close.disabled = true;
-              const { error } = await client.rpc('dues_close_invoice', { p_id: inv.id });
-              close.disabled = false;
-              if (error) { setMessage('Tagihan gagal ditutup: ' + (error.message || 'coba lagi') + '.', 'error'); return; }
-              setMessage('Tagihan ditutup.');
-              renderDues();
-            });
-            actions.append(close);
-          }
-
-          if (inv.status === 'draf' && inv.publish_at) {
-            const cancelSchedule = make('button', 'admin-link-button', 'Batalkan jadwal');
-            cancelSchedule.type = 'button';
-            cancelSchedule.addEventListener('click', () => {
-              openEditor(inv);
-              setMessage('Ubah bagian jadwal, atau simpan sebagai draf untuk membatalkan penjadwalan.', 'warning');
-            });
-            actions.append(cancelSchedule);
-          }
-
-          const edit = make('button', 'admin-link-button', 'Ubah');
-          edit.type = 'button';
-          edit.addEventListener('click', () => openEditor(inv));
-          actions.append(edit);
-
-          if (isOwner()) {
-            const remove = make('button', 'admin-link-button is-danger', 'Hapus');
-            remove.type = 'button';
-            remove.addEventListener('click', async () => {
-              if (!window.confirm(`Hapus tagihan “${inv.title}”? Tagihan yang sudah punya pembayaran tidak bisa dihapus.`)) return;
-              remove.disabled = true;
-              const { error } = await client.rpc('dues_delete_invoice', { p_id: inv.id });
-              remove.disabled = false;
-              if (error) { setMessage(error.message || 'Tagihan gagal dihapus.', 'error'); return; }
-              setMessage('Tagihan dihapus.');
-              renderDues();
-            });
-            actions.append(remove);
-          }
-
-          actionCell.append(actions);
-          tr.append(actionCell);
-          body.append(tr);
-        });
-        invoiceSection.append(wrap);
-      }
-
-      const invoiceNote = make('p', 'privacy-mini',
-        'Hanya satu tagihan yang berjalan pada satu waktu. Peluncuran otomatis menutup tagihan lain agar tidak ada dobel bayar. ' +
-        'Cek status & rekap pembayaran tetap memakai daftar di bawah.');
-      invoiceSection.append(invoiceNote);
-    }
-
-    // ---------- pengaturan ----------
-    const settingsCard = make('section', 'dues-admin-settings');
-    settingsCard.style.cssText = 'border:1px solid #ded9ce;background:#f7f4ec;padding:16px;margin:0 0 18px';
-    const settingsTitle = make('div', 'card-heading');
-    settingsTitle.style.cssText = 'display:flex;align-items:flex-start;justify-content:space-between;gap:12px;border:0;padding:0;margin:0 0 12px';
-    const settingsTitleBlock = make('div');
-    settingsTitleBlock.append(
-      make('span', '', 'PENGATURAN TAGIHAN'),
-      make('h4', '', 'Kanal pembayaran & pengaturan lama')
-    );
-    settingsTitleBlock.firstChild.style.cssText = 'font-size:9px;font-weight:900;letter-spacing:2px;color:#9a2928';
-    settingsTitleBlock.lastChild.style.cssText = 'font:20px/1.2 Arial,Helvetica,sans-serif;margin:5px 0 0';
-    settingsTitle.append(settingsTitleBlock);
-    const toggleNote = make('span', 'status-pill', isOpen ? 'DIBUKA' : 'TUTUP');
-    toggleNote.style.cssText = isOpen ? 'background:#dff0d8;color:#2f5d2a' : 'background:#f7e0e0;color:#8a1f1f';
-    settingsTitle.append(toggleNote);
-    settingsCard.append(settingsTitle);
-
-    const settingsForm = make('form', 'content-form');
-    settingsForm.style.gridTemplateColumns = 'repeat(auto-fit,minmax(220px,1fr))';
-    settingsForm.style.display = 'grid';
-    const settingInputs = new Map();
-    DUES_FIELDS.forEach(field => {
-      const group = make('div', 'content-field');
-      const label = make('label', '', field.label);
-      label.htmlFor = `dues-set-${field.key}`;
-      let input;
-      if (field.type === 'select') {
-        input = make('select');
-        field.options.forEach(([value, text]) => input.append(new Option(text, value)));
-      } else if (field.type === 'textarea') {
-        input = make('textarea');
-        input.rows = 2;
-      } else {
-        input = make('input');
-        input.type = field.type === 'date' ? 'date' : 'text';
-        if (field.inputmode) input.inputMode = field.inputmode;
-        if (field.placeholder) input.placeholder = field.placeholder;
-      }
-      input.id = `dues-set-${field.key}`;
-      input.name = field.key;
-      input.value = settingValues.get(field.key) || '';
-      if (field.key === 'iuran_catatan') group.style.gridColumn = '1/-1';
-      group.append(label, input);
-      if (field.help) group.append(make('small', 'privacy-mini', field.help));
-      settingInputs.set(field.key, input);
-      settingsForm.append(group);
-    });
-
-    const saveRow = make('div', 'card-buttons');
-    saveRow.style.cssText = 'grid-column:1/-1;margin:4px 0 0';
-    const saveButton = make('button', 'admin-button admin-button-gold', 'Simpan pengaturan iuran');
-    saveButton.type = 'submit';
-    const announcementButton = make('button', 'admin-button admin-button-outline', 'Buat teks pengumuman WhatsApp');
-    announcementButton.type = 'button';
-    saveRow.append(saveButton, announcementButton);
-    settingsForm.append(saveRow);
-
-    function validateSettings() {
-      const nominalText = settingInputs.get('iuran_nominal').value.trim();
-      const periodText = settingInputs.get('iuran_periode').value.trim();
-      const waText = settingInputs.get('iuran_wa').value.trim();
-      if (nominalText && !/^\d{3,9}$/.test(nominalText)) return 'Nominal harus berupa angka tanpa titik/koma, contoh 60000.';
-      if (periodText && !/^\d{4}(-\d{2})?$/.test(periodText)) return 'Periode harus 4 digit tahun (2026) atau format 2026-10 untuk bulanan.';
-      if (waText && !/^62\d{8,13}$/.test(waText)) return 'Nomor WhatsApp bendahara harus format 62… tanpa spasi, contoh 6281235911689.';
-      if (settingInputs.get('iuran_aktif').value === '1' && !nominalText) return 'Isi nominal dulu sebelum membuka periode iuran.';
-      return '';
-    }
-
-    settingsForm.addEventListener('submit', async event => {
-      event.preventDefault();
-      const problem = validateSettings();
-      if (problem) { setMessage(problem, 'warning'); return; }
-      saveButton.disabled = true;
-      const updates = DUES_FIELDS.map(field => ({
-        key: field.key,
-        value: { text: String(settingInputs.get(field.key).value || '').trim() },
-        updated_at: new Date().toISOString()
-      }));
-      const { error } = await client.from('site_content').upsert(updates, { onConflict: 'key' });
-      saveButton.disabled = false;
-      if (error) {
-        setMessage('Pengaturan tidak tersimpan. Pastikan migrasi iuran sudah dijalankan dan peran akun Anda Pemilik, Editor Situs, atau Bendahara.', 'error');
-        return;
-      }
-      setMessage('Pengaturan iuran tersimpan dan langsung tampil di halaman /iuran.');
-      renderDues();
-    });
-
-    const announcementBox = make('div');
-    announcementBox.style.cssText = 'grid-column:1/-1';
-    announcementBox.hidden = true;
-    announcementButton.addEventListener('click', async () => {
-      announcementBox.hidden = false;
-      announcementBox.replaceChildren(make('div', 'table-empty', 'Membuat teks…'));
-      const periodLabel = duesPeriodLabel(settingInputs.get('iuran_periode').value.trim() || currentPeriod);
-      const nominalText = nominal || parseInt(settingInputs.get('iuran_nominal').value.trim() || '0', 10) || 0;
-      const due = settingInputs.get('iuran_jatuh_tempo').value;
-      const message = [
-        'Assalamualaikum saudara/i GMPI Sidoarjo 🇮🇩',
-        '',
-        `*${(settingInputs.get('iuran_nama').value.trim() || 'Iuran Keanggotaan').toUpperCase()} — PERIODE ${periodLabel.toUpperCase()}*`,
-        `Nominal: ${rupiahAdmin(nominalText)} per anggota${due ? ` · jatuh tempo ${duesDate(due)}` : ''}`,
-        '',
-        'Cara bayar (pilih yang paling mudah):',
-        '1) QRIS — buka m-banking/e-wallet, pilih Scan QRIS, nominal sudah terisi otomatis:',
-        '   https://www.gmpisidoarjo.com/iuran',
-        '2) E-wallet / transfer bank — nomor dan rekening resmi ada di tautan yang sama.',
-        '3) Tunai ke bendahara saat rapat atau di sekretariat.',
-        '',
-        'Setelah membayar, isi formulir konfirmasi singkat di halaman itu (30 detik, tanpa unggah berkas) supaya langsung tercatat.',
-        '',
-        `Pembayaran hanya ke kanal atas nama *GMPI DPD SIDOARJO*. Jangan ke rekening pribadi.`,
-        'Terima kasih atas iurannya — kas organisasi menghidupkan advokasi warga dan kegiatan sosial kita.',
-        '',
-        '_Bendahara GMPI DPD Sidoarjo_'
-      ].join('\n');
-      const preview = make('textarea');
-      preview.value = message;
-      preview.readOnly = true;
-      preview.rows = 14;
-      preview.style.cssText = 'width:100%;font:12px/1.6 Arial,Helvetica,sans-serif;padding:12px;border:1px solid #cbc5b8;background:#fff';
-      const actions = make('div', 'card-buttons');
-      actions.append(duesCopyButton('Salin teks', () => preview.value));
-      const waShare = make('a', 'admin-link-button', 'Buka WhatsApp');
-      waShare.href = `https://wa.me/?text=${encodeURIComponent(preview.value)}`;
-      waShare.target = '_blank';
-      waShare.rel = 'noopener';
-      waShare.style.marginLeft = '12px';
-      actions.append(waShare);
-      announcementBox.replaceChildren(preview, actions);
-    });
-
-    settingsCard.append(settingsForm, announcementBox);
-
-    // ---------- daftar pembayaran ----------
-    const listTitle = make('h4', '', 'Pembayaran masuk');
-    listTitle.style.cssText = 'font:20px/1.2 Arial,Helvetica,sans-serif;margin:24px 0 4px';
-    const listHelp = make('p', '', 'Baris "Menunggu" berarti anggota sudah mengaku membayar; cocokkan dengan mutasi QRIS/rekening atau bukti WhatsApp sebelum menekan Verifikasi. Baris terverifikasi otomatis terhitung lunas pada periode tersebut.');
-    listHelp.className = 'privacy-mini';
-    listHelp.style.margin = '0 0 12px';
-
-    let filter = pendingRows.length ? 'menunggu' : 'semua';
-    const filterBar = make('div', 'card-buttons');
-    filterBar.style.cssText = 'flex-wrap:wrap;margin:0 0 12px';
-    const filterButtons = [];
-    const FILTERS = [
-      ['menunggu', `Menunggu (${pendingRows.length})`],
-      ['terverifikasi', `Terverifikasi (${verifiedRows.length})`],
-      ['ditolak', `Ditolak (${rejectedRows.length})`],
-      ['semua', `Semua (${payments.length})`]
-    ];
-    const listBox = make('div');
-
-    function patchRow(row) {
-      const index = payments.findIndex(item => item.id === row.id);
-      if (index >= 0) payments[index] = row;
-    }
-
-    function renderRows() {
-      const shown = payments.filter(row => filter === 'semua' || row.status === filter);
-      if (!payments.length) {
-        listBox.replaceChildren(make('div', 'table-empty', 'Belum ada konfirmasi pembayaran. Bagikan tautan /iuran + teks pengumuman WhatsApp ke grup anggota.'));
-        return;
-      }
-      if (!shown.length) {
-        listBox.replaceChildren(make('div', 'table-empty', 'Tidak ada data dengan status ini.'));
-        return;
-      }
-      const { wrap, body } = makeTable(['Dikirim', 'Nama / nomor anggota', 'Kecamatan & WA', 'Metode', 'Bulan dibayar', 'Jumlah', 'Tanggal bayar', 'Status', 'Aksi']);
-      shown.forEach(row => {
-        const tr = make('tr');
-        tr.append(make('td', '', sosTime(row.created_at)));
-        const nameCell = make('td');
-        nameCell.append(make('b', '', row.member_name));
-        nameCell.append(make('small', 'privacy-mini', row.member_number || 'Nomor anggota belum diisi'));
-        tr.append(nameCell);
-        const contactCell = make('td');
-        contactCell.append(make('div', '', row.district));
-        const phone = String(row.phone || '');
-        contactCell.append(make('small', 'privacy-mini', phone || '—'));
-        tr.append(contactCell);
-        tr.append(make('td', '', DUES_METHOD_LABELS[row.method] || row.method));
-        const monthsCell = make('td');
-        const paidMonths = Array.isArray(row.periods) && row.periods.length ? row.periods : [];
-        if (paidMonths.length) {
-          monthsCell.append(make('span', '', paidMonths.slice(0, 3).map(monthShort).join(', ')));
-          if (paidMonths.length > 3) monthsCell.append(make('small', 'privacy-mini', `+${paidMonths.length - 3} bulan lain`));
-          if (paidMonths.length > 1) monthsCell.append(make('small', 'privacy-mini', `${paidMonths.length} bulan`));
-        } else {
-          monthsCell.append(make('span', '', duesPeriodLabel(row.period)));
-          if (Number(row.months) > 1) monthsCell.append(make('small', 'privacy-mini', `${row.months} bulan`));
-        }
-        tr.append(monthsCell);
-        tr.append(make('td', '', rupiahAdmin(row.amount)));
-        tr.append(make('td', '', duesDate(row.paid_at)));
-        const statusCell = make('td');
-        const pill = make('span', 'status-pill', DUES_STATUS_LABELS[row.status] || row.status);
-        pill.style.cssText = row.status === 'terverifikasi'
-          ? 'background:#dff0d8;color:#2f5d2a'
-          : row.status === 'ditolak' ? 'background:#f7e0e0;color:#8a1f1f' : 'background:#efe7d2;color:#6b5a2a';
-        statusCell.append(pill);
-        if (row.status === 'ditolak' && row.reject_reason) statusCell.append(make('small', 'privacy-mini', row.reject_reason));
-        if (row.status === 'terverifikasi' && row.verified_by) statusCell.append(make('small', 'privacy-mini', `oleh ${row.verified_by}`));
-        if (row.source === 'manual') statusCell.append(make('small', 'privacy-mini', 'dicatat manual'));
-        tr.append(statusCell);
-
-        const actionCell = make('td', 'member-actions-cell');
-        const buttonRow = make('div', 'card-buttons');
-        buttonRow.style.cssText = 'margin:0;gap:6px;flex-direction:column;align-items:flex-start';
-        if (row.status !== 'terverifikasi') {
-          const verify = make('button', 'admin-link-button', 'Verifikasi');
-          verify.type = 'button';
-          verify.style.cssText = 'color:#2f5d2a;font-weight:800';
-          verify.addEventListener('click', async () => {
-            verify.disabled = true;
-            const { data, error } = await client.rpc('verify_dues_payment', { p_id: row.id, p_status: 'terverifikasi', p_reason: null });
-            verify.disabled = false;
-            if (error) { setMessage('Tidak bisa memverifikasi. Periksa peran akun dan migrasi iuran.', 'error'); return; }
-            row.status = 'terverifikasi';
-            row.verified_at = new Date().toISOString();
-            row.verified_by = myEmail();
-            patchRow(row);
-            setMessage(`Pembayaran ${row.member_name} (${duesPeriodLabel(row.period)}) ditandai lunas.`);
-            renderDues();
-          });
-          buttonRow.append(verify);
-        } else {
-          const undo = make('button', 'admin-link-button', 'Batalkan verifikasi');
-          undo.type = 'button';
-          undo.addEventListener('click', async () => {
-            if (!window.confirm('Kembalikan status menjadi "Menunggu"? Data tetap tersimpan.')) return;
-            undo.disabled = true;
-            const { error } = await client.rpc('verify_dues_payment', { p_id: row.id, p_status: 'menunggu', p_reason: null });
-            undo.disabled = false;
-            if (error) { setMessage('Tidak bisa membatalkan verifikasi.', 'error'); return; }
-            setMessage('Status dikembalikan ke Menunggu.');
-            renderDues();
-          });
-          buttonRow.append(undo);
-        }
-        if (row.status !== 'ditolak') {
-          const reject = make('button', 'admin-link-button is-danger', 'Tolak');
-          reject.type = 'button';
-          reject.addEventListener('click', async () => {
-            const reason = window.prompt('Alasan penolakan (terlihat oleh bendahara lain, tidak ditampilkan ke publik):', 'Pembayaran tidak ditemukan di mutasi');
-            if (reason === null) return;
-            if (!reason.trim()) { setMessage('Alasan penolakan wajib diisi.', 'warning'); return; }
-            reject.disabled = true;
-            const { error } = await client.rpc('verify_dues_payment', { p_id: row.id, p_status: 'ditolak', p_reason: reason.trim() });
-            reject.disabled = false;
-            if (error) { setMessage('Tidak bisa menolak data ini.', 'error'); return; }
-            setMessage('Pembayaran ditolak dan dicatat alasannya.');
-            renderDues();
-          });
-          buttonRow.append(reject);
-        }
-        const wa = duesWa(phone);
-        if (wa) {
-          const chat = make('a', 'admin-link-button', 'WA anggota');
-          const confirmText = row.status === 'terverifikasi'
-            ? `Halo ${row.member_name}, iuran ${duesPeriodLabel(row.period)} sebesar ${rupiahAdmin(row.amount)} sudah kami verifikasi di kas GMPI DPD Sidoarjo. Terima kasih. — Bendahara`
-            : `Halo ${row.member_name}, kami menerima konfirmasi iuran ${duesPeriodLabel(row.period)} sebesar ${rupiahAdmin(row.amount)}. Mohon kirimkan bukti pembayaran di chat ini agar bisa kami verifikasi. — Bendahara GMPI DPD Sidoarjo`;
-          chat.href = `https://wa.me/${wa}?text=${encodeURIComponent(confirmText)}`;
-          chat.target = '_blank';
-          chat.rel = 'noopener';
-          buttonRow.append(chat);
-        }
-        if (isOwner()) {
-          const remove = make('button', 'admin-link-button is-danger', 'Hapus');
-          remove.type = 'button';
-          remove.addEventListener('click', async () => {
-            if (!window.confirm(`Hapus permanen catatan pembayaran ${row.member_name} (${duesPeriodLabel(row.period)})? Tindakan ini tidak bisa dibatalkan.`)) return;
-            remove.disabled = true;
-            const { error } = await client.from('dues_payments').delete().eq('id', row.id);
-            remove.disabled = false;
-            if (error) { setMessage('Catatan tidak terhapus. Muat ulang halaman lalu coba lagi.', 'error'); return; }
-            setMessage('Catatan pembayaran dihapus.');
-            renderDues();
-          });
-          buttonRow.append(remove);
-        }
-        if (row.note) {
-          const noteSpan = make('small', 'privacy-mini', `Catatan: ${row.note}`);
-          buttonRow.append(noteSpan);
-        }
-        actionCell.append(buttonRow);
-        tr.append(actionCell);
-        body.append(tr);
-      });
-      listBox.replaceChildren(wrap);
-    }
-
-    FILTERS.forEach(([key, label]) => {
-      const button = make('button', 'admin-button admin-button-outline', label);
-      button.type = 'button';
-      button.addEventListener('click', () => {
-        filter = key;
-        filterButtons.forEach(([filterKey, node]) => {
-          node.style.cssText = filterKey === filter ? 'background:#171715;color:#fff' : '';
-        });
-        renderRows();
-      });
-      filterButtons.push([key, button]);
-      filterBar.append(button);
-    });
-    filterButtons.forEach(([key, node]) => {
-      if (key === filter) node.style.cssText = 'background:#171715;color:#fff';
-    });
-
-    const toolsBar = make('div', 'card-buttons');
-    toolsBar.style.cssText = 'flex-wrap:wrap;margin:0 0 12px';
-    const reload = make('button', 'admin-button admin-button-outline', 'Muat ulang');
-    reload.type = 'button';
-    reload.addEventListener('click', () => renderDues());
-    toolsBar.append(reload);
-    const csvButton = make('button', 'admin-button admin-button-gold', 'Unduh rekap (CSV)');
-    csvButton.type = 'button';
-    csvButton.addEventListener('click', () => {
-      const esc = value => `"${String(value == null ? '' : value).replace(/"/g, '""')}"`;
-      const head = 'Dikirim;Nama;Nomor anggota;Kecamatan;WhatsApp;Metode;Bulan dibayar;Jumlah;Tanggal bayar;Status;Diverifikasi oleh;Catatan;Alasan ditolak';
-      const lines = payments.map(row => [
-        sosTime(row.created_at), row.member_name, row.member_number || '', row.district, row.phone || '',
-        DUES_METHOD_LABELS[row.method] || row.method,
-        (Array.isArray(row.periods) && row.periods.length ? row.periods.join(' ') : duesPeriodLabel(row.period)), row.amount,
-        row.paid_at, DUES_STATUS_LABELS[row.status] || row.status, row.verified_by || '', row.note || '', row.reject_reason || ''
-      ].map(esc).join(';'));
-      const blob = new Blob([`\ufeff${head}\n${lines.join('\n')}`], { type: 'text/csv;charset=utf-8' });
-      const link = make('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `iuran-gmpi-${currentPeriod}.csv`;
-      document.body.append(link);
-      link.click();
-      link.remove();
-    });
-    toolsBar.append(csvButton);
-
-    renderRows();
-
-    // ---------- rekap bulanan per anggota (menilai kedisiplinan) ----------
-    // Sumber: RPC dues_members_ledger — satu baris per anggota aktif + daftar
-    // bulan yang sudah lunas / masih menunggu verifikasi.
-    const ledgerSection = make('section');
-    ledgerSection.style.cssText = 'margin-top:26px;border:1px solid #ded9ce;background:#fffdf7;padding:16px';
-
-    const ledgerTitle = make('h4', '', 'Rekap bulanan & kedisiplinan anggota');
-    ledgerTitle.style.cssText = 'font:20px/1.2 Arial,Helvetica,sans-serif;margin:0 0 4px';
-    const ledgerHelp = make('p', '', 'Anggota boleh membayar per bulan. Tabel ini menunjukkan siapa yang rutin dan siapa yang menunggak, diurutkan dari yang paling sedikit membayar. Gunakan tombol “Ingatkan” untuk mengirim pesan pribadi berisi bulan yang belum dibayar.');
-    ledgerHelp.className = 'privacy-mini';
-    ledgerHelp.style.margin = '0 0 10px';
-
-    const ledgerBar = make('div', 'card-buttons');
-    ledgerBar.style.cssText = 'flex-wrap:wrap;gap:8px;align-items:flex-end;margin:0 0 12px';
-
-    function monthKeyList(fromKey, toKey) {
-      const list = [];
-      if (!/^\d{4}-\d{2}$/.test(fromKey) || !/^\d{4}-\d{2}$/.test(toKey)) return list;
-      let [year, month] = fromKey.split('-').map(Number);
-      const endYear = Number(toKey.slice(0, 4));
-      const endMonth = Number(toKey.slice(5, 7));
-      let guard = 0;
-      while (guard < 60) {
-        list.push(`${year}-${String(month).padStart(2, '0')}`);
-        if (year === endYear && month === endMonth) break;
-        month += 1;
-        if (month === 13) { month = 1; year += 1; }
-        guard += 1;
-      }
-      return list;
-    }
-    function monthKeyFromInvoice(invoice) {
-      if (!invoice) return null;
-      if (/^\d{4}-\d{2}$/.test(String(invoice.period))) return String(invoice.period);
-      if (/^\d{4}$/.test(String(invoice.period))) return `${invoice.period}-01`;
-      return null;
-    }
-    function monthKeyForDate(date) {
-      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-    }
-    function monthShort(key) {
-      const [year, month] = String(key).split('-').map(Number);
-      if (!year || !month) return key;
-      return `${DUES_MONTHS[month - 1].slice(0, 3)} ${String(year).slice(2)}`;
-    }
-    function monthLong(key) {
-      const [year, month] = String(key).split('-').map(Number);
-      if (!year || !month) return key;
-      return `${DUES_MONTHS[month - 1]} ${year}`;
-    }
-
-    const activeInvoiceForLedger = invoiceFeature
-      ? (invoiceList.find(inv => inv.status === 'dibuka') ||
-         invoiceList.find(inv => inv.status === 'draf' && inv.publish_at && new Date(inv.publish_at) <= new Date()))
-      : null;
-
-    const defaultRange = (() => {
-      const activeStart = monthKeyFromInvoice(activeInvoiceForLedger);
-      if (activeStart) {
-        const span = Math.max(1, Number(activeInvoiceForLedger.months) || 1);
-        const list = monthKeyList(activeStart, activeStart);
-        const startDate = new Date(`${activeStart}-01T00:00:00`);
-        const endDate = new Date(startDate.getFullYear(), startDate.getMonth() + span - 1, 1);
-        return {
-          from: list[0],
-          to: `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}`
-        };
-      }
-      const now = new Date();
-      return { from: `${now.getFullYear()}-01`, to: `${now.getFullYear()}-12` };
-    })();
-
-    const ledgerFrom = make('input');
-    ledgerFrom.type = 'month';
-    ledgerFrom.value = defaultRange.from;
-    ledgerFrom.style.cssText = 'padding:9px 10px;border:1px solid #cbc5b8;background:#fff;font-size:12px';
-    ledgerFrom.setAttribute('aria-label', 'Bulan awal rekap');
-    const ledgerTo = make('input');
-    ledgerTo.type = 'month';
-    ledgerTo.value = defaultRange.to;
-    ledgerTo.style.cssText = ledgerFrom.style.cssText;
-    ledgerTo.setAttribute('aria-label', 'Bulan akhir rekap');
-
-    const ledgerBox = make('div');
-    ledgerBox.append(make('div', 'table-empty', 'Memuat rekap bulanan…'));
-
-    let ledgerRows = [];
-    let ledgerMonths = [];
-    let onlyUnpaid = false;
-
-    function unpaidInRange(row) {
-      return ledgerMonths.filter(month => !(row.paid_months || []).includes(month));
-    }
-    function futureMonths() {
-      const now = (typeof currentMonthKey === 'function') ? currentMonthKey() : '';
-      return ledgerMonths.filter(month => month > now);
-    }
-    function monthListText(list, max = 5) {
-      if (list.length <= max) return list.map(monthLong).join(', ');
-      return `${list.slice(0, max).map(monthLong).join(', ')}, dan ${list.length - max} bulan lainnya`;
-    }
-    // Bulan yang sudah jatuh tempo saja (bukan bulan mendatang).
-    function currentMonthKey() {
-      return monthKeyForDate(new Date());
-    }
-    function dueMonthsInRange() {
-      const now = currentMonthKey();
-      return ledgerMonths.filter(month => month <= now);
-    }
-    function dueUnpaid(row) {
-      return dueMonthsInRange().filter(month => !(row.paid_months || []).includes(month));
-    }
-
-    function reminderForRow(row) {
-      const missing = dueUnpaid(row);
-      const later = unpaidInRange(row).filter(month => month > currentMonthKey());
-      const nominal = activeInvoiceForLedger
-        ? Number(activeInvoiceForLedger.nominal) || nominalValue
-        : nominalValue;
-      const money = nominal && missing.length ? `sekitar ${rupiahAdmin(nominal * missing.length)}` : '';
-      const status = missing.length
-        ? `Bulan yang belum tercatat: ${monthListText(missing)} (${missing.length} bulan${money ? `, ${money}` : ''}).`
-        : 'Seluruh bulan yang sudah jatuh tempo sudah tercatat lunas. Terima kasih.';
-      return [
-        `Assalamualaikum ${row.full_name},`,
-        '',
-        `Kami dari Bendahara GMPI DPD Sidoarjo mengingatkan iuran keanggotaan periode ${monthLong(ledgerMonths[0])} – ${monthLong(ledgerMonths[ledgerMonths.length - 1])}.`,
-        status,
-        later.length ? `Bulan ${monthListText(later, 3)} belum jatuh tempo, bisa menyusul.` : '',
-        '',
-        'Boleh dibayar per bulan — tidak harus sekaligus. Paling mudah lewat QRIS (nominal terisi otomatis):',
-        'https://www.gmpisidoarjo.com/iuran',
-        '',
-        'Sudah membayar? Isi formulir konfirmasi singkat di halaman yang sama agar segera tercatat.',
-        'Terima kasih. — Bendahara GMPI DPD Sidoarjo'
-      ].filter(line => line !== '').join('\n').replace(/\n{3,}/g, '\n\n');
-    }
-
-    function renderLedger() {
-      if (!ledgerRows.length) {
-        ledgerBox.replaceChildren(make('div', 'table-empty',
-          'Belum bisa menampilkan rekap. Pastikan migrasi 202610290030_iuran_per_bulan.sql sudah dijalankan dan sudah ada kartu anggota aktif.'));
-        return;
-      }
-      const rows = onlyUnpaid ? ledgerRows.filter(row => dueUnpaid(row).length > 0) : ledgerRows;
-      if (!rows.length) {
-        ledgerBox.replaceChildren(make('div', 'table-empty', 'Semua tagihan yang sudah jatuh tempo pada rentang ini sudah lunas. Luar biasa.'));
-        return;
-      }
-      const dueList = dueMonthsInRange();
-      const headers = ['Anggota', ...ledgerMonths.map(monthShort), 'Lunas', 'Tunggakan', 'Terakhir bayar', 'Aksi'];
-      const { wrap, body } = makeTable(headers);
-      rows.forEach(row => {
-        const tr = make('tr');
-        const nameCell = make('td');
-        nameCell.append(make('b', '', row.full_name));
-        nameCell.append(make('small', 'privacy-mini', `${row.member_number} · ${row.district}`));
-        tr.append(nameCell);
-
-        ledgerMonths.forEach(month => {
-          const cell = make('td');
-          cell.style.cssText = 'text-align:center;font-weight:800';
-          if ((row.paid_months || []).includes(month)) {
-            cell.textContent = '✓';
-            cell.style.cssText += ';color:#2f5d2a;background:#eef7ea';
-            cell.title = `${monthLong(month)}: lunas`;
-          } else if ((row.pending_months || []).includes(month)) {
-            cell.textContent = '⏳';
-            cell.style.cssText += ';color:#8a6a1f;background:#fdf6e4';
-            cell.title = `${monthLong(month)}: menunggu verifikasi`;
-          } else if (month > currentMonthKey()) {
-            cell.textContent = '–';
-            cell.style.cssText += ';color:#cfc9bc;background:#faf8f3';
-            cell.title = `${monthLong(month)}: belum jatuh tempo`;
-          } else {
-            cell.textContent = '·';
-            cell.style.cssText += ';color:#c2bcae';
-            cell.title = `${monthLong(month)}: belum dibayar`;
-          }
-          tr.append(cell);
-        });
-
-        const paidDue = dueList.filter(month => (row.paid_months || []).includes(month)).length;
-        const paidCell = make('td');
-        paidCell.append(make('b', '', `${paidDue}/${dueList.length}`));
-        paidCell.append(make('small', 'privacy-mini', `dari ${ledgerMonths.length} bulan`));
-        tr.append(paidCell);
-
-        const missing = dueUnpaid(row);
-        const dueCell = make('td');
-        if (missing.length) {
-          dueCell.append(make('b', '', `${missing.length} bulan`));
-          dueCell.append(make('small', 'privacy-mini', nominalValue ? rupiahAdmin(nominalValue * missing.length) : '—'));
-        } else {
-          dueCell.append(make('span', 'status-pill', 'LUNAS'));
-          dueCell.firstChild.style.cssText = 'background:#dff0d8;color:#2f5d2a';
-        }
-        tr.append(dueCell);
-        tr.append(make('td', '', row.last_paid ? duesDate(String(row.last_paid).slice(0, 10)) : '—'));
-
-        const actionCell = make('td', 'member-actions-cell');
-        const actions = make('div', 'card-buttons');
-        actions.style.cssText = 'margin:0;gap:6px;flex-direction:column;align-items:flex-start';
-        const wa = duesWa(row.phone);
-        if (wa) {
-          const link = make('a', 'admin-link-button', missing.length ? 'Ingatkan via WA' : 'WA apresiasi');
-          link.href = `https://wa.me/${wa}?text=${encodeURIComponent(reminderForRow(row))}`;
-          link.target = '_blank';
-          link.rel = 'noopener';
-          actions.append(link);
-        } else {
-          actions.append(make('small', 'privacy-mini', 'Nomor WA belum ada'));
-        }
-        actionCell.append(actions);
-        tr.append(actionCell);
-        body.append(tr);
-      });
-      const legend = make('p', 'privacy-mini',
-        `Keterangan: ✓ lunas · ⏳ menunggu verifikasi · · belum dibayar · – belum jatuh tempo. ` +
-        `Rentang ${monthLong(ledgerMonths[0])} – ${monthLong(ledgerMonths[ledgerMonths.length - 1])}; ` +
-        `kolom “Lunas” dan “Tunggakan” hanya menghitung bulan yang sudah jatuh tempo (${dueList.length} bulan). ` +
-        'Anggota yang belum pernah membayar juga tampil di sini.');
-      ledgerBox.replaceChildren(legend, wrap);
-    }
-
-    async function loadLedger() {
-      ledgerMonths = monthKeyList(ledgerFrom.value, ledgerTo.value);
-      if (!ledgerMonths.length) {
-        ledgerBox.replaceChildren(make('div', 'table-empty', 'Rentang bulan belum benar.'));
-        return;
-      }
-      ledgerBox.replaceChildren(make('div', 'table-empty', 'Memuat rekap bulanan…'));
-      try {
-        const { data, error } = await client.rpc('dues_members_ledger', {
-          p_from: ledgerFrom.value,
-          p_to: ledgerTo.value
-        });
-        if (error) throw error;
-        ledgerRows = Array.isArray(data) ? data : [];
-        renderLedger();
-      } catch (error) {
-        ledgerBox.replaceChildren(make('div', 'table-empty',
-          'Rekap bulanan belum bisa dimuat. Minta Pemilik menjalankan migrasi 202610290030_iuran_per_bulan.sql di Supabase SQL Editor, lalu muat ulang halaman ini.'));
-      }
-    }
-
-    const ledgerRefresh = make('button', 'admin-button admin-button-outline', 'Tampilkan');
-    ledgerRefresh.type = 'button';
-    ledgerRefresh.addEventListener('click', () => loadLedger());
-
-    const ledgerOnlyUnpaid = make('button', 'admin-button admin-button-outline', 'Hanya yang menunggak');
-    ledgerOnlyUnpaid.type = 'button';
-    ledgerOnlyUnpaid.addEventListener('click', () => {
-      onlyUnpaid = !onlyUnpaid;
-      ledgerOnlyUnpaid.style.cssText = onlyUnpaid ? 'background:#171715;color:#fff' : '';
-      renderLedger();
-    });
-
-    const ledgerCopy = duesCopyButton('Salin rekap (teks)', () => {
-      const head = ['Anggota', ...ledgerMonths.map(monthShort), 'Lunas', 'Tunggakan'].join('\t');
-      const lines = ledgerRows.map(row => {
-        const paidCount = ledgerMonths.filter(month => (row.paid_months || []).includes(month)).length;
-        const cells = ledgerMonths.map(month => (row.paid_months || []).includes(month) ? '✓'
-          : ((row.pending_months || []).includes(month) ? '⏳' : '·'));
-        const paidDue = dueMonthsInRange().filter(month => (row.paid_months || []).includes(month)).length;
-        const missing = dueUnpaid(row).length;
-        return [row.full_name, ...cells, `${paidDue}/${dueMonthsInRange().length}`, `${missing} bulan`].join('\t');
-      });
-      return [head, ...lines].join('\n');
-    });
-
-    const fromLabel = make('label', '', 'Dari');
-    fromLabel.style.cssText = 'display:grid;gap:4px;font-size:10px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:#6d6961';
-    fromLabel.append(ledgerFrom);
-    const toLabel = make('label', '', 'Sampai');
-    toLabel.style.cssText = fromLabel.style.cssText;
-    toLabel.append(ledgerTo);
-
-    ledgerBar.append(fromLabel, toLabel, ledgerRefresh, ledgerOnlyUnpaid, ledgerCopy);
-    ledgerSection.append(ledgerTitle, ledgerHelp, ledgerBar, ledgerBox);
-
-    loadLedger();
-
-    // ---------- anggota belum membayar ----------
-    const unpaidSection = make('section');
-    unpaidSection.style.cssText = 'margin-top:26px;border:1px solid #ded9ce;background:#fff;padding:16px';
-    const unpaidTitle = make('h4', '', 'Anggota aktif yang belum lunas');
-    unpaidTitle.style.cssText = 'font:20px/1.2 Arial,Helvetica,sans-serif;margin:0 0 4px';
-    const unpaidHelp = make('p', '', `Daftar diambil dari kartu anggota aktif yang belum punya pembayaran terverifikasi untuk periode ${duesPeriodLabel(currentPeriod)}. Nomor WhatsApp hanya ditampilkan untuk akun berperan Pemilik/Registrasi/Bendahara. Gunakan tombol "Ingatkan" untuk mengirim pesan pribadi.`);
-    unpaidHelp.className = 'privacy-mini';
-    unpaidHelp.style.margin = '0 0 12px';
-    const unpaidBox = make('div');
-    unpaidBox.append(make('div', 'table-empty', 'Memuat daftar anggota…'));
-    const unpaidBar = make('div', 'card-buttons');
-    unpaidBar.style.cssText = 'margin:12px 0 0';
-    unpaidSection.append(unpaidTitle, unpaidHelp, unpaidBar, unpaidBox);
-
-    let unpaidList = [];
-    function reminderText(row) {
-      return [
-        `Assalamualaikum ${row.full_name},`,
-        '',
-        `Kami dari Bendahara GMPI DPD Sidoarjo mengingatkan ${settingValues.get('iuran_nama') || 'iuran keanggotaan'} periode ${duesPeriodLabel(currentPeriod)}${nominal ? ` sebesar ${rupiahAdmin(nominal)}` : ''} belum tercatat di kas organisasi.`,
-        '',
-        'Paling mudah lewat QRIS — nominal sudah terisi otomatis, tinggal pindai:',
-        'https://www.gmpisidoarjo.com/iuran',
-        '',
-        'Sudah membayar? Isi formulir konfirmasi singkat di halaman yang sama agar segera tercatat.',
-        'Terima kasih. — Bendahara GMPI DPD Sidoarjo'
-      ].join('\n');
-    }
-    function unpaidPlainList() {
-      return unpaidList.map((row, index) => `${index + 1}. ${row.full_name} — ${row.member_number} (${row.district})${row.phone ? ` · ${row.phone}` : ''}`).join('\n');
-    }
-    function renderUnpaid() {
-      if (!unpaidList.length) {
-        unpaidBox.replaceChildren(make('div', 'table-empty', `Semua anggota aktif sudah lunas untuk periode ${duesPeriodLabel(currentPeriod)}, atau belum ada kartu anggota aktif.`));
-        return;
-      }
-      const { wrap, body } = makeTable(['Nama', 'Nomor anggota', 'Kecamatan', 'WhatsApp', 'Aksi']);
-      unpaidList.forEach(row => {
-        const tr = make('tr');
-        tr.append(make('td', '', row.full_name));
-        tr.append(make('td', '', row.member_number));
-        tr.append(make('td', '', row.district));
-        tr.append(make('td', '', row.phone || '—'));
-        const actionCell = make('td');
-        const wa = duesWa(row.phone);
-        if (wa) {
-          const link = make('a', 'admin-link-button', 'Ingatkan via WA');
-          link.href = `https://wa.me/${wa}?text=${encodeURIComponent(reminderText(row))}`;
-          link.target = '_blank';
-          link.rel = 'noopener';
-          actionCell.append(link);
-        } else {
-          actionCell.append(make('small', 'privacy-mini', 'Nomor WA belum ada — hubungi lewat gugus/kecamatan.'));
-        }
-        tr.append(actionCell);
-        body.append(tr);
-      });
-      unpaidBox.replaceChildren(make('div', 'privacy-mini', `${unpaidList.length} anggota belum lunas.`), wrap);
-    }
-
-    const copyUnpaid = duesCopyButton('Salin daftar belum lunas', () => unpaidPlainList());
-    const copyReminder = duesCopyButton('Salin teks pengingat', () => reminderText({
-      full_name: '{nama anggota}',
-      district: '{kecamatan}',
-      member_number: '{nomor}'
-    }));
-    unpaidBar.append(copyUnpaid, copyReminder);
-    unpaidBar.append(duesCopyButton('Salin tautan halaman iuran', () => 'https://www.gmpisidoarjo.com/iuran'));
-
-    (async () => {
-      try {
-        const { data, error } = await client.rpc('dues_unpaid_members', { p_period: currentPeriod });
-        if (error) throw error;
-        unpaidList = Array.isArray(data) ? data : [];
-        renderUnpaid();
-      } catch (error) {
-        unpaidBox.replaceChildren(make('div', 'table-empty', 'Daftar belum lunas tidak bisa dimuat. Pastikan peran akun Anda Pemilik/Registrasi/Bendahara dan migrasi iuran sudah dijalankan.'));
-      }
-    })();
-
-    const privacyNote = make('p', 'privacy-mini', 'Data iuran berisi nama, kecamatan, dan nomor WhatsApp anggota — jangan diekspor atau dibagikan ke luar kepengurusan. Hanya Pemilik yang bisa menghapus catatan. Verifikasi sebaiknya dilakukan setelah mencocokkan mutasi QRIS/rekening dengan bukti yang dikirim anggota.');
-
-    workspace.replaceChildren(
-      heading,
-      chips,
-      invoiceSection,
-      settingsCard,
-      listTitle,
-      listHelp,
-      toolsBar,
-      filterBar,
-      listBox,
-      ledgerSection,
-      unpaidSection,
-      privacyNote
-    );
-  }
-
   async function renderReports() {
     const heading = make('div', 'workspace-heading');
     const titleBlock = make('div');
@@ -3107,10 +1862,7 @@
         kontakCell.append(ad);
       }
       row.append(kontakCell);
-      const bidangCell = make('td', '', member.division || '—');
-      if (!member.division) bidangCell.style.cssText = 'color:#a49d90';
-      if (!member.division) bidangCell.title = 'Bidang belum diisi (pendaftar tidak lagi ditanya bidang)';
-      row.append(bidangCell);
+      row.append(make('td', '', member.division));
       const jabatanCell = make('td');
       const jabSel = make('select');
       jabSel.className = 'member-jabatan-pick';
@@ -3206,28 +1958,27 @@
           });
         } else if (member.status !== 'ditolak') {
           const regMatches = (data || []).filter(r => r.status !== 'ditolak' && normalizeMemberConfirmation(r.full_name) === normalizeMemberConfirmation(member.full_name) && r.district === member.district);
-          const possibleCards = memberCardRows.filter(card => !card.registration_id && normalizeMemberConfirmation(card.full_name) === normalizeMemberConfirmation(member.full_name) && card.district === member.district);
-          const unlinkedCards = memberCardRows.filter(card => !card.registration_id);
-          if (regMatches.length === 1 && possibleCards.length === 1) {
-            const card = possibleCards[0];
+          const matchingCards = matchingUnlinkedMemberCards(member, memberCardRows);
+          if (regMatches.length === 1 && matchingCards.length === 1) {
+            const card = matchingCards[0];
             const item = make('div', 'member-kta-item');
             item.append(make('strong', '', card.member_number || 'KTA'), make('small', '', `${cardStatusLabel[card.status] || card.status} · belum tertaut`));
             const linkButton = make('button', 'admin-link-button', 'Hubungkan KTA');
             linkButton.type = 'button';
-            linkButton.addEventListener('click', () => openMemberKtaLinkDialog(member, unlinkedCards, card.id));
+            linkButton.addEventListener('click', () => openMemberKtaLinkDialog(member, matchingCards, card.id));
             item.append(linkButton); ktaCell.append(item);
           } else {
-            const text = possibleCards.length || regMatches.length > 1
-              ? 'Ada kemungkinan kecocokan, tetapi tidak unik. Pilih kartu yang benar secara manual.'
-              : 'Belum ada KTA tertaut. Jika kartunya sudah dibuat, pilih untuk menautkannya.';
+            const text = matchingCards.length > 1 || regMatches.length > 1
+              ? 'Ada lebih dari satu kecocokan nama/kecamatan. Tinjau hanya kartu yang cocok dan pastikan orangnya sama.'
+              : 'Tidak ada KTA tanpa tautan dengan nama dan kecamatan yang cocok. Kartu milik orang lain tidak ditampilkan.';
             ktaCell.append(make('small', 'privacy-mini', text));
-            if (unlinkedCards.length) {
-              const linkButton = make('button', 'admin-link-button', 'Pilih KTA…');
+            if (matchingCards.length) {
+              const linkButton = make('button', 'admin-link-button', 'Pilih KTA yang cocok…');
               linkButton.type = 'button';
-              linkButton.addEventListener('click', () => openMemberKtaLinkDialog(member, unlinkedCards));
+              linkButton.addEventListener('click', () => openMemberKtaLinkDialog(member, matchingCards));
               ktaCell.append(linkButton);
             } else {
-              ktaCell.append(make('small', 'privacy-mini', 'Tidak ada KTA tanpa tautan. Buat kartu terlebih dahulu jika anggota ini belum memiliki KTA.'));
+              ktaCell.append(make('small', 'privacy-mini', 'Periksa nama/kecamatan atau buat KTA untuk pendaftar ini terlebih dahulu.'));
             }
           }
         } else {
@@ -3274,7 +2025,16 @@
     return String(value || '').normalize('NFC').trim().replace(/\s+/g, ' ').toLocaleLowerCase('id-ID');
   }
 
-  function openMemberKtaLinkDialog(member, unlinkedCards, suggestedCardId = '') {
+  function matchingUnlinkedMemberCards(member, cards) {
+    const name = normalizeMemberConfirmation(member?.full_name);
+    const district = normalizeMemberConfirmation(member?.district);
+    return (cards || []).filter(card => !card.registration_id
+      && normalizeMemberConfirmation(card.full_name) === name
+      && normalizeMemberConfirmation(card.district) === district);
+  }
+
+  function openMemberKtaLinkDialog(member, cards, suggestedCardId = '') {
+    const matchingCards = matchingUnlinkedMemberCards(member, cards);
     const overlay = make('div', 'member-delete-overlay');
     overlay.setAttribute('role', 'presentation');
     const dialog = make('section', 'member-delete-dialog member-kta-link-dialog');
@@ -3283,31 +2043,34 @@
     dialog.setAttribute('aria-labelledby', 'member-kta-link-title');
     const title = make('h3', '', 'Hubungkan KTA ke pendaftaran');
     title.id = 'member-kta-link-title';
-    const note = make('p', 'member-delete-warning', `Pilih KTA yang benar untuk ${member.full_name} · ${member.district}. Tautan ini hanya menghubungkan kedua data—nomor, data, dan status KTA tidak berubah.`);
+    const note = make('p', 'member-delete-warning', `Daftar hanya menampilkan KTA yang nama dan kecamatannya cocok dengan ${member.full_name} · ${member.district}. Pastikan identitasnya sebelum menautkan.`);
     const form = make('form');
     const label = make('label');
     label.append(make('span', '', 'Kartu KTA yang akan ditautkan'));
     const select = make('select'); select.required = true;
     select.append(new Option('— Pilih nomor dan nama KTA —', ''));
     const statusLabels = { menunggu: 'Menunggu persetujuan', aktif: 'Aktif/disetujui', ditolak: 'Ditolak', nonaktif: 'Nonaktif', dicabut: 'Dicabut' };
-    unlinkedCards.forEach(card => select.append(new Option(`${card.member_number} · ${card.full_name} · ${card.district} · ${statusLabels[card.status] || card.status}`, card.id)));
-    if (suggestedCardId && unlinkedCards.some(card => card.id === suggestedCardId)) select.value = suggestedCardId;
+    matchingCards.forEach(card => select.append(new Option(`${card.member_number} · ${card.full_name} · ${card.district} · ${statusLabels[card.status] || card.status}`, card.id)));
+    if (suggestedCardId && matchingCards.some(card => card.id === suggestedCardId)) select.value = suggestedCardId;
     label.append(select);
     form.append(label);
     const actions = make('div', 'member-delete-actions');
     const cancel = make('button', 'admin-button admin-button-outline', 'Batal'); cancel.type = 'button';
     const submit = make('button', 'admin-button admin-button-red', 'Hubungkan KTA'); submit.type = 'submit';
-    submit.disabled = !unlinkedCards.length;
+    submit.disabled = !matchingCards.length;
     actions.append(cancel, submit); form.append(actions);
-    if (!unlinkedCards.length) form.prepend(make('p', 'privacy-mini', 'Belum ada KTA yang tersedia untuk ditautkan. Buat kartu terlebih dahulu melalui modul Kartu anggota.'));
+    if (!matchingCards.length) form.prepend(make('p', 'privacy-mini', 'Tidak ada KTA tanpa tautan yang cocok. Kartu milik anggota lain sengaja tidak ditampilkan. Periksa ejaan nama/kecamatan atau buat KTA untuk pendaftar ini.'));
     dialog.append(title, note, form); overlay.append(dialog); document.body.append(overlay);
     const close = () => overlay.remove();
     cancel.addEventListener('click', close);
     overlay.addEventListener('click', event => { if (event.target === overlay) close(); });
     form.addEventListener('submit', async event => {
       event.preventDefault();
-      const card = unlinkedCards.find(item => item.id === select.value);
-      if (!card) { setMessage('Pilih KTA yang akan dihubungkan.', 'error'); return; }
+      const card = matchingCards.find(item => item.id === select.value);
+      if (!card || normalizeMemberConfirmation(card.full_name) !== normalizeMemberConfirmation(member.full_name)
+        || normalizeMemberConfirmation(card.district) !== normalizeMemberConfirmation(member.district)) {
+        setMessage('KTA tidak sesuai nama dan kecamatan pendaftar. Tidak ada kartu milik orang lain yang dapat ditautkan dari dialog ini.', 'error'); return;
+      }
       const confirmed = window.confirm(`Tautkan ${card.member_number} (${card.full_name}, ${card.district}) ke pendaftaran ${member.full_name} (${member.district})? Pastikan ini orang yang sama.`);
       if (!confirmed) return;
       submit.disabled = true; cancel.disabled = true;
@@ -3375,7 +2138,6 @@
     const addressIn = make('textarea'); addressIn.name = 'address'; addressIn.required = true; addressIn.maxLength = 1000; addressIn.rows = 3;
     addressIn.value = member.address || ''; addressWrap.append(addressIn); grid.append(addressWrap); controls.address = addressIn;
     const divisions = [
-      ['— Belum ditentukan —', ''],
       ['Lembaga Bantuan Hukum / Advokasi Hukum Rakyat', 'Lembaga Bantuan Hukum / Advokasi Hukum Rakyat'],
       ['Squad Militansi — Pengamanan & Solidaritas', 'Squad Militansi — Pengamanan & Solidaritas'],
       ['Militansi Perempuan Indonesia (MPI Sidoarjo)', 'Militansi Perempuan Indonesia (MPI Sidoarjo)'],
@@ -3385,7 +2147,7 @@
       ['Seluruh bidang (Ketua DPD)', 'Seluruh bidang (Ketua DPD)']
     ];
     const divisionField = addSelect('division', 'Bidang', divisions);
-    divisionField.append(make('small', 'privacy-mini', 'Pendaftar tidak lagi ditanya bidang. Isi di sini hanya bila perlu untuk catatan internal; untuk Ketua DPD pilih “Seluruh bidang (Ketua DPD)”.'));
+    divisionField.append(make('small', 'privacy-mini', 'Untuk Ketua DPD yang membawahi semua divisi, pilih “Seluruh bidang (Ketua DPD)”.'));
     addField('jabatan', 'Jabatan pengurus (kosongkan untuk anggota biasa)', 'text', { maxLength: 60 });
     addSelect('status', 'Status pendaftaran', MEMBER_STATUSES.map(value => [value.replaceAll('_',' '), value]));
     form.append(grid);
@@ -3454,7 +2216,7 @@
       const values = {};
       Object.entries(controls).forEach(([key, control]) => {
         const value = control.value.trim();
-        const next = ['jabatan','division','kelurahan','rt','rw','kode_pos','kota_luar'].includes(key) ? (value || null) : value;
+        const next = ['jabatan','kelurahan','rt','rw','kode_pos','kota_luar'].includes(key) ? (value || null) : value;
         const old = member[key] == null ? null : String(member[key]);
         if (String(next ?? '') !== String(old ?? '')) values[key] = next;
       });
@@ -3722,7 +2484,7 @@
   const DISTRICTS = ['Sidoarjo','Buduran','Gedangan','Waru','Sukodono','Taman','Krian','Balongbendo','Tarik','Prambon','Krembung','Porong','Jabon','Tanggulangin','Candi','Tulangan','Wonoayu','Sedati'];
   const JABATAN_GROUPS = [
     ['Dewan DPD', ['Dewan Penasihat DPD', 'Dewan Pembina DPD']],
-    ['Pengurus harian DPD', ['Ketua DPD', 'Sekretaris DPD', 'Ketua Harian DPD', 'Kepala Humas DPD', 'Bendahara DPD']],
+    ['Pengurus harian DPD', ['Ketua DPD', 'Wakil Ketua DPD', 'Sekretaris DPD', 'Ketua Harian DPD', 'Kepala Humas DPD', 'Bendahara DPD']],
     ['Departemen DPD', ['Wakil Ketua Departemen DPD', 'Pengurus Departemen DPD']],
     ['Ranting (desa)', ['Korja Ranting', 'Wakil Korja Ranting', 'Sekretaris Ranting']],
     ['Organisasi otonom', ['LBH GMPI', 'Squad Militansi', 'MPI Sidoarjo', 'SB GMPI', 'Tagana']],
@@ -3883,7 +2645,7 @@
     const numberIn = input('card-number', 'text', { required: true, maxLength: 40, placeholder: 'GMPI-SDA-2026-0001', autocomplete: 'off' });
     const districtIn = make('select'); districtIn.id = 'card-district'; districtIn.required = true;
     districtIn.append(new Option('Pilih kecamatan', ''));
-    DISTRICTS.forEach(d => districtIn.append(new Option(d, d)));
+    [...DISTRICTS, 'Di luar Kab. Sidoarjo'].forEach(d => districtIn.append(new Option(d, d)));
     const jabatanIn = input('card-jabatan', 'text', { required: true, maxLength: 60, value: 'Anggota' });
     const list = make('select'); list.id = 'card-jabatan-pick'; list.className = 'card-jabatan-pick';
     list.setAttribute('aria-label', 'Pilih jabatan');
@@ -4359,189 +3121,12 @@
     const listHeading = make('div', 'workspace-heading card-list-heading');
     const listTitle = make('div');
     listTitle.append(make('h3', '', 'Daftar kartu'));
-    listTitle.append(make('p', '', 'Ubah status menjadi Nonaktif atau Dicabut bila kartu hilang, disalahgunakan, atau anggota keluar — hasil pindai QR langsung berubah. Kartu yang dicabut/ditolak otomatis disembunyikan (bisa dimunculkan kembali), dan kartu aktif bisa dicetak sekaligus: centang beberapa kartu lalu tekan “Cetak terpilih”.'));
+    listTitle.append(make('p', '', 'Ubah status menjadi Nonaktif atau Dicabut bila kartu hilang, disalahgunakan, atau anggota keluar — hasil pindai QR langsung berubah.'));
     listHeading.append(listTitle);
     const search = input('card-search', 'search', { placeholder: 'Cari nama / nomor…' });
     search.className = 'card-search';
     listHeading.append(search);
     const listWrap = make('div');
-
-    // ---- Filter & cetak massal ----
-    let hideClosed = (() => {
-      try { return localStorage.getItem('gmpi.card.hideClosed') !== '0'; } catch (e) { return true; }
-    })();
-    const selectedIds = new Set();
-    const listTools = make('div', 'card-tools');
-    const hideWrap = make('label', 'card-tool-check');
-    const hideCheck = make('input'); hideCheck.type = 'checkbox'; hideCheck.checked = hideClosed;
-    hideCheck.addEventListener('change', () => {
-      hideClosed = hideCheck.checked;
-      try { localStorage.setItem('gmpi.card.hideClosed', hideClosed ? '1' : '0'); } catch (e) { /* abaikan */ }
-      renderList();
-    });
-    hideWrap.append(hideCheck, make('span', '', 'Sembunyikan kartu dicabut & ditolak'));
-    const bulkInfo = make('span', 'card-tool-info', '');
-    const pickAllBtn = make('button', 'admin-link-button', 'Pilih semua yang aktif');
-    pickAllBtn.type = 'button';
-    pickAllBtn.addEventListener('click', () => {
-      const printable = visibleCards().filter(c => c.status === 'aktif');
-      const allPicked = printable.length && printable.every(c => selectedIds.has(c.id));
-      printable.forEach(c => (allPicked ? selectedIds.delete(c.id) : selectedIds.add(c.id)));
-      renderList();
-    });
-    const printBtn = make('button', 'admin-button admin-button-red', 'Cetak terpilih');
-    printBtn.type = 'button';
-    printBtn.addEventListener('click', () => printSelected());
-    const pngBtn = make('button', 'admin-button admin-button-outline', 'Unduh PNG terpilih');
-    pngBtn.type = 'button';
-    pngBtn.addEventListener('click', () => downloadSelected());
-    listTools.append(hideWrap, bulkInfo, pickAllBtn, printBtn, pngBtn);
-
-    // Kartu yang lolos pencarian + filter tampilan.
-    const CLOSED_STATUS = ['dicabut', 'ditolak'];
-    function matchesSearch(c) {
-      const q = search.value.trim().toLowerCase();
-      return !q || c.full_name.toLowerCase().includes(q) || c.member_number.toLowerCase().includes(q);
-    }
-    function visibleCards() {
-      return cards.filter(c => matchesSearch(c) && (!hideClosed || !CLOSED_STATUS.includes(c.status)));
-    }
-
-    // Data kartu untuk cetak massal (tidak mengganggu formulir yang sedang dibuka).
-    function bulkData(card, photoImage) {
-      return {
-        name: card.full_name, number: card.member_number, district: card.district,
-        jabatan: card.jabatan || 'Anggota', issued: card.issued_at, validUntil: card.valid_until,
-        token: card.card_token || '', photo: photoImage || null,
-        photoZoom: 1, photoX: 0, photoY: 0, logo,
-        signerName: signerNameIn.value, signerTitle: signerTitleIn.value,
-        signature: null, stamp: ''
-      };
-    }
-    // Foto profil tersimpan milik pendaftar terkait (bila akun berhak membaca dokumen).
-    async function photoForCard(card) {
-      if (!canSeeMembers()) return null;
-      let reg = card.registration_id ? regRows.find(r => r.id === card.registration_id) : null;
-      if (!reg && card.registration_id) {
-        const linked = await client.from('member_registrations')
-          .select('id,full_name,district,jabatan,status,profile_object_key,created_at')
-          .eq('id', card.registration_id).maybeSingle();
-        if (!linked.error && linked.data) { reg = linked.data; regRows.unshift(reg); }
-      }
-      if (!reg?.profile_object_key) return null;
-      const { data, error } = await client.storage.from('member-documents').createSignedUrl(reg.profile_object_key, 300);
-      if (error || !data?.signedUrl) return null;
-      return window.GMPICard.loadImage(data.signedUrl, true);
-    }
-    function selectedCards() {
-      return [...selectedIds].map(id => cards.find(c => c.id === id)).filter(c => c && c.status === 'aktif');
-    }
-
-    async function printSelected() {
-      const list = selectedCards();
-      if (!list.length) { setMessage('Centang dulu kartu yang ingin dicetak (hanya kartu berstatus Aktif).', 'error'); return; }
-      const win = window.open('', '_blank');
-      if (!win) { setMessage('Jendela cetak diblokir browser. Izinkan pop-up untuk halaman ini lalu coba lagi.', 'error'); return; }
-      win.document.write('<!doctype html><meta charset="utf-8"><title>Menyiapkan kartu…</title><p style="font-family:Arial;padding:24px">Menyiapkan ' + list.length + ' kartu…</p>');
-      win.document.close();
-      setMessage(`Menyiapkan ${list.length} kartu untuk dicetak…`);
-
-      const nodes = [];
-      let noPhoto = 0;
-      for (const card of list) {
-        let img = null;
-        try { img = await photoForCard(card); } catch (e) { img = null; }
-        if (!img) noPhoto += 1;
-        const wrapCard = win.document.createElement('div');
-        wrapCard.className = 'card-slot';
-        const front = win.document.createElement('canvas');
-        const back = win.document.createElement('canvas');
-        window.GMPICard.draw(front, bulkData(card, img));
-        window.GMPICard.drawBack(back, bulkData(card, img));
-        front.className = 'face front';
-        back.className = 'face back';
-        wrapCard.append(front, back);
-        const label = win.document.createElement('div');
-        label.className = 'label';
-        label.textContent = `${card.member_number} · ${card.full_name}`;
-        wrapCard.append(label);
-        nodes.push(wrapCard);
-      }
-
-      const sheet = win.document.createElement('div');
-      sheet.className = 'sheet';
-      nodes.forEach(n => sheet.append(n));
-      const bar = win.document.createElement('div');
-      bar.className = 'bar';
-      const go = win.document.createElement('button');
-      go.textContent = 'Cetak sekarang';
-      go.addEventListener('click', () => win.print());
-      const closeBtn = win.document.createElement('button');
-      closeBtn.textContent = 'Tutup';
-      closeBtn.addEventListener('click', () => win.close());
-      bar.append(go, closeBtn, Object.assign(win.document.createElement('span'), {
-        className: 'note',
-        textContent: 'Ukuran tiap sisi 54 × 85,6 mm. Cetak di kertas PVC/art carton, skala 100% (jangan “fit to page”).'
-      }));
-      win.document.title = `Kartu anggota — ${list.length} kartu`;
-      win.document.body.replaceChildren(bar, sheet);
-      const style = win.document.createElement('style');
-      style.textContent = `
-        @page { size: A4; margin: 8mm; }
-        body { margin:0; background:#f4f2ed; font:12px/1.5 Arial,Helvetica,sans-serif; color:#171715; }
-        .bar { position:sticky; top:0; display:flex; gap:10px; align-items:center; flex-wrap:wrap; padding:10px 14px; background:#10100f; color:#fff; z-index:5; }
-        .bar button { font:700 12px Arial; padding:8px 16px; border:0; border-radius:5px; cursor:pointer; background:#e51c24; color:#fff; }
-        .bar button + button { background:#3a3833; }
-        .bar .note { color:#b9b5ac; font-size:11px; }
-        .sheet { display:grid; grid-template-columns:repeat(2, 54mm); gap:6mm; padding:10mm; justify-content:center; }
-        .card-slot { width:54mm; break-inside:avoid; page-break-inside:avoid; background:#fff; }
-        .card-slot canvas { width:54mm; height:85.6mm; display:block; }
-        .card-slot .back { margin-top:3mm; }
-        .label { font-size:6.5pt; color:#8a8478; text-align:center; padding-top:1.5mm; }
-        @media print {
-          body { background:#fff; }
-          .bar { display:none; }
-          .sheet { padding:0; gap:5mm; }
-          .label { display:none; }
-          .card-slot { outline:none; }
-        }
-      `;
-      win.document.head.append(style);
-      const photoNote = !noPhoto ? ''
-        : canSeeMembers()
-          ? ` ${noPhoto} kartu tampil tanpa foto karena pendaftar terkait belum punya foto profil tersimpan.`
-          : ` ${noPhoto} kartu tampil tanpa foto karena akun ini bukan Petugas Registrasi/Pemilik sehingga tidak dapat membaca dokumen pendaftar — minta Petugas Registrasi mencetak kartu tersebut.`;
-      setMessage(`${list.length} kartu siap dicetak.${photoNote} Tekan “Cetak sekarang” di jendela baru.`);
-    }
-
-    async function downloadSelected() {
-      const list = selectedCards();
-      if (!list.length) { setMessage('Centang dulu kartu yang ingin diunduh (hanya kartu berstatus Aktif).', 'error'); return; }
-      if (!window.confirm(`Unduh ${list.length * 2} berkas PNG (depan + belakang) untuk ${list.length} kartu? Browser mungkin menanyakan izin mengunduh banyak berkas.`)) return;
-      setMessage('Menyiapkan berkas PNG…');
-      let done = 0;
-      for (const card of list) {
-        let img = null;
-        try { img = await photoForCard(card); } catch (e) { img = null; }
-        for (const which of ['front', 'back']) {
-          const out = document.createElement('canvas');
-          if (which === 'front') window.GMPICard.draw(out, bulkData(card, img));
-          else window.GMPICard.drawBack(out, bulkData(card, img));
-          const blob = await new Promise(resolve => out.toBlob(resolve, 'image/png'));
-          if (blob) {
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `KTA-${card.member_number.replace(/[^A-Z0-9-]/gi, '_')}-${which === 'back' ? 'belakang' : 'depan'}.png`;
-            document.body.append(a); a.click(); a.remove();
-            setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-          }
-          await new Promise(resolve => setTimeout(resolve, 350));
-        }
-        done += 1;
-        setMessage(`Mengunduh kartu ${done} dari ${list.length}…`);
-      }
-      setMessage(`${list.length} kartu diunduh (${list.length * 2} berkas PNG). Periksa folder unduhan.`);
-    }
 
     const pendingBox = make('div', 'card-pending');
     async function decide(card, status) {
@@ -4573,52 +3158,17 @@
 
     function renderList() {
       renderPending();
+      const q = search.value.trim().toLowerCase();
       const rank = c => (c.status === 'menunggu' ? 0 : c.status === 'ditolak' ? 1 : 2);
-      const matched = visibleCards();
-      const shown = matched.slice().sort((a, b) => rank(a) - rank(b));
-      // Jumlah kartu yang disembunyikan karena statusnya ditutup (bukan karena pencarian).
-      const hiddenCount = hideClosed ? cards.filter(c => matchesSearch(c) && CLOSED_STATUS.includes(c.status)).length : 0;
-      const activeVisible = shown.filter(c => c.status === 'aktif');
-      // Buang pilihan yang kartunya sudah tidak aktif lagi.
-      [...selectedIds].forEach(id => {
-        const c = cards.find(x => x.id === id);
-        if (!c || c.status !== 'aktif') selectedIds.delete(id);
-      });
-      const picked = selectedIds.size;
-      const allPicked = activeVisible.length > 0 && activeVisible.every(c => selectedIds.has(c.id));
-      bulkInfo.textContent = picked
-        ? `${picked} kartu dipilih`
-        : `${activeVisible.length} kartu aktif siap dicetak${hiddenCount ? ` · ${hiddenCount} kartu disembunyikan` : ''}`;
-      pickAllBtn.textContent = allPicked ? 'Batalkan pilihan' : 'Pilih semua yang aktif';
-      printBtn.disabled = !picked;
-      pngBtn.disabled = !picked;
-      printBtn.textContent = picked ? `Cetak terpilih (${picked})` : 'Cetak terpilih';
-      pngBtn.textContent = picked ? `Unduh PNG terpilih (${picked})` : 'Unduh PNG terpilih';
-
-      const { wrap, body } = makeTable(['Pilih', 'No. anggota', 'Nama', 'Kecamatan / jabatan', 'Berlaku s/d', 'Status', 'Aksi']);
+      const shown = cards.filter(c => !q || c.full_name.toLowerCase().includes(q) || c.member_number.toLowerCase().includes(q))
+        .slice().sort((a, b) => rank(a) - rank(b));
+      const { wrap, body } = makeTable(['No. anggota', 'Nama', 'Kecamatan / jabatan', 'Berlaku s/d', 'Status', 'Aksi']);
       if (!shown.length) {
-        const empty = make('div', 'table-empty', cards.length
-          ? (hiddenCount ? 'Semua kartu pada daftar ini disembunyikan (dicabut/ditolak). Hilangkan centang “Sembunyikan kartu dicabut & ditolak” untuk menampilkannya kembali.' : 'Tidak ada kartu yang cocok.')
-          : 'Belum ada kartu yang diterbitkan.');
-        listWrap.replaceChildren(listTools, empty);
+        listWrap.replaceChildren(make('div', 'table-empty', cards.length ? 'Tidak ada kartu yang cocok.' : 'Belum ada kartu yang diterbitkan.'));
         return;
       }
       shown.forEach(card => {
         const row = make('tr');
-        const pickCell = make('td', 'card-pick-cell');
-        if (card.status === 'aktif') {
-          const cb = make('input'); cb.type = 'checkbox'; cb.checked = selectedIds.has(card.id);
-          cb.setAttribute('aria-label', `Pilih kartu ${card.member_number} untuk dicetak`);
-          cb.addEventListener('change', () => {
-            if (cb.checked) selectedIds.add(card.id); else selectedIds.delete(card.id);
-            renderList();
-          });
-          pickCell.append(cb);
-        } else {
-          pickCell.append(make('span', 'card-note', '—'));
-          pickCell.title = 'Hanya kartu berstatus Aktif yang bisa dicetak.';
-        }
-        row.append(pickCell);
         const numCell = make('td', 'mono-cell', card.member_number);
         if (isReservedNumber(card.member_number)) numCell.append(make('span', 'card-reserved-tag', '★ khusus'));
         row.append(numCell);
@@ -4691,7 +3241,7 @@
         row.append(actions);
         body.append(row);
       });
-      listWrap.replaceChildren(listTools, wrap);
+      listWrap.replaceChildren(wrap);
     }
     search.addEventListener('input', renderList);
 
