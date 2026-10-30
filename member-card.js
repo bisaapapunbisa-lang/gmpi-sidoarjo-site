@@ -258,7 +258,9 @@
     }
 
     // aksen sudut kanan atas: merah + garis emas + strip holografik
+    // (diperkecil ke 70% dari ukuran semula, berpusat di pojok kanan atas)
     ctx.save();
+    ctx.translate(W, 0); ctx.scale(0.7, 0.7); ctx.translate(-W, 0);
     const redG = ctx.createLinearGradient(W - 220, 0, W, 220);
     redG.addColorStop(0, C.red);
     redG.addColorStop(1, C.red2);
@@ -274,13 +276,18 @@
     ctx.beginPath(); ctx.moveTo(W - 206, 0); ctx.lineTo(W - 186, 0); ctx.lineTo(W, 186); ctx.lineTo(W, 206); ctx.closePath(); ctx.fill();
     ctx.strokeStyle = C.gold; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(W - 232, 0); ctx.lineTo(W, 232); ctx.stroke();
-    ctx.fillStyle = '#fff';
-    ctx.font = `800 11px ${F.body}`;
-    ctx.save();
-    ctx.translate(W - 50, 50);
-    ctx.rotate(Math.PI / 4);
-    spaced(ctx, 'KTA', 0, 4, 3, 'center');
     ctx.restore();
+
+    // teks "KTA" emas dengan bayangan tipis
+    ctx.save();
+    ctx.font = `800 10px ${F.body}`;
+    ctx.translate(W - 38, 38);
+    ctx.rotate(Math.PI / 4);
+    ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1;
+    const kg = ctx.createLinearGradient(-16, 0, 16, 0);
+    kg.addColorStop(0, C.gold); kg.addColorStop(0.5, C.goldHi); kg.addColorStop(1, C.gold);
+    ctx.fillStyle = kg;
+    spaced(ctx, 'KTA', 0, 3.5, 2.6, 'center');
     ctx.restore();
 
     // ---------- Header ----------
