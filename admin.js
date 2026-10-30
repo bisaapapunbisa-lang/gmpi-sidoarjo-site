@@ -4272,11 +4272,42 @@
       photoLoadSequence += 1;
       photo = img;
       registrationPhotoId = null;
-      photoSourceStatus.textContent = 'Foto manual dipilih dari perangkat. Foto ini tidak disimpan ulang ke server.';
+      photoSourceStatus.textContent = selectedRegistrationId
+        ? 'Foto pengganti dipilih. Klik Simpan untuk mengganti foto profil pendaftar.'
+        : 'Foto manual dipilih. Pilih pendaftar tersimpan sebelum menyimpan perubahan foto.';
       zoomIn.value = 100; xIn.value = 0; yIn.value = 0;
       photoTools.hidden = false;
       redraw();
     });
+
+    async function persistRegistrationProfilePhoto(registrationId) {
+      if (!isOwner()) return { error: 'Hanya Pemilik situs yang dapat mengganti foto profil pendaftar.' };
+      if (!photo) return { error: 'Foto pengganti tidak tersedia di pratinjau.' };
+      let reg = regRows.find(row => row.id === registrationId);
+      if (!reg) {
+        const lookup = await client.from('member_registrations').select('id,profile_object_key').eq('id', registrationId).maybeSingle();
+        if (lookup.error || !lookup.data) return { error: 'Data pendaftar tidak dapat dimuat untuk menyimpan foto.' };
+        reg = lookup.data; regRows.unshift(reg);
+      }
+      if (!reg.profile_object_key) return { error: 'Pendaftar ini belum memiliki lokasi foto profil tersimpan.' };
+      const sourceWidth = photo.naturalWidth || photo.width;
+      const sourceHeight = photo.naturalHeight || photo.height;
+      const scale = Math.min(1, 2200 / Math.max(sourceWidth, sourceHeight));
+      const exportCanvas = document.createElement('canvas');
+      exportCanvas.width = Math.max(1, Math.round(sourceWidth * scale));
+      exportCanvas.height = Math.max(1, Math.round(sourceHeight * scale));
+      exportCanvas.getContext('2d').drawImage(photo, 0, 0, exportCanvas.width, exportCanvas.height);
+      const blob = await new Promise(resolve => exportCanvas.toBlob(resolve, 'image/jpeg', 0.9));
+      if (!blob) return { error: 'Foto tidak berhasil disiapkan untuk disimpan.' };
+      if (blob.size > 5 * 1024 * 1024) return { error: 'Ukuran foto hasil proses melebihi batas 5 MB.' };
+      const { error } = await client.storage.from('member-documents').upload(reg.profile_object_key, blob, {
+        contentType: 'image/jpeg', cacheControl: '60', upsert: true
+      });
+      if (error) return { error: `Foto gagal disimpan: ${error.message || 'pastikan migrasi izin ganti foto sudah diterapkan.'}` };
+      registrationPhotoId = registrationId;
+      photoSourceStatus.textContent = 'Foto profil pengganti berhasil disimpan dan akan dipakai saat KTA dibuka kembali.';
+      return { error: null };
+    }
 
     formEl.addEventListener('submit', async event => {
       event.preventDefault();
@@ -4292,6 +4323,9 @@
         if (matches.length === 1) selectedRegistrationId = matches[0].id;
       }
       if (!editing || selectedRegistrationId || registrationSelectionTouched) payload.registration_id = selectedRegistrationId || null;
+      const photoReplacementPending = Boolean(photo && !registrationPhotoId && photoIn.files?.[0]);
+      if (photoReplacementPending && !selectedRegistrationId) { setMessage('Pilih pendaftar tersimpan terlebih dahulu agar foto pengganti dapat disimpan ke profilnya.', 'error'); return; }
+      if (photoReplacementPending && !isOwner()) { setMessage('Hanya Pemilik situs yang dapat mengganti foto profil pendaftar.', 'error'); return; }
       if (payload.full_name.length < 2) { setMessage('Isi nama lengkap anggota.', 'error'); return; }
       if (!payload.district) { setMessage('Pilih kecamatan.', 'error'); return; }
       if (payload.valid_until < payload.issued_at) { setMessage('Tanggal berlaku harus setelah tanggal terbit.', 'error'); return; }
@@ -4302,10 +4336,14 @@
           payload.member_number = newNumber;
         }
       }
+      const cardDataChanged = Boolean(editing && (
+        payload.full_name !== editing.full_name || payload.district !== editing.district ||
+        payload.jabatan !== editing.jabatan || payload.issued_at !== editing.issued_at ||
+        payload.valid_until !== editing.valid_until || Boolean(payload.member_number)
+      ));
       if (editing && approvalReady && editing.status !== 'menunggu') {
-        const changed = payload.full_name !== editing.full_name || payload.district !== editing.district || payload.jabatan !== editing.jabatan || payload.issued_at !== editing.issued_at || payload.valid_until !== editing.valid_until || Boolean(payload.member_number);
-        if (!changed && editing.status !== 'ditolak') { setMessage('Tidak ada perubahan data kartu.'); return; }
-        if (editing.status === 'aktif' && !window.confirm('Kartu ini sudah disetujui. Jika datanya diubah, kartu kembali MENUNGGU PERSETUJUAN dan hasil pindai QR berstatus “belum disetujui” sampai disetujui ulang. Lanjutkan?')) return;
+        if (!cardDataChanged && !photoReplacementPending && editing.status !== 'ditolak') { setMessage('Tidak ada perubahan data kartu.'); return; }
+        if (cardDataChanged && editing.status === 'aktif' && !window.confirm('Data kartu ini sudah disetujui. Jika data kartu diubah, statusnya kembali MENUNGGU PERSETUJUAN dan QR sementara berstatus “belum disetujui”. Lanjutkan?')) return;
       }
       saveBtn.disabled = true;
       let result;
@@ -4320,19 +4358,30 @@
         result = await client.from('member_cards').insert({ ...payload, member_number: number })
           .select(cols).single();
       }
-      saveBtn.disabled = false;
       if (result.error) {
+        saveBtn.disabled = false;
         const duplicate = String(result.error.code) === '23505';
         setMessage(duplicate ? 'Nomor anggota sudah dipakai kartu lain. Gunakan nomor berbeda.' : cardError(result.error, 'Kartu gagal disimpan. Pastikan migrasi kartu sudah dijalankan dan peran Anda Pemilik/Petugas Registrasi.'), 'error');
         return;
       }
       const wasNew = !editing;
       editing = result.data;
+      let photoSaveError = null;
+      if (photoReplacementPending) {
+        const photoResult = await persistRegistrationProfilePhoto(selectedRegistrationId);
+        photoSaveError = photoResult.error;
+      }
+      saveBtn.disabled = false;
       cards = [editing, ...cards.filter(c => c.id !== editing.id)];
       renderList();
       refillJabatanPick();
       setMode();
-      if (editing.status === 'menunggu') setMessage(wasNew ? 'Kartu tersimpan dan MENUNGGU PERSETUJUAN. QR belum berlaku; kartu bisa diunduh setelah disetujui Penyetuju Kartu.' : 'Perubahan tersimpan. Kartu menunggu persetujuan ulang dari Penyetuju Kartu.');
+      if (photoSaveError) {
+        photoSourceStatus.textContent = 'Foto profil belum tersimpan. Periksa pesan Admin lalu klik Simpan lagi untuk mencoba ulang.';
+        setMessage(photoSaveError, 'error');
+      } else if (photoReplacementPending && !cardDataChanged && editing.status === 'aktif') {
+        setMessage('Foto profil pendaftar berhasil diganti. Status KTA dan QR tetap sama; unduh/cetak ulang KTA untuk memakai foto baru.');
+      } else if (editing.status === 'menunggu') setMessage(wasNew ? 'Kartu tersimpan dan MENUNGGU PERSETUJUAN. QR belum berlaku; kartu bisa diunduh setelah disetujui Penyetuju Kartu.' : 'Perubahan tersimpan. Kartu menunggu persetujuan ulang dari Penyetuju Kartu.');
       else setMessage(wasNew ? 'Kartu terbit dan QR sudah aktif. Unduh sisi depan dan belakang (PNG) untuk dicetak.' : 'Perubahan kartu tersimpan. QR tetap sama, jadi kartu lama yang sudah dicetak tetap bisa diverifikasi.');
     });
 
@@ -4365,6 +4414,16 @@
     search.className = 'card-search';
     listHeading.append(search);
     const listWrap = make('div');
+    const selectedPrintIds = new Set();
+    const bulkPrintBar = make('div', 'card-bulk-print');
+    const selectAllActive = make('button', 'admin-button admin-button-outline', 'Pilih semua KTA aktif');
+    selectAllActive.type = 'button';
+    const printSelected = make('button', 'admin-button admin-button-red', 'Cetak pilihan (0)');
+    printSelected.type = 'button'; printSelected.disabled = true;
+    const printAllActive = make('button', 'admin-button admin-button-outline', 'Cetak semua KTA aktif');
+    printAllActive.type = 'button';
+    const bulkPrintHint = make('small', 'privacy-mini', 'Cetak menghasilkan lembar siap cetak dengan sisi depan dan belakang setiap KTA aktif.');
+    bulkPrintBar.append(selectAllActive, printSelected, printAllActive, bulkPrintHint);
 
     const pendingBox = make('div', 'card-pending');
     async function decide(card, status) {
@@ -4394,19 +4453,115 @@
       pendingBox.replaceChildren(make('b', '', '⏳ '), make('span', '', text + ' Kartu yang menunggu ada di bagian atas daftar.'));
     }
 
+    function printableCards() { return cards.filter(card => card.status === 'aktif' && card.valid_until >= today); }
+    function refreshBulkPrintBar() {
+      const active = printableCards();
+      for (const id of [...selectedPrintIds]) if (!active.some(card => card.id === id)) selectedPrintIds.delete(id);
+      const chosenCount = selectedPrintIds.size;
+      printSelected.textContent = `Cetak pilihan (${chosenCount})`;
+      printSelected.disabled = chosenCount === 0;
+      printAllActive.textContent = `Cetak semua KTA aktif (${active.length})`;
+      printAllActive.disabled = active.length === 0;
+      selectAllActive.textContent = active.length && active.every(card => selectedPrintIds.has(card.id)) ? 'Batalkan pilihan' : 'Pilih semua KTA aktif';
+      bulkPrintHint.textContent = `Tersedia ${active.length} KTA aktif dan belum kedaluwarsa. Cetak membuka lembar sisi depan-belakang untuk dicetak atau disimpan sebagai PDF.`;
+    }
+
+    async function printCards(cardList) {
+      if (!cardList.length) { setMessage('Tidak ada KTA aktif yang dipilih untuk dicetak.', 'error'); return; }
+      const printWindow = window.open('', '_blank');
+      if (!printWindow) { setMessage('Jendela cetak diblokir browser. Izinkan pop-up untuk situs Admin lalu coba lagi.', 'error'); return; }
+      printWindow.document.open();
+      printWindow.document.write('<!doctype html><html><head><meta charset="utf-8"><title>Cetak KTA GMPI</title></head><body><p>Menyiapkan lembar cetak KTA…</p></body></html>');
+      printWindow.document.close();
+      printWindow.document.head.insertAdjacentHTML('beforeend', `<style>
+        @page{size:A4 portrait;margin:9mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;margin:0;color:#111}
+        .print-help{font-size:11px;margin:0 0 5mm;text-align:center}.print-pair{display:flex;justify-content:center;align-items:flex-start;gap:8mm;margin:0 auto 8mm;break-inside:avoid;page-break-inside:avoid;width:max-content}
+        .print-item{text-align:center}.print-item img{display:block;width:54mm;height:85.6mm;object-fit:contain}.print-item small{display:block;font-size:8pt;margin-top:1mm}
+        @media print{.print-help{display:none}}
+      </style>`);
+      const doc = printWindow.document;
+      doc.body.replaceChildren();
+      const help = doc.createElement('p'); help.className = 'print-help';
+      help.textContent = 'KTA GMPI · Sisi depan dan belakang. Pilih ukuran aktual/100% pada dialog cetak.';
+      doc.body.append(help);
+      const images = [];
+      try {
+        await window.GMPICard.ready();
+        const defaultSignature = await window.GMPICard.defaultSignatureReady();
+        const signer = { signerName: signerNameIn.value.trim(), signerTitle: signerTitleIn.value.trim(), signature: signature || defaultSignature || null };
+        for (const card of cardList) {
+          let photoImage = null;
+          let registration = card.registration_id ? regRows.find(row => row.id === card.registration_id) : null;
+          if (!registration && card.registration_id && canSeeMembers()) {
+            const linked = await client.from('member_registrations').select('id,profile_object_key').eq('id', card.registration_id).maybeSingle();
+            registration = linked.data || null;
+          }
+          if (registration?.profile_object_key) {
+            const signed = await client.storage.from('member-documents').createSignedUrl(registration.profile_object_key, 120);
+            if (!signed.error && signed.data?.signedUrl) photoImage = await window.GMPICard.loadImage(signed.data.signedUrl, true);
+          }
+          const cardData = {
+            name: card.full_name, number: card.member_number, district: card.district, jabatan: card.jabatan,
+            issued: card.issued_at, validUntil: card.valid_until, token: card.card_token,
+            photo: photoImage, photoZoom: 1, photoX: 0, photoY: 0, logo, ...signer, stamp: ''
+          };
+          const front = document.createElement('canvas'); window.GMPICard.draw(front, cardData);
+          const back = document.createElement('canvas'); window.GMPICard.drawBack(back, cardData);
+          const pair = doc.createElement('section'); pair.className = 'print-pair';
+          for (const [label, source] of [['Depan', front], ['Belakang', back]]) {
+            const item = doc.createElement('div'); item.className = 'print-item';
+            const image = doc.createElement('img');
+            const half = document.createElement('canvas'); half.width = 638; half.height = 1012;
+            half.getContext('2d').drawImage(source, 0, 0, half.width, half.height);
+            image.src = half.toDataURL('image/png'); image.alt = `${label} KTA ${card.member_number}`;
+            item.append(image);
+            const caption = doc.createElement('small'); caption.textContent = `${label} · ${card.member_number}`; item.append(caption);
+            pair.append(item); images.push(image);
+          }
+          doc.body.append(pair);
+        }
+        await Promise.all(images.map(image => image.decode().catch(() => null)));
+        setMessage(`${cardList.length} KTA siap dicetak. Gunakan dialog cetak atau pilih “Simpan sebagai PDF”.`, 'ok');
+        setTimeout(() => { if (!printWindow.closed) printWindow.print(); }, 250);
+      } catch (error) {
+        printWindow.close();
+        setMessage(`Lembar cetak gagal dibuat: ${error?.message || 'coba muat ulang Admin.'}`, 'error');
+      }
+    }
+
+    selectAllActive.addEventListener('click', () => {
+      const active = printableCards();
+      if (active.length && active.every(card => selectedPrintIds.has(card.id))) selectedPrintIds.clear();
+      else active.forEach(card => selectedPrintIds.add(card.id));
+      renderList();
+    });
+    printSelected.addEventListener('click', () => printCards(printableCards().filter(card => selectedPrintIds.has(card.id))));
+    printAllActive.addEventListener('click', () => printCards(printableCards()));
+
     function renderList() {
       renderPending();
+      refreshBulkPrintBar();
       const q = search.value.trim().toLowerCase();
       const rank = c => (c.status === 'menunggu' ? 0 : c.status === 'ditolak' ? 1 : 2);
       const shown = cards.filter(c => !q || c.full_name.toLowerCase().includes(q) || c.member_number.toLowerCase().includes(q))
         .slice().sort((a, b) => rank(a) - rank(b));
-      const { wrap, body } = makeTable(['No. anggota', 'Nama', 'Kecamatan / jabatan', 'Berlaku s/d', 'Status', 'Aksi']);
+      const { wrap, body } = makeTable(['Pilih cetak', 'No. anggota', 'Nama', 'Kecamatan / jabatan', 'Berlaku s/d', 'Status', 'Aksi']);
       if (!shown.length) {
         listWrap.replaceChildren(make('div', 'table-empty', cards.length ? 'Tidak ada kartu yang cocok.' : 'Belum ada kartu yang diterbitkan.'));
         return;
       }
       shown.forEach(card => {
         const row = make('tr');
+        const printCell = make('td');
+        const printCheck = make('input'); printCheck.type = 'checkbox';
+        printCheck.checked = selectedPrintIds.has(card.id);
+        printCheck.disabled = !printableCards().some(activeCard => activeCard.id === card.id);
+        printCheck.setAttribute('aria-label', `Pilih KTA ${card.member_number} untuk dicetak`);
+        printCheck.addEventListener('change', () => {
+          if (printCheck.checked) selectedPrintIds.add(card.id); else selectedPrintIds.delete(card.id);
+          refreshBulkPrintBar();
+        });
+        printCell.append(printCheck); row.append(printCell);
         const numCell = make('td', 'mono-cell', card.member_number);
         if (isReservedNumber(card.member_number)) numCell.append(make('span', 'card-reserved-tag', '★ khusus'));
         row.append(numCell);
@@ -4483,7 +4638,7 @@
     }
     search.addEventListener('input', renderList);
 
-    workspace.replaceChildren(...[heading, setupNote, pendingBox, designer, listHeading, listWrap].filter(Boolean));
+    workspace.replaceChildren(...[heading, setupNote, pendingBox, designer, listHeading, bulkPrintBar, listWrap].filter(Boolean));
     resetForm();
     renderList();
     if (openCardOnNextRenderId) {
