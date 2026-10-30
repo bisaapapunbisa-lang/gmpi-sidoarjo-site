@@ -276,3 +276,14 @@
 .member-list-tab{border:1px solid #cbc5b8;background:#fffdf7;padding:8px 11px;color:#57534d;font-size:10px;font-weight:800;cursor:pointer}
 .member-list-tab:hover,.member-list-tab.is-active{background:#171715;color:#fff;border-color:#171715}
 .member-list-hint{margin:6px 0 12px}
+
+.card-bulk-print{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin:-6px 0 14px;padding:12px;background:#f3f0e8;border:1px solid #ded9ce}
+.card-bulk-print .admin-button{margin-top:0;min-height:38px}
+.card-bulk-print .privacy-mini{flex-basis:100%;margin:0}
+.card-bulk-print+div .admin-table td:first-child{width:72px;text-align:center}
+.card-bulk-print+div .admin-table td:first-child input[type=checkbox]{width:18px;height:18px;accent-color:#9a2928;cursor:pointer}
+.card-bulk-print+div .admin-table td:first-child input[type=checkbox]:disabled{cursor:not-allowed;opacity:.45}
+@media(max-width:640px){.card-bulk-print{align-items:stretch}.card-bulk-print .admin-button{flex:1 1 100%}}
+
+.card-actions .card-permanent-delete{color:#9a2928;font-weight:900;border:1px solid #d5b4af;padding:5px 7px;text-align:left}
+.card-actions .card-permanent-delete:hover{background:#f7e5e5;color:#702326}
