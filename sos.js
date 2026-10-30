@@ -161,6 +161,17 @@
     return lines.join('\n');
   }
   function ready() {
+    if (!hasDb) {
+      msgEl.textContent = 'Pengecekan keanggotaan sedang tidak tersedia. Coba lagi saat jaringan pulih, atau telepon 112 bila darurat.';
+      msgEl.className = 'sos-msg is-err';
+      return false;
+    }
+    if (!numberIn.value.trim() || !phoneIn || !phoneIn.value.trim()) {
+      msgEl.textContent = 'Nomor KTA dan nomor HP yang terdaftar wajib diisi.';
+      msgEl.className = 'sos-msg is-err';
+      (!numberIn.value.trim() ? numberIn : phoneIn).focus();
+      return false;
+    }
     if (!chosenType()) {
       msgEl.textContent = 'Pilih dulu apa yang terjadi (langkah 1).';
       msgEl.className = 'sos-msg is-err';
@@ -178,7 +189,18 @@
   // ---------- Catat untuk Tim Siaga ----------
   function record() {
     if (!hasDb) return Promise.resolve(null);
-    if (active) { pushLocation(true); return Promise.resolve(active); }
+    if (active) {
+      return rpc('sos_status', { p_id: active.id, p_token: active.token }).then(status => {
+        if (!status) { endActive(true); return record(); }
+        if (active.memberName) nameIn.value = active.memberName;
+        pushLocation(true);
+        return active;
+      }).catch(() => {
+        msgEl.textContent = 'Pengecekan keanggotaan gagal karena jaringan. Coba lagi atau telepon 112 bila darurat.';
+        msgEl.className = 'sos-msg is-err';
+        return null;
+      });
+    }
     if (submitting) return submitting;
     submitting = rpc('submit_sos', {
       p_name: nameIn.value.trim() || 'Tanpa nama',
@@ -192,7 +214,9 @@
     }).then(rows => {
       const row = Array.isArray(rows) ? rows[0] : rows;
       if (!row || !row.id) return null;
-      active = { id: row.id, token: row.token, at: Date.now() };
+      if (row.member_name) nameIn.value = row.member_name;
+      saveProfile();
+      active = { id: row.id, token: row.token, at: Date.now(), verified: true, memberName: row.member_name || '' };
       lastSent = best ? { ...best, sentAt: Date.now() } : null;
       try { localStorage.setItem(ACTIVE_KEY, JSON.stringify(active)); } catch (e) { /* abaikan */ }
       showLive('baru');
@@ -200,8 +224,11 @@
       schedulePoll();
       return active;
     }).catch(err => {
-      if (err && err.status === 400 && /sudah tercatat|Terlalu banyak/i.test(err.message)) {
-        msgEl.textContent = err.message;
+      if (err && err.status === 400) {
+        msgEl.textContent = err.message || 'Data anggota tidak dapat diverifikasi.';
+        msgEl.className = 'sos-msg is-err';
+      } else {
+        msgEl.textContent = 'Pengecekan anggota gagal karena jaringan. Coba lagi atau telepon 112 bila darurat.';
         msgEl.className = 'sos-msg is-err';
       }
       return null;
@@ -210,23 +237,27 @@
   }
 
   function openWa(number) {
-    const text = encodeURIComponent(buildMessage());
-    const url = number ? `https://wa.me/${number}?text=${text}` : `https://wa.me/?text=${text}`;
-    const saving = record(); // mulai mencatat sebelum WhatsApp dibuka
-    msgEl.textContent = 'WhatsApp dibuka — tekan tombol KIRIM di WhatsApp. Lalu kembali ke halaman ini agar lokasi terus diperbarui untuk Tim Siaga.';
-    msgEl.className = 'sos-msg is-ok';
+    // Buka tab kosong secara sinkron agar tidak dianggap popup setelah RPC selesai.
     let win = null;
-    try { win = window.open(url, '_blank'); if (win) win.opener = null; } catch (e) { win = null; }
-    if (!win) {
-      // Pop-up diblokir: tunggu pencatatan sebentar, lalu buka WhatsApp di tab ini.
-      Promise.race([saving, new Promise(r => setTimeout(r, 2500))]).then(() => { window.location.href = url; });
-    }
+    try { win = window.open('about:blank', '_blank'); if (win) win.opener = null; } catch (e) { win = null; }
+    msgEl.textContent = 'Memeriksa KTA aktif dan nomor HP terdaftar…';
+    msgEl.className = 'sos-msg';
+    record().then(saved => {
+      if (!saved) { if (win) win.close(); return; }
+      const text = encodeURIComponent(buildMessage());
+      const url = number ? `https://wa.me/${number}?text=${text}` : `https://wa.me/?text=${text}`;
+      msgEl.textContent = 'Data anggota cocok. WhatsApp dibuka — tekan tombol KIRIM di WhatsApp.';
+      msgEl.className = 'sos-msg is-ok';
+      if (win) win.location.replace(url);
+      else window.location.href = url;
+    });
   }
   piketBtn.addEventListener('click', () => { if (ready()) openWa(piketNumber); });
   groupBtn.addEventListener('click', () => { if (ready()) openWa(''); });
   copyBtn.addEventListener('click', async () => {
-    if (!chosenType()) { ready(); return; }
-    record();
+    if (!ready()) return;
+    const saved = await record();
+    if (!saved) return;
     try {
       await navigator.clipboard.writeText(buildMessage());
       msgEl.textContent = 'Pesan disalin. Tempel di WhatsApp / SMS.';

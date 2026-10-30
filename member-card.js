@@ -115,6 +115,17 @@
     const chars = [...String(text)];
     return chars.reduce((a, ch) => a + ctx.measureText(ch).width, 0) + spacing * Math.max(0, chars.length - 1);
   }
+  function spacedStroke(ctx, text, x, y, spacing, align = 'left') {
+    const chars = [...String(text)];
+    const widths = chars.map(ch => ctx.measureText(ch).width);
+    const total = widths.reduce((a, b) => a + b, 0) + spacing * Math.max(0, chars.length - 1);
+    let cx = align === 'center' ? x - total / 2 : align === 'right' ? x - total : x;
+    const prevAlign = ctx.textAlign;
+    ctx.textAlign = 'left';
+    chars.forEach((ch, i) => { ctx.strokeText(ch, cx, y); cx += widths[i] + spacing; });
+    ctx.textAlign = prevAlign;
+    return total;
+  }
 
   function drawCover(ctx, img, x, y, w, h, zoom = 1, offX = 0, offY = 0) {
     const iw = img.naturalWidth || img.width;
@@ -317,9 +328,18 @@
     ctx.fillStyle = C.muted;
     ctx.font = `600 9.5px ${F.body}`;
     spaced(ctx, 'GERAKAN MILITANSI PEJUANG INDONESIA', 238, 44, 1.5);
-    ctx.fillStyle = C.white;
+    ctx.save();
     ctx.font = `120px ${F.display}`;
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 2.6;
+    // Lapisan merah bergeser memberi aksen cetak bertumpuk; huruf utama merah berpinggir putih.
+    ctx.fillStyle = 'rgba(229,28,36,.62)';
+    spaced(ctx, 'GMPI', 239, 169, 4);
+    ctx.strokeStyle = C.white;
+    spacedStroke(ctx, 'GMPI', 236, 166, 4);
+    ctx.fillStyle = C.red;
     spaced(ctx, 'GMPI', 236, 166, 4);
+    ctx.restore();
     ctx.fillStyle = C.gold;
     ctx.font = `800 13px ${F.body}`;
     spaced(ctx, 'DPD SIDOARJO', 243, 186, 4.2);
@@ -600,9 +620,17 @@
       ctx.strokeStyle = color; ctx.beginPath(); ctx.arc(lx, ly, lr + 5, a, b); ctx.stroke();
     });
     ctx.textAlign = 'right';
-    ctx.fillStyle = C.white;
+    ctx.save();
     ctx.font = `34px ${F.display}`;
+    ctx.lineJoin = 'round';
+    ctx.lineWidth = 1.2;
+    ctx.fillStyle = 'rgba(229,28,36,.6)';
+    spaced(ctx, 'GMPI', W - 116, 74, 2, 'right');
+    ctx.strokeStyle = C.white;
+    spacedStroke(ctx, 'GMPI', W - 118, 72, 2, 'right');
+    ctx.fillStyle = C.red;
     spaced(ctx, 'GMPI', W - 118, 72, 2, 'right');
+    ctx.restore();
     ctx.fillStyle = C.gold;
     ctx.font = `800 9.5px ${F.body}`;
     spaced(ctx, 'DPD SIDOARJO', W - 118, 90, 3, 'right');

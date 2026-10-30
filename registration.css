@@ -4,3 +4,11 @@
 @media(max-width:760px){.join-section{grid-template-columns:1fr;gap:24px}.join-copy{padding-top:0}.join-security{max-width:100%}.join-form-wrap.registration-wrap{grid-column:auto;padding:22px 18px}}
 @media(max-width:430px){.upload-grid{grid-template-columns:1fr}.registration-heading{align-items:flex-start;flex-direction:column;gap:6px}.gender-field{flex-wrap:wrap;gap:10px}.gender-field legend{width:100%;margin:0 0 1px}}
 .join-form-wrap .form-row-3{grid-template-columns:1fr 1fr 1fr}@media(max-width:430px){.join-form-wrap .form-row-3{grid-template-columns:1fr;gap:0}}
+
+/* Tautan formulir yang mudah dibagikan dan lompat tepat ke kartu pendaftaran. */
+#pendaftaran{scroll-margin-top:100px}
+.join-share-actions{display:grid;justify-items:start;gap:9px;margin-top:18px}
+.join-share-open,.join-share-copy{display:inline-flex;align-items:center;gap:10px;min-height:40px;padding:0 13px;border:1px solid var(--gold);background:transparent;color:#f1d591;font-size:9px;font-weight:800;letter-spacing:.25px;cursor:pointer}
+.join-share-open:hover,.join-share-copy:hover{background:var(--gold);color:#17140c}
+.join-share-copy{border-color:rgba(255,255,255,.25);color:#d5d1c7}
+.join-share-actions>small{min-height:12px;color:#d6cfbb;font-size:8px;line-height:1.5}

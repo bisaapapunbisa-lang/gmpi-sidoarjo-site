@@ -28,7 +28,7 @@
   <main class="sos-main">
     <div class="sos-kicker"><span></span> TOMBOL DARURAT ANGGOTA</div>
     <h1>Butuh bantuan? <em>Saudara datang.</em></h1>
-    <p class="sos-lead">Pilih masalahnya, lalu tekan tombol merah. WhatsApp terbuka dengan pesan berisi <b>lokasi persis Anda di Google Maps</b>, siap dikirim ke piket siaga atau grup anggota.</p>
+    <p class="sos-lead">SOS hanya dapat dikirim oleh anggota aktif setelah nomor KTA dan HP terdaftar cocok. Pilih masalahnya, lalu kirim ke nomor WhatsApp piket tetap; Anda tetap perlu menekan tombol Kirim di WhatsApp.</p>
 
     <form class="sos-form" id="sos-form" novalidate>
       <fieldset class="sos-step">
@@ -56,16 +56,16 @@
       <fieldset class="sos-step">
         <legend><b>3</b> Data singkat <small>(diingat di HP ini)</small></legend>
         <div class="sos-row">
-          <label>Nama<input id="sos-name" name="name" type="text" maxlength="60" autocomplete="name" placeholder="Nama Anda"></label>
-          <label>No. anggota <small>(opsional)</small><input id="sos-number" name="number" type="text" maxlength="40" autocomplete="off" placeholder="GMPI-SDA-…"></label>
+          <label>Nama <small>(akan mengikuti nama resmi pada KTA)</small><input id="sos-name" name="name" type="text" maxlength="60" autocomplete="name" placeholder="Diisi otomatis setelah verifikasi"></label>
+          <label>No. anggota / KTA<input id="sos-number" name="number" type="text" maxlength="40" autocomplete="off" placeholder="GMPI-SDA-…" required></label>
         </div>
-        <label>No. HP / WhatsApp <small>(agar Tim Siaga bisa menelepon)</small><input id="sos-phone" name="phone" type="tel" inputmode="tel" maxlength="20" autocomplete="tel" placeholder="08xx xxxx xxxx"></label>
+        <label>No. HP terdaftar <small>(harus sama dengan data pendaftaran)</small><input id="sos-phone" name="phone" type="tel" inputmode="tel" maxlength="20" autocomplete="tel" placeholder="08xx xxxx xxxx" required></label>
         <label>Keterangan / patokan <small>(opsional)</small><textarea id="sos-note" name="note" maxlength="240" rows="2" placeholder="Contoh: depan Indomaret Jl. Raya Waru, motor ditabrak, butuh ambulans"></textarea></label>
       </fieldset>
 
       <div class="sos-actions">
         <button type="button" class="sos-send" id="sos-send-piket"><span class="sos-send-ring" aria-hidden="true"></span><b>KIRIM KE PIKET SIAGA</b><small>lewat WhatsApp</small></button>
-        <button type="button" class="sos-alt" id="sos-send-group">Kirim ke grup WA / saudara lain</button>
+        <button type="button" class="sos-alt" id="sos-send-group">Bagikan pesan ke grup / saudara lain</button>
         <button type="button" class="sos-copy" id="sos-copy">Salin pesan</button>
         <p class="sos-msg" id="sos-msg" role="status"></p>
       </div>
@@ -100,7 +100,7 @@
       </details>
       <details>
         <summary>🔒 Soal lokasi & privasi</summary>
-        <p>Lokasi hanya dibaca saat halaman ini terbuka. Saat Anda menekan tombol kirim, nama, no. HP, masalah, dan lokasi Anda dicatat untuk <b>Tim Siaga GMPI DPD Sidoarjo</b> agar bantuan cepat datang, dan <b>dihapus otomatis setelah 7 hari</b>. Selama permintaan masih aktif, lokasi diperbarui otomatis hanya ketika halaman ini terbuka; tekan “Saya sudah aman” untuk mengakhiri. Gunakan hanya untuk keadaan darurat sungguhan.</p>
+        <p>Lokasi hanya dibaca saat halaman ini terbuka. Setelah KTA aktif dan nomor HP terdaftar cocok, nama resmi KTA, no. HP, masalah, dan lokasi Anda dicatat untuk <b>Tim Siaga GMPI DPD Sidoarjo</b> agar bantuan cepat datang, dan <b>dihapus otomatis setelah 7 hari</b>. Selama permintaan masih aktif, lokasi diperbarui otomatis hanya ketika halaman ini terbuka; tekan “Saya sudah aman” untuk mengakhiri. Gunakan hanya untuk keadaan darurat sungguhan.</p>
       </details>
     </section>
   </main>

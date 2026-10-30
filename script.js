@@ -19,6 +19,19 @@
     nav.classList.remove('open');
   }));
 
+  const copyJoinLink = document.querySelector('#join-copy-link');
+  const joinLinkStatus = document.querySelector('#join-copy-status');
+  copyJoinLink?.addEventListener('click', async () => {
+    const url = 'https://www.gmpisidoarjo.com/#pendaftaran';
+    try {
+      await navigator.clipboard.writeText(url);
+      joinLinkStatus.textContent = 'Tautan pendaftaran tersalin. Silakan bagikan.';
+    } catch (error) {
+      window.prompt('Salin tautan pendaftaran ini:', url);
+      joinLinkStatus.textContent = 'Salin tautan di atas untuk dibagikan.';
+    }
+  });
+
   const sections = [...document.querySelectorAll('main section[id]')];
   if ('IntersectionObserver' in window) {
     const observer = new IntersectionObserver(entries => {
