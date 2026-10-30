@@ -129,6 +129,19 @@
     ctx.drawImage(img, dx, dy, dw, dh);
   }
 
+  // Tampilkan logo UTUH di dalam kotak (tanpa memotong sisi/ribbon).
+  function drawContain(ctx, img, x, y, w, h, pad = 0) {
+    const iw = img.naturalWidth || img.width;
+    const ih = img.naturalHeight || img.height;
+    if (!iw || !ih) return;
+    const boxW = Math.max(1, w - pad * 2);
+    const boxH = Math.max(1, h - pad * 2);
+    const k = Math.min(boxW / iw, boxH / ih);
+    const dw = iw * k;
+    const dh = ih * k;
+    ctx.drawImage(img, x + pad + (boxW - dw) / 2, y + pad + (boxH - dh) / 2, dw, dh);
+  }
+
   function drawQr(ctx, text, x, y, size) {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(x, y, size, size);
@@ -271,13 +284,15 @@
     ctx.restore();
 
     // ---------- Header ----------
-    const lx = 90, ly = 94, lr = 44;
+    const lx = 90, ly = 94, lr = 50;
     if (data.logo) {
       ctx.save();
       ctx.beginPath(); ctx.arc(lx, ly, lr, 0, Math.PI * 2); ctx.closePath();
-      ctx.fillStyle = '#10100f'; ctx.fill();
+      // Latar lingkaran disamakan dengan latar hitam logo agar tepinya menyatu.
+      ctx.fillStyle = '#0b0105'; ctx.fill();
       ctx.clip();
-      drawCover(ctx, data.logo, lx - lr, ly - lr, lr * 2, lr * 2);
+      // Logo utuh, diperbesar hingga hampir menyentuh lingkaran (jarak tipis 1.5 px).
+      drawContain(ctx, data.logo, lx - lr, ly - lr, lr * 2, lr * 2, 1.5);
       ctx.restore();
     } else {
       ctx.fillStyle = '#1f1e1b'; ctx.beginPath(); ctx.arc(lx, ly, lr, 0, Math.PI * 2); ctx.fill();
@@ -294,8 +309,8 @@
     ctx.font = `600 8.6px ${F.body}`;
     spaced(ctx, 'GERAKAN MILITANSI PEJUANG INDONESIA', 156, 62, 1.5);
     ctx.fillStyle = C.white;
-    ctx.font = `58px ${F.display}`;
-    spaced(ctx, 'GMPI', 154, 118, 3);
+    ctx.font = `66px ${F.display}`;
+    spaced(ctx, 'GMPI', 154, 118, 3.5);
     ctx.fillStyle = C.gold;
     ctx.font = `800 13px ${F.body}`;
     spaced(ctx, 'DPD SIDOARJO', 157, 140, 4.2);
