@@ -57,3 +57,45 @@
   .org-role{font-size:8px;letter-spacing:.6px}
   .org-board,.org-group,.org-branch,.org-depts{padding:16px 10px 14px}
 }
+
+/* Luxury dark-and-gold treatment for the organization chart */
+.struktur-section{--org-bg:#11110f;background:radial-gradient(ellipse at 50% -12%,rgba(198,155,59,.15),transparent 48%),radial-gradient(ellipse at 4% 58%,rgba(229,28,36,.055),transparent 34%),#11110f;color:#f5f0e5;border-top:1px solid rgba(224,184,85,.24)}
+.struktur-section .section-head .eyebrow{color:#d7c18a}
+.struktur-section .section-head .eyebrow-line{background:var(--gold-hi)}
+.struktur-section .section-head h2{color:#faf6ec}
+.struktur-section .section-intro{color:#bcb7ac}
+.org-chart{gap:0}
+.org-title{color:var(--gold-hi);font-size:9px;letter-spacing:2.3px}
+.org-title:after{content:"";display:block;width:30px;height:2px;margin:9px auto 0;background:linear-gradient(90deg,var(--red),var(--gold-hi));border-radius:2px}
+.org-link{background:linear-gradient(180deg,rgba(224,184,85,.8),rgba(198,155,59,.18))}
+.org-link.is-dashed{background:repeating-linear-gradient(180deg,rgba(224,184,85,.72) 0 5px,transparent 5px 10px)}
+.org-advisors{gap:20px}
+.org-board,.org-group,.org-branch,.org-depts{position:relative;padding:20px 18px 18px;border:1px solid rgba(224,184,85,.2);border-radius:18px;background:linear-gradient(145deg,rgba(255,255,255,.065),rgba(255,255,255,.024));box-shadow:inset 0 1px 0 rgba(255,255,255,.055),0 18px 40px rgba(0,0,0,.22);backdrop-filter:blur(8px)}
+.org-board{border-top:3px solid var(--gold)}
+.org-group{border-top:3px solid var(--red)}
+.org-branch{border-top:3px solid rgba(224,184,85,.78)}
+.org-depts{border-top:3px solid #8f7844}
+.org-people{gap:12px}
+.org-person:not(.is-lg){padding:12px 8px;border:1px solid rgba(224,184,85,.1);border-radius:14px;background:rgba(255,255,255,.025)}
+.org-photo{border-color:#c8a34a;box-shadow:0 8px 18px rgba(0,0,0,.36),0 0 0 4px rgba(198,155,59,.08)}
+.org-name{color:#f5f0e5}
+.org-role{color:#e2bd69}
+.org-person.is-empty .org-name{color:#a7a092}
+.org-person.is-empty .org-photo{color:#d0ad5c}
+.org-person.is-lg{min-width:280px;padding:22px 36px 20px;border:1px solid rgba(224,184,85,.46);border-top:4px solid var(--red);border-radius:20px;background:linear-gradient(145deg,#29251f,#171614);box-shadow:0 22px 48px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.08)}
+.org-person.is-lg .org-photo{border-color:var(--gold-hi);box-shadow:0 10px 24px rgba(0,0,0,.4),0 0 0 6px rgba(198,155,59,.1)}
+.org-person.is-lg .org-name{color:#fffaf0}
+.org-person.is-lg .org-role{color:var(--gold-hi)}
+.org-branches:before{background:linear-gradient(90deg,transparent,rgba(224,184,85,.7) 12%,rgba(224,184,85,.7) 88%,transparent)}
+.org-branch:before{background:rgba(224,184,85,.72)}
+.org-branch .org-people{border-top-color:rgba(224,184,85,.28)}
+.org-dept-grid{gap:14px}
+.org-dept{padding:16px 12px;border:1px solid rgba(224,184,85,.18);border-radius:14px;background:rgba(255,255,255,.035)}
+.org-dept-name{color:#f2ead9}
+.org-dept.is-placeholder{color:#aaa395;border-color:rgba(224,184,85,.24)}
+.struktur-note{color:#a9a397}
+@media(max-width:760px){
+  .org-board,.org-group,.org-branch,.org-depts{padding:16px 10px 14px;border-radius:15px}
+  .org-person:not(.is-lg){padding:10px 6px}
+  .org-person.is-lg{min-width:0;width:100%;padding:18px}
+}
