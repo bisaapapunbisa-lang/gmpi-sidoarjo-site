@@ -269,14 +269,14 @@
     const ready = vals.has('sos_whatsapp');
     const heading = make('div', 'workspace-heading');
     const hb = make('div');
-    hb.append(make('h3', '', 'Tombol Darurat (SOS)'), make('p', '', 'Anggota menekan tombol SOS di website → memilih masalah → WhatsApp terbuka dengan pesan berisi lokasi persis (link Google Maps). Pesan dikirim ke nomor piket di bawah atau ke grup WA pilihan anggota. Bila migrasi 0010 sudah dijalankan, permintaan juga tercatat di tab “Siaga” untuk Tim Siaga (dihapus otomatis setelah 7 hari).'));
+    hb.append(make('h3', '', 'Tombol Darurat (SOS)'), make('p', '', 'SOS hanya bisa dikirim setelah server mencocokkan KTA aktif dan nomor HP pendaftarannya. WhatsApp diarahkan ke satu nomor piket tetap (anggota masih menekan Kirim di WhatsApp). Permintaan juga tercatat di tab “Siaga” dan dihapus otomatis setelah 7 hari.'));
     heading.append(hb);
     const box = make('form', 'content-form shop-settings');
     if (!ready) box.append(make('div', 'admin-message is-error', 'Jalankan migrasi 202610200009_sos_piket.sql di Supabase SQL Editor agar nomor piket bisa disimpan. Sementara ini tombol darurat memakai nomor WhatsApp toko.'));
     const inp = input('sos-whatsapp', 'text', { placeholder: '6281234567890', maxLength: 20 });
     inp.value = vals.get('sos_whatsapp') || '';
     const fallback = vals.get('shop_whatsapp') || '';
-    box.append(field('Nomor WhatsApp piket siaga', inp, `Format 62…, contoh 6281234567890. Pilih nomor yang selalu aktif dan dipegang piket bergiliran. Bila dikosongkan, dipakai nomor toko${fallback ? ` (${fallback})` : ''}.`));
+    box.append(field('Nomor WhatsApp piket siaga', inp, `Format 62…, contoh 6281234567890. Gunakan satu nomor posko tetap yang tidak berubah tiap pergantian piket; petugas dapat memakai WhatsApp multi-device. Bila dikosongkan, dipakai nomor toko${fallback ? ` (${fallback})` : ''}.`));
     const save = make('button', 'admin-button admin-button-red', 'Simpan nomor piket');
     save.type = 'submit'; save.disabled = !ready;
     const open = make('a', 'admin-link-button', 'Buka halaman darurat ↗');
