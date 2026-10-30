@@ -4272,11 +4272,42 @@
       photoLoadSequence += 1;
       photo = img;
       registrationPhotoId = null;
-      photoSourceStatus.textContent = 'Foto manual dipilih dari perangkat. Foto ini tidak disimpan ulang ke server.';
+      photoSourceStatus.textContent = selectedRegistrationId
+        ? 'Foto pengganti dipilih. Klik Simpan untuk mengganti foto profil pendaftar.'
+        : 'Foto manual dipilih. Pilih pendaftar tersimpan sebelum menyimpan perubahan foto.';
       zoomIn.value = 100; xIn.value = 0; yIn.value = 0;
       photoTools.hidden = false;
       redraw();
     });
+
+    async function persistRegistrationProfilePhoto(registrationId) {
+      if (!isOwner()) return { error: 'Hanya Pemilik situs yang dapat mengganti foto profil pendaftar.' };
+      if (!photo) return { error: 'Foto pengganti tidak tersedia di pratinjau.' };
+      let reg = regRows.find(row => row.id === registrationId);
+      if (!reg) {
+        const lookup = await client.from('member_registrations').select('id,profile_object_key').eq('id', registrationId).maybeSingle();
+        if (lookup.error || !lookup.data) return { error: 'Data pendaftar tidak dapat dimuat untuk menyimpan foto.' };
+        reg = lookup.data; regRows.unshift(reg);
+      }
+      if (!reg.profile_object_key) return { error: 'Pendaftar ini belum memiliki lokasi foto profil tersimpan.' };
+      const sourceWidth = photo.naturalWidth || photo.width;
+      const sourceHeight = photo.naturalHeight || photo.height;
+      const scale = Math.min(1, 2200 / Math.max(sourceWidth, sourceHeight));
+      const exportCanvas = document.createElement('canvas');
+      exportCanvas.width = Math.max(1, Math.round(sourceWidth * scale));
+      exportCanvas.height = Math.max(1, Math.round(sourceHeight * scale));
+      exportCanvas.getContext('2d').drawImage(photo, 0, 0, exportCanvas.width, exportCanvas.height);
+      const blob = await new Promise(resolve => exportCanvas.toBlob(resolve, 'image/jpeg', 0.9));
+      if (!blob) return { error: 'Foto tidak berhasil disiapkan untuk disimpan.' };
+      if (blob.size > 5 * 1024 * 1024) return { error: 'Ukuran foto hasil proses melebihi batas 5 MB.' };
+      const { error } = await client.storage.from('member-documents').upload(reg.profile_object_key, blob, {
+        contentType: 'image/jpeg', cacheControl: '60', upsert: true
+      });
+      if (error) return { error: `Foto gagal disimpan: ${error.message || 'pastikan migrasi izin ganti foto sudah diterapkan.'}` };
+      registrationPhotoId = registrationId;
+      photoSourceStatus.textContent = 'Foto profil pengganti berhasil disimpan dan akan dipakai saat KTA dibuka kembali.';
+      return { error: null };
+    }
 
     formEl.addEventListener('submit', async event => {
       event.preventDefault();
@@ -4292,6 +4323,9 @@
         if (matches.length === 1) selectedRegistrationId = matches[0].id;
       }
       if (!editing || selectedRegistrationId || registrationSelectionTouched) payload.registration_id = selectedRegistrationId || null;
+      const photoReplacementPending = Boolean(photo && !registrationPhotoId && photoIn.files?.[0]);
+      if (photoReplacementPending && !selectedRegistrationId) { setMessage('Pilih pendaftar tersimpan terlebih dahulu agar foto pengganti dapat disimpan ke profilnya.', 'error'); return; }
+      if (photoReplacementPending && !isOwner()) { setMessage('Hanya Pemilik situs yang dapat mengganti foto profil pendaftar.', 'error'); return; }
       if (payload.full_name.length < 2) { setMessage('Isi nama lengkap anggota.', 'error'); return; }
       if (!payload.district) { setMessage('Pilih kecamatan.', 'error'); return; }
       if (payload.valid_until < payload.issued_at) { setMessage('Tanggal berlaku harus setelah tanggal terbit.', 'error'); return; }
@@ -4302,10 +4336,14 @@
           payload.member_number = newNumber;
         }
       }
+      const cardDataChanged = Boolean(editing && (
+        payload.full_name !== editing.full_name || payload.district !== editing.district ||
+        payload.jabatan !== editing.jabatan || payload.issued_at !== editing.issued_at ||
+        payload.valid_until !== editing.valid_until || Boolean(payload.member_number)
+      ));
       if (editing && approvalReady && editing.status !== 'menunggu') {
-        const changed = payload.full_name !== editing.full_name || payload.district !== editing.district || payload.jabatan !== editing.jabatan || payload.issued_at !== editing.issued_at || payload.valid_until !== editing.valid_until || Boolean(payload.member_number);
-        if (!changed && editing.status !== 'ditolak') { setMessage('Tidak ada perubahan data kartu.'); return; }
-        if (editing.status === 'aktif' && !window.confirm('Kartu ini sudah disetujui. Jika datanya diubah, kartu kembali MENUNGGU PERSETUJUAN dan hasil pindai QR berstatus “belum disetujui” sampai disetujui ulang. Lanjutkan?')) return;
+        if (!cardDataChanged && !photoReplacementPending && editing.status !== 'ditolak') { setMessage('Tidak ada perubahan data kartu.'); return; }
+        if (cardDataChanged && editing.status === 'aktif' && !window.confirm('Data kartu ini sudah disetujui. Jika data kartu diubah, statusnya kembali MENUNGGU PERSETUJUAN dan QR sementara berstatus “belum disetujui”. Lanjutkan?')) return;
       }
       saveBtn.disabled = true;
       let result;
@@ -4320,19 +4358,30 @@
         result = await client.from('member_cards').insert({ ...payload, member_number: number })
           .select(cols).single();
       }
-      saveBtn.disabled = false;
       if (result.error) {
+        saveBtn.disabled = false;
         const duplicate = String(result.error.code) === '23505';
         setMessage(duplicate ? 'Nomor anggota sudah dipakai kartu lain. Gunakan nomor berbeda.' : cardError(result.error, 'Kartu gagal disimpan. Pastikan migrasi kartu sudah dijalankan dan peran Anda Pemilik/Petugas Registrasi.'), 'error');
         return;
       }
       const wasNew = !editing;
       editing = result.data;
+      let photoSaveError = null;
+      if (photoReplacementPending) {
+        const photoResult = await persistRegistrationProfilePhoto(selectedRegistrationId);
+        photoSaveError = photoResult.error;
+      }
+      saveBtn.disabled = false;
       cards = [editing, ...cards.filter(c => c.id !== editing.id)];
       renderList();
       refillJabatanPick();
       setMode();
-      if (editing.status === 'menunggu') setMessage(wasNew ? 'Kartu tersimpan dan MENUNGGU PERSETUJUAN. QR belum berlaku; kartu bisa diunduh setelah disetujui Penyetuju Kartu.' : 'Perubahan tersimpan. Kartu menunggu persetujuan ulang dari Penyetuju Kartu.');
+      if (photoSaveError) {
+        photoSourceStatus.textContent = 'Foto profil belum tersimpan. Periksa pesan Admin lalu klik Simpan lagi untuk mencoba ulang.';
+        setMessage(photoSaveError, 'error');
+      } else if (photoReplacementPending && !cardDataChanged && editing.status === 'aktif') {
+        setMessage('Foto profil pendaftar berhasil diganti. Status KTA dan QR tetap sama; unduh/cetak ulang KTA untuk memakai foto baru.');
+      } else if (editing.status === 'menunggu') setMessage(wasNew ? 'Kartu tersimpan dan MENUNGGU PERSETUJUAN. QR belum berlaku; kartu bisa diunduh setelah disetujui Penyetuju Kartu.' : 'Perubahan tersimpan. Kartu menunggu persetujuan ulang dari Penyetuju Kartu.');
       else setMessage(wasNew ? 'Kartu terbit dan QR sudah aktif. Unduh sisi depan dan belakang (PNG) untuk dicetak.' : 'Perubahan kartu tersimpan. QR tetap sama, jadi kartu lama yang sudah dicetak tetap bisa diverifikasi.');
     });
 
