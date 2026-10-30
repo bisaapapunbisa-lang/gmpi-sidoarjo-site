@@ -285,7 +285,7 @@
 
     // ---------- Header ----------
     // Lingkaran logo diperbesar mengikuti desain KTA (cincin gradasi di luarnya).
-    const lx = 108, ly = 92, lr = 62;
+    const lx = 118, ly = 92, lr = 72;
     if (data.logo) {
       ctx.save();
       ctx.beginPath(); ctx.arc(lx, ly, lr, 0, Math.PI * 2); ctx.closePath();
@@ -308,14 +308,14 @@
 
     ctx.textAlign = 'left';
     ctx.fillStyle = C.muted;
-    ctx.font = `600 9px ${F.body}`;
-    spaced(ctx, 'GERAKAN MILITANSI PEJUANG INDONESIA', 196, 48, 1.5);
+    ctx.font = `600 9.5px ${F.body}`;
+    spaced(ctx, 'GERAKAN MILITANSI PEJUANG INDONESIA', 216, 40, 1.5);
     ctx.fillStyle = C.white;
-    ctx.font = `90px ${F.display}`;
-    spaced(ctx, 'GMPI', 194, 140, 3.5);
+    ctx.font = `104px ${F.display}`;
+    spaced(ctx, 'GMPI', 214, 146, 4);
     ctx.fillStyle = C.gold;
     ctx.font = `800 13px ${F.body}`;
-    spaced(ctx, 'DPD SIDOARJO', 199, 160, 4.2);
+    spaced(ctx, 'DPD SIDOARJO', 221, 166, 4.2);
 
     // ---------- Label kartu ----------
     ctx.font = `800 11.5px ${F.body}`;
