@@ -22,8 +22,6 @@
     body: "'GMPI Inter', 'Segoe UI', Arial, sans-serif",
     mono: "'GMPI Mono', 'Consolas', 'Courier New', monospace"
   };
-  // Warna latar logo GMPI (webp) supaya menyatu dengan lingkaran di kartu.
-  const LOGO_BG = '#0b0105';
   const MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MEI', 'JUN', 'JUL', 'AGU', 'SEP', 'OKT', 'NOV', 'DES'];
 
   const scriptSrc = document.currentScript && document.currentScript.src;
@@ -260,7 +258,9 @@
     }
 
     // aksen sudut kanan atas: merah + garis emas + strip holografik
+    // (diperkecil ke 70% dari ukuran semula, berpusat di pojok kanan atas)
     ctx.save();
+    ctx.translate(W, 0); ctx.scale(0.7, 0.7); ctx.translate(-W, 0);
     const redG = ctx.createLinearGradient(W - 220, 0, W, 220);
     redG.addColorStop(0, C.red);
     redG.addColorStop(1, C.red2);
@@ -276,65 +276,72 @@
     ctx.beginPath(); ctx.moveTo(W - 206, 0); ctx.lineTo(W - 186, 0); ctx.lineTo(W, 186); ctx.lineTo(W, 206); ctx.closePath(); ctx.fill();
     ctx.strokeStyle = C.gold; ctx.lineWidth = 1.5;
     ctx.beginPath(); ctx.moveTo(W - 232, 0); ctx.lineTo(W, 232); ctx.stroke();
-    ctx.fillStyle = '#fff';
-    ctx.font = `800 11px ${F.body}`;
-    ctx.save();
-    ctx.translate(W - 50, 50);
-    ctx.rotate(Math.PI / 4);
-    spaced(ctx, 'KTA', 0, 4, 3, 'center');
     ctx.restore();
+
+    // teks "KTA" emas dengan bayangan tipis
+    ctx.save();
+    ctx.font = `800 10px ${F.body}`;
+    ctx.translate(W - 38, 38);
+    ctx.rotate(Math.PI / 4);
+    ctx.shadowColor = 'rgba(0,0,0,.6)'; ctx.shadowBlur = 3; ctx.shadowOffsetY = 1;
+    const kg = ctx.createLinearGradient(-16, 0, 16, 0);
+    kg.addColorStop(0, C.gold); kg.addColorStop(0.5, C.goldHi); kg.addColorStop(1, C.gold);
+    ctx.fillStyle = kg;
+    spaced(ctx, 'KTA', 0, 3.5, 2.6, 'center');
     ctx.restore();
 
     // ---------- Header ----------
-    const lx = 90, ly = 94, lr = 44;
+    // Lingkaran logo diperbesar mengikuti desain KTA (cincin gradasi di luarnya).
+    const lx = 130, ly = 104, lr = 84;
     if (data.logo) {
       ctx.save();
       ctx.beginPath(); ctx.arc(lx, ly, lr, 0, Math.PI * 2); ctx.closePath();
-      // Latar lingkaran disamakan dengan latar gelap logo agar tepi kotak logo tidak terlihat.
-      ctx.fillStyle = LOGO_BG; ctx.fill();
+      // Latar lingkaran disamakan dengan latar hitam logo agar tepinya menyatu.
+      ctx.fillStyle = '#0b0105'; ctx.fill();
       ctx.clip();
-      // Logo utuh di dalam lingkaran (sebelumnya drawCover memotong tepi perisai & ribbon GMPI).
-      drawContain(ctx, data.logo, lx - lr, ly - lr, lr * 2, lr * 2, lr * 0.30);
+      // Logo utuh, diperbesar hingga hampir menyentuh lingkaran (jarak tipis 1.5 px).
+      // Crest ~86% dari lingkaran, sisanya ruang gelap di tepi (seperti desain).
+      drawContain(ctx, data.logo, lx - lr, ly - lr, lr * 2, lr * 2, lr * 0.14);
       ctx.restore();
     } else {
       ctx.fillStyle = '#1f1e1b'; ctx.beginPath(); ctx.arc(lx, ly, lr, 0, Math.PI * 2); ctx.fill();
     }
     // ring khas situs (segmen cyan / merah / emas)
-    ctx.lineWidth = 2.6;
+    ctx.lineWidth = 4.5;
     ctx.lineCap = 'round';
     [[C.cyan, -0.35, 0.25], [C.red, 1.6, 2.25], [C.goldHi, 3.6, 4.35], ['rgba(100,244,255,.25)', 0, Math.PI * 2]].forEach(([color, a, b]) => {
-      ctx.strokeStyle = color; ctx.beginPath(); ctx.arc(lx, ly, lr + 7, a, b); ctx.stroke();
+      ctx.strokeStyle = color; ctx.beginPath(); ctx.arc(lx, ly, lr + 6, a, b); ctx.stroke();
     });
 
     ctx.textAlign = 'left';
     ctx.fillStyle = C.muted;
-    ctx.font = `600 8.6px ${F.body}`;
-    spaced(ctx, 'GERAKAN MILITANSI PEJUANG INDONESIA', 156, 62, 1.5);
+    ctx.font = `600 9.5px ${F.body}`;
+    spaced(ctx, 'GERAKAN MILITANSI PEJUANG INDONESIA', 238, 44, 1.5);
     ctx.fillStyle = C.white;
-    ctx.font = `58px ${F.display}`;
-    spaced(ctx, 'GMPI', 154, 118, 3);
+    ctx.font = `120px ${F.display}`;
+    spaced(ctx, 'GMPI', 236, 166, 4);
     ctx.fillStyle = C.gold;
     ctx.font = `800 13px ${F.body}`;
-    spaced(ctx, 'DPD SIDOARJO', 157, 140, 4.2);
+    spaced(ctx, 'DPD SIDOARJO', 243, 186, 4.2);
 
     // ---------- Label kartu ----------
     ctx.font = `800 11.5px ${F.body}`;
     const labelText = 'KARTU TANDA ANGGOTA';
     const labelW = spacedWidth(ctx, labelText, 3) + 32;
     ctx.fillStyle = C.red;
-    rr(ctx, 40, 176, labelW, 30, 4); ctx.fill();
+    rr(ctx, 40, 206, labelW, 30, 4); ctx.fill();
     ctx.fillStyle = '#fff';
-    spaced(ctx, labelText, 56, 196, 3);
+    spaced(ctx, labelText, 56, 226, 3);
     ctx.fillStyle = C.gold;
     ctx.font = `700 12px ${F.mono}`;
     ctx.textAlign = 'right';
-    ctx.fillText(`TERBIT ${issuedYear}`, W - 40, 196);
+    ctx.fillText(`TERBIT ${issuedYear}`, W - 40, 226);
     const yearW = ctx.measureText(`TERBIT ${issuedYear}`).width;
     ctx.strokeStyle = 'rgba(215,172,76,.55)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(40 + labelW + 12, 191); ctx.lineTo(W - 52 - yearW, 191); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(40 + labelW + 12, 221); ctx.lineTo(W - 52 - yearW, 221); ctx.stroke();
 
     // ---------- Foto ----------
-    const pw = 246, ph = 304, px = (W - pw) / 2 - 7, py = 236;
+    const pw = 246, ph = 286, px = (W - pw) / 2 - 7, py = 250;
     ctx.fillStyle = C.red;
     rr(ctx, px + 14, py + 14, pw, ph, 22); ctx.fill();
     ctx.save();
@@ -585,8 +592,8 @@
     // ---------- Header ----------
     const lx = W - 70, ly = 70, lr = 28;
     if (data.logo) {
-      ctx.save(); ctx.beginPath(); ctx.arc(lx, ly, lr, 0, Math.PI * 2); ctx.fillStyle = LOGO_BG; ctx.fill(); ctx.clip();
-      drawContain(ctx, data.logo, lx - lr, ly - lr, lr * 2, lr * 2, lr * 0.30); ctx.restore();
+      ctx.save(); ctx.beginPath(); ctx.arc(lx, ly, lr, 0, Math.PI * 2); ctx.fillStyle = '#10100f'; ctx.fill(); ctx.clip();
+      drawCover(ctx, data.logo, lx - lr, ly - lr, lr * 2, lr * 2); ctx.restore();
     }
     ctx.lineWidth = 2; ctx.lineCap = 'round';
     [[C.cyan, -0.35, 0.3], [C.red, 1.7, 2.3], [C.goldHi, 3.7, 4.3], ['rgba(100,244,255,.25)', 0, Math.PI * 2]].forEach(([color, a, b]) => {

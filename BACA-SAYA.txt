@@ -1,0 +1,66 @@
+========================================================
+PERBAIKAN LOGO HALAMAN UTAMA - PAKET FINAL
+========================================================
+
+MASALAH YANG KITA PERBAIKI
+--------------------------
+Logo di header, lingkaran hero, footer, favicon, dan gambar
+pratinjau share (WhatsApp/Facebook) semuanya sudah digantikan
+dengan LOGO BARU hasil restorasi (tajam). Paket lama hanya
+mengganti file, tetapi logo tetap tidak berubah karena:
+  1. Database Supabase masih menyimpan pengaturan "Logo situs"
+     yang menunjuk ke file logo LAMA (unggahan panel terdahulu).
+  2. Browser/CDN Vercel masih menampilkan file lama (cache).
+
+LANGKAH 1 - UNGGAH FILE (GitHub)
+--------------------------------
+Di repositori gmpi-sidoarjo-site, timpa/tambahkan file berikut
+sesuai foldernya (drag & drop di GitHub, pilih "Commit"):
+  - assets/logo-gmpi-sidoarjo-crop.webp   (logo utama situs)
+  - assets/logo-gmpi-sidoarjo.jpg         (logo cadangan)
+  - assets/favicon.png                    (ikon tab browser)
+  - assets/og-share.jpg                   (pratinjau saat link
+                                            dibagikan)
+Tunggu 1-2 menit sampai Vercel selesai redeploy.
+
+LANGKAH 2 - WAJIB: LEPAS LOGO LAMA DARI DATABASE
+------------------------------------------------
+1. Buka panel Admin -> menu "Isi situs" -> bagian "Logo situs".
+2. Di kotak "SEDANG DIPAKAI", klik tombol
+   **"Kembalikan logo bawaan"**.
+   (Ini memutus pengaturan lama yang tetap menunjuk file logo
+   lama - inilah akar sebab logo tidak pernah berubah.)
+3. Selesai. Situs otomatis memakai logo bawaan = logo baru.
+
+LANGKAH 3 - MUAT ULANG PAKSA - ANTI-CACHE
+---------------------------------
+Buka https://gmpi-sidoarjo-site.vercel.app lalu tekan
+Ctrl + Shift + R (muat paksa / hard refresh).
+Periksa: header kiri atas, lingkaran di hero, dan footer
+sekarang menampilkan logo baru yang tajam.
+
+OPSIONAL - JIKA INGIN UNGGAH LEWAT PANEL
+----------------------------------------
+Folder "logos/" berisi logo-gmpi-v2-1000.png (1 MB, lolos batas
+2 MB panel - file JPEG 2,4 MB kemarin ditolak panel karena
+melebihi batas). Boleh diunggah lewat "Pilih gambar logo baru"
+bila ingin logo tersimpan di database. Kolom nama di storage
+akan berbentuk logos/logo-gmpi-v2-1000.png.
+Tetap jalankan LANGKAH 3 setelahnya.
+
+CATATAN OG IMAGE
+----------------
+og-share.jpg digambar ulang: logo baru + semboyan lengkap
+"Setia Bersaudara Sampai Urat Nadi" (versi lama terpotong
+tampil sebagai "Naul"). Pratinjau share di WhatsApp baru akan
+mengikuti cache Meta/WhatsApp; bila masih tampil lama, tempel
+link situs di https://developers.facebook.com/tools/debug/
+lalu klik "Fetch new information".
+
+KONTEN PAKET (tanpa perlu mengubah kode HTML/JS)
+------------------------------------------------
+assets/logo-gmpi-sidoarjo-crop.webp
+assets/logo-gmpi-sidoarjo.jpg
+assets/favicon.png
+assets/og-share.jpg
+logos/logo-gmpi-v2-1000.png  (opsional, untuk panel)

@@ -1,0 +1,42 @@
+PANDUAN PASANG UNDANGAN DIGITAL + KONFIRMASI KEHADIRAN
+(pelan-pelan saja, ± 5 menit, tanpa menyentuh kode)
+
+LANGKAH 1 — Jalankan SQL satu kali (menyimpan jawaban)
+1. Buka https://supabase.com → login → pilih proyek GMPI.
+2. Di menu kiri klik "SQL Editor" → klik "+ New query".
+3. Buka file di dalam zip ini: supabase/migrations/202610210015_rsvp_rapat.sql
+   (klik dua kali, akan terbuka di aplikasi catatan/Word), lalu Salin SEMUA isinya.
+4. Tempel di kotak SQL Editor → klik tombol "Run".
+5. Muncul tulisan "Success" → selesai. Tutup halaman ini boleh.
+
+LANGKAH 2 — Unggah 3 file ke GitHub
+1. Buka halaman repo situs di https://github.com (repo yang sama seperti biasa).
+2. Klik "Add file" → "Upload files".
+3. Seret TIGA file dari zip ini: rsvp.html, rsvp.js, admin.js
+   (admin.js yang lama akan otomatis TERGANTI — memang begitu tujuannya:
+    versi baru ini menambahkan tab "Kehadiran" di panel Admin).
+4. Turun ke bawah → klik "Commit changes".
+5. Tunggu sekitar 1 menit sampai Vercel selesai membangun ulang situs.
+
+LANGKAH 3 — Coba dulu sebelum dibagikan
+1. Buka: https://www.gmpisidoarjo.com/rsvp
+2. Is formulir latihan (nama bebas) → kirim. Harus muncul "Terima kasih".
+3. Buka Admin → masuk → klik tab "Kehadiran" → jawaban latihan tadi terlihat.
+4. Klik "Kosongkan daftar (acara baru)" supaya data latihan hilang.
+   (Kalau tab "Kehadiran" belum muncul, tutup browser lalu buka lagi / muat ulang
+    halaman Admin sambil menekan Ctrl+Shift+R.)
+
+BAGIKAN KE GRUP WA (berurutan):
+1. Gambar poster undangan (file PNG seperti biasa).
+2. Isi file wa-undangan.txt (sudah termasuk tautan RSVP) — salin-tempel.
+3. Selesai. Jawaban anggota Anda pantau di Admin → tab "Kehadiran".
+   Tombol "Unduh daftar (CSV)" membuat berkas rekap untuk dibuka di Excel.
+   Tombol "Kosongkan daftar" dipakai saat mengumumkan ACARA BERIKUTNYA.
+
+CATATAN PRIVASI & KEAMANAN
+- Pengunjung hanya melihat angka rekap (tanpa nama). Daftar nama hanya terlihat
+  pengurus yang punya akun Admin.
+- Anggota yang salah memilih tinggal kirim ulang dengan nama yang sama —
+  jawaban terakhir yang dihitung.
+- Untuk rapat berikutnya: ganti detail acara di file rsvp.js (5 baris paling
+  atas, ada petunjuknya), unggah ulang rsvp.js, lalu kosongkan daftar.

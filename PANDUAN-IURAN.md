@@ -58,8 +58,7 @@ Cara bayar yang didukung (semua tanpa biaya tambahan, tanpa payment gateway):
 5. Klik **Simpan pengaturan iuran**, lalu buka `https://www.gmpisidoarjo.com/iuran`
    untuk memastikan nominal dan QRIS tampil benar.
 6. Klik **Buat teks pengumuman WhatsApp** → **Salin teks** → tempel di grup anggota.
-   Teksnya dibuat langsung dari pengaturan yang aktif, jadi tidak ada berkas terpisah
-   yang perlu disunting — cukup sunting kalimatnya di WhatsApp sebelum dikirim.
+   Tersedia juga file `wa-iuran.txt` untuk diubah manual.
 
 > Selama status masih **Tutup**, halaman `/iuran` tetap bisa dibuka tetapi formulir
 > pembayaran disembunyikan, jadi tidak ada anggota yang salah bayar.
