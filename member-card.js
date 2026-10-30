@@ -284,7 +284,8 @@
     ctx.restore();
 
     // ---------- Header ----------
-    const lx = 90, ly = 94, lr = 50;
+    // Lingkaran logo diperbesar mengikuti desain KTA (cincin gradasi di luarnya).
+    const lx = 108, ly = 92, lr = 62;
     if (data.logo) {
       ctx.save();
       ctx.beginPath(); ctx.arc(lx, ly, lr, 0, Math.PI * 2); ctx.closePath();
@@ -292,28 +293,29 @@
       ctx.fillStyle = '#0b0105'; ctx.fill();
       ctx.clip();
       // Logo utuh, diperbesar hingga hampir menyentuh lingkaran (jarak tipis 1.5 px).
-      drawContain(ctx, data.logo, lx - lr, ly - lr, lr * 2, lr * 2, 1.5);
+      // Crest ~86% dari lingkaran, sisanya ruang gelap di tepi (seperti desain).
+      drawContain(ctx, data.logo, lx - lr, ly - lr, lr * 2, lr * 2, lr * 0.14);
       ctx.restore();
     } else {
       ctx.fillStyle = '#1f1e1b'; ctx.beginPath(); ctx.arc(lx, ly, lr, 0, Math.PI * 2); ctx.fill();
     }
     // ring khas situs (segmen cyan / merah / emas)
-    ctx.lineWidth = 2.6;
+    ctx.lineWidth = 4.5;
     ctx.lineCap = 'round';
     [[C.cyan, -0.35, 0.25], [C.red, 1.6, 2.25], [C.goldHi, 3.6, 4.35], ['rgba(100,244,255,.25)', 0, Math.PI * 2]].forEach(([color, a, b]) => {
-      ctx.strokeStyle = color; ctx.beginPath(); ctx.arc(lx, ly, lr + 7, a, b); ctx.stroke();
+      ctx.strokeStyle = color; ctx.beginPath(); ctx.arc(lx, ly, lr + 6, a, b); ctx.stroke();
     });
 
     ctx.textAlign = 'left';
     ctx.fillStyle = C.muted;
-    ctx.font = `600 8.6px ${F.body}`;
-    spaced(ctx, 'GERAKAN MILITANSI PEJUANG INDONESIA', 156, 62, 1.5);
+    ctx.font = `600 9px ${F.body}`;
+    spaced(ctx, 'GERAKAN MILITANSI PEJUANG INDONESIA', 196, 48, 1.5);
     ctx.fillStyle = C.white;
-    ctx.font = `66px ${F.display}`;
-    spaced(ctx, 'GMPI', 154, 118, 3.5);
+    ctx.font = `90px ${F.display}`;
+    spaced(ctx, 'GMPI', 194, 140, 3.5);
     ctx.fillStyle = C.gold;
     ctx.font = `800 13px ${F.body}`;
-    spaced(ctx, 'DPD SIDOARJO', 157, 140, 4.2);
+    spaced(ctx, 'DPD SIDOARJO', 199, 160, 4.2);
 
     // ---------- Label kartu ----------
     ctx.font = `800 11.5px ${F.body}`;
