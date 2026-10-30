@@ -22,3 +22,13 @@
 .copyright{grid-column:1/-1;justify-self:start;font-size:8px;line-height:1.65;color:#807d76;white-space:normal}
 @media(max-width:1050px){.site-footer{grid-template-columns:minmax(180px,.8fr) minmax(300px,1.2fr);gap:24px 30px}.footer-links{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:760px){.site-footer{padding:32px 6% 20px;grid-template-columns:1fr;gap:23px}.footer-identity{gap:12px}.footer-contact-row{grid-template-columns:72px minmax(0,1fr);gap:10px}.footer-links{grid-column:auto;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px;padding:16px 0}.footer-links a{font-size:9px}.copyright{grid-column:auto}}
+
+/* Homepage leadership poster: retain the full portrait artwork on every screen. */
+.leadership-poster-layout{display:grid;justify-items:center;gap:24px}
+.leadership-poster-preview{display:block;width:min(100%,760px);padding:clamp(8px,1.5vw,15px);border:1px solid rgba(198,155,59,.45);background:linear-gradient(145deg,rgba(255,255,255,.035),rgba(255,255,255,.01));box-shadow:0 24px 70px rgba(0,0,0,.28);line-height:0}
+.leadership-poster-preview img{display:block;width:100%;height:auto;object-fit:contain;background:#111}
+.leadership-poster-preview span{display:block;padding:12px 6px 2px;color:var(--gold-hi);font-size:10px;font-weight:800;line-height:1.5;letter-spacing:.5px;text-align:center}
+.leadership-poster-preview:focus-visible,.leadership-org-link:focus-visible{outline:3px solid var(--gold-hi);outline-offset:4px}
+.leadership-org-link{display:inline-flex;align-items:center;justify-content:center;gap:18px;min-height:48px;padding:0 22px;background:var(--gold);color:#17140c;font-size:10px;font-weight:900;letter-spacing:.6px;text-decoration:none;transition:transform .2s,background .2s}
+.leadership-org-link:hover{transform:translateY(-2px);background:var(--gold-hi)}
+@media(max-width:760px){.leadership-poster-layout{gap:18px}.leadership-poster-preview{width:100%}.leadership-poster-preview span{font-size:9px}.leadership-org-link{width:100%;min-height:46px}}
