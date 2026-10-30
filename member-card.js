@@ -285,7 +285,7 @@
 
     // ---------- Header ----------
     // Lingkaran logo diperbesar mengikuti desain KTA (cincin gradasi di luarnya).
-    const lx = 118, ly = 92, lr = 72;
+    const lx = 130, ly = 104, lr = 84;
     if (data.logo) {
       ctx.save();
       ctx.beginPath(); ctx.arc(lx, ly, lr, 0, Math.PI * 2); ctx.closePath();
@@ -309,32 +309,32 @@
     ctx.textAlign = 'left';
     ctx.fillStyle = C.muted;
     ctx.font = `600 9.5px ${F.body}`;
-    spaced(ctx, 'GERAKAN MILITANSI PEJUANG INDONESIA', 216, 40, 1.5);
+    spaced(ctx, 'GERAKAN MILITANSI PEJUANG INDONESIA', 238, 44, 1.5);
     ctx.fillStyle = C.white;
-    ctx.font = `104px ${F.display}`;
-    spaced(ctx, 'GMPI', 214, 146, 4);
+    ctx.font = `120px ${F.display}`;
+    spaced(ctx, 'GMPI', 236, 166, 4);
     ctx.fillStyle = C.gold;
     ctx.font = `800 13px ${F.body}`;
-    spaced(ctx, 'DPD SIDOARJO', 221, 166, 4.2);
+    spaced(ctx, 'DPD SIDOARJO', 243, 186, 4.2);
 
     // ---------- Label kartu ----------
     ctx.font = `800 11.5px ${F.body}`;
     const labelText = 'KARTU TANDA ANGGOTA';
     const labelW = spacedWidth(ctx, labelText, 3) + 32;
     ctx.fillStyle = C.red;
-    rr(ctx, 40, 176, labelW, 30, 4); ctx.fill();
+    rr(ctx, 40, 206, labelW, 30, 4); ctx.fill();
     ctx.fillStyle = '#fff';
-    spaced(ctx, labelText, 56, 196, 3);
+    spaced(ctx, labelText, 56, 226, 3);
     ctx.fillStyle = C.gold;
     ctx.font = `700 12px ${F.mono}`;
     ctx.textAlign = 'right';
-    ctx.fillText(`TERBIT ${issuedYear}`, W - 40, 196);
+    ctx.fillText(`TERBIT ${issuedYear}`, W - 40, 226);
     const yearW = ctx.measureText(`TERBIT ${issuedYear}`).width;
     ctx.strokeStyle = 'rgba(215,172,76,.55)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(40 + labelW + 12, 191); ctx.lineTo(W - 52 - yearW, 191); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(40 + labelW + 12, 221); ctx.lineTo(W - 52 - yearW, 221); ctx.stroke();
 
     // ---------- Foto ----------
-    const pw = 246, ph = 304, px = (W - pw) / 2 - 7, py = 236;
+    const pw = 246, ph = 286, px = (W - pw) / 2 - 7, py = 250;
     ctx.fillStyle = C.red;
     rr(ctx, px + 14, py + 14, pw, ph, 22); ctx.fill();
     ctx.save();
