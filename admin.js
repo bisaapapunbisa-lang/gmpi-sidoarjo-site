@@ -4538,6 +4538,96 @@
     printSelected.addEventListener('click', () => printCards(printableCards().filter(card => selectedPrintIds.has(card.id))));
     printAllActive.addEventListener('click', () => printCards(printableCards()));
 
+    function openRevokedCardPurgeDialog(card) {
+      if (!isOwner()) { setMessage('Hanya Pemilik situs yang dapat menghapus KTA dan data anggota permanen.', 'error'); return; }
+      const overlay = make('div', 'member-delete-overlay');
+      const dialog = make('section', 'member-delete-dialog');
+      dialog.setAttribute('role', 'dialog'); dialog.setAttribute('aria-modal', 'true');
+      const title = make('h3', '', 'Hapus KTA dan data anggota permanen?');
+      const warning = make('p', 'member-delete-warning',
+        'Tindakan ini tidak dapat dibatalkan: KTA dicabut akan dihapus, begitu juga pendaftaran anggota, foto profil, dan foto KTP yang tertaut. Sistem akan menolak penghapusan bila pendaftaran masih ditautkan ke KTA lain. Gambar PNG KTA yang pernah diunduh di komputer tidak terhapus.');
+      const info = make('div', 'member-delete-info');
+      info.append(make('strong', '', card.full_name), make('span', '', `${card.member_number} · ${card.district} · status Dicabut`));
+      const consent = make('label', 'member-kta-override');
+      const consentBox = make('input'); consentBox.type = 'checkbox';
+      consent.append(consentBox, make('span', '', 'Saya memahami bahwa pendaftaran dan berkas privat anggota akan ikut dihapus bila tertaut dan tidak digunakan KTA lain.'));
+      const nameLabel = make('label', '', 'Ketik nama anggota untuk konfirmasi');
+      const nameInput = make('input'); nameInput.type = 'text'; nameInput.autocomplete = 'off'; nameInput.spellcheck = false; nameLabel.append(nameInput);
+      const numberLabel = make('label', '', 'Ketik nomor KTA persis untuk konfirmasi');
+      const numberInput = make('input'); numberInput.type = 'text'; numberInput.autocomplete = 'off'; numberInput.spellcheck = false; numberLabel.append(numberInput);
+      const reasonLabel = make('label', '', 'Alasan penghapusan (wajib)');
+      const reasonInput = make('textarea'); reasonInput.rows = 2; reasonInput.maxLength = 300; reasonInput.value = 'KTA dicabut; penghapusan data diminta Pemilik'; reasonLabel.append(reasonInput);
+      const feedback = make('small', 'member-delete-feedback', 'Centang persetujuan dan cocokkan nama serta nomor KTA.');
+      const actions = make('div', 'member-delete-actions');
+      const cancel = make('button', 'admin-button admin-button-outline', 'Batal'); cancel.type = 'button';
+      const confirm = make('button', 'admin-button admin-button-red', 'Hapus KTA + data'); confirm.type = 'button'; confirm.disabled = true;
+      actions.append(cancel, confirm);
+      dialog.append(title, warning, info, consent, nameLabel, numberLabel, reasonLabel, feedback, actions);
+      overlay.append(dialog); document.body.append(overlay);
+      const close = () => overlay.remove();
+      cancel.addEventListener('click', close);
+      overlay.addEventListener('click', event => { if (event.target === overlay) close(); });
+      const normalize = value => String(value || '').normalize('NFC').trim().replace(/\s+/g, ' ').toLocaleLowerCase('id-ID');
+      const validate = () => {
+        const matches = normalize(nameInput.value) === normalize(card.full_name)
+          && String(numberInput.value || '').trim().toUpperCase() === String(card.member_number || '').toUpperCase();
+        const valid = matches && reasonInput.value.trim().length >= 5 && consentBox.checked;
+        confirm.disabled = !valid;
+        feedback.textContent = valid
+          ? 'Konfirmasi cocok. Penghapusan tetap dibatalkan oleh server jika KTA lain masih memakai data pendaftaran.'
+          : 'Persetujuan, nama, nomor KTA, dan alasan minimal 5 karakter wajib diisi.';
+        feedback.classList.toggle('is-ready', valid);
+      };
+      [nameInput, numberInput, reasonInput].forEach(input => input.addEventListener('input', validate));
+      consentBox.addEventListener('change', validate);
+      confirm.addEventListener('click', async () => {
+        confirm.disabled = true; cancel.disabled = true; confirm.textContent = 'Menghapus…';
+        const ok = await permanentlyDeleteRevokedCard(card, nameInput.value, numberInput.value, reasonInput.value);
+        if (ok) close();
+        else { confirm.disabled = false; cancel.disabled = false; confirm.textContent = 'Hapus KTA + data'; }
+      });
+      nameInput.focus();
+    }
+
+    async function permanentlyDeleteRevokedCard(card, typedName, typedNumber, reason) {
+      setMessage('Memeriksa keterkaitan KTA dan menghapus data secara aman…', 'warning');
+      const { data, error } = await client.rpc('owner_delete_revoked_member_card', {
+        p_card_id: card.id,
+        p_confirm_member_number: typedNumber.trim(),
+        p_confirm_name: typedName.trim(),
+        p_reason: reason.trim()
+      });
+      if (error || !data?.ok) {
+        const message = String(error?.message || 'Penghapusan tidak dapat dilakukan.');
+        const normalizedMessage = message.toLocaleLowerCase('id-ID');
+        setMessage(normalizedMessage.includes('kta') || normalizedMessage.includes('berkas') || normalizedMessage.includes('konfirmasi') || normalizedMessage.includes('dicabut')
+          ? message : 'Penghapusan dibatalkan. Pastikan migrasi penghapusan KTA permanen sudah diterapkan dan akun adalah Pemilik.', 'error');
+        return false;
+      }
+      cards = cards.filter(item => item.id !== card.id);
+      if (editing?.id === card.id) resetForm();
+      renderList(); refillJabatanPick();
+      const keys = [...new Set([data.ktp_object_key, data.profile_object_key].filter(Boolean))];
+      if (data.registration_audit_id && keys.length) {
+        const { error: storageError } = await client.storage.from('member-documents').remove(keys);
+        if (storageError) {
+          setMessage('KTA dan pendaftaran sudah dihapus, tetapi berkas privat belum bersih. Masuk ke tab Pendaftaran anggota dan gunakan Bersihkan dokumen tertunda untuk mencoba lagi.', 'warning');
+          return true;
+        }
+      }
+      if (data.registration_audit_id) {
+        const { error: cleanupError } = await client.rpc('complete_member_registration_cleanup', { p_audit_id: data.registration_audit_id });
+        if (cleanupError) {
+          setMessage('KTA, pendaftaran, dan berkas sudah dihapus, tetapi catatan pembersihan tertunda. Buka tab Pendaftaran anggota untuk menyelesaikannya.', 'warning');
+          return true;
+        }
+      }
+      setMessage(data.registration_deleted
+        ? `KTA ${card.member_number}, pendaftaran, foto profil, dan foto KTP terkait berhasil dihapus permanen. Catatan audit tanpa nama/NIK tetap disimpan.`
+        : `KTA ${card.member_number} berhasil dihapus permanen. Tidak ada pendaftaran/berkas privat yang tertaut.`);
+      return true;
+    }
+
     function renderList() {
       renderPending();
       refreshBulkPrintBar();
@@ -4631,6 +4721,13 @@
         checkLink.href = `verifikasi.html?k=${encodeURIComponent(card.card_token)}`;
         checkLink.target = '_blank'; checkLink.rel = 'noopener';
         actions.append(openBtn, checkLink);
+        if (isOwner() && card.status === 'dicabut') {
+          const purgeBtn = make('button', 'admin-link-button card-permanent-delete', 'Hapus permanen…');
+          purgeBtn.type = 'button';
+          purgeBtn.title = 'Hapus KTA dicabut dan data pendaftaran beserta berkas privat bila tidak dipakai KTA lain.';
+          purgeBtn.addEventListener('click', () => openRevokedCardPurgeDialog(card));
+          actions.append(purgeBtn);
+        }
         row.append(actions);
         body.append(row);
       });
