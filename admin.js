@@ -3836,6 +3836,26 @@
     }
     if (error) return showWorkspaceError('Data kartu belum bisa dibuka. Jalankan migrasi 202610200004_member_cards.sql di Supabase, lalu muat ulang halaman.');
     let cards = cardRows || [];
+    let cardPhotoStorageReady = false;
+    const cardPhotoColumn = await client.from('member_cards').select('photo_object_key').limit(1);
+    if (!cardPhotoColumn.error) {
+      cardPhotoStorageReady = true;
+      if (cards.length) {
+        const photos = await client.from('member_cards').select('id,photo_object_key')
+          .eq('is_sample', false).order('created_at', { ascending: false }).limit(500);
+        if (!photos.error) {
+          const photoKeys = new Map((photos.data || []).map(row => [row.id, row.photo_object_key]));
+          cards.forEach(card => { card.photo_object_key = photoKeys.get(card.id) || null; });
+        } else cardPhotoStorageReady = false;
+      }
+    }
+    let pendingCardPhotoCleanup = [];
+    if (cardPhotoStorageReady && isOwner()) {
+      const pendingPhotos = await client.from('member_card_photo_cleanup_audit')
+        .select('id,member_card_id,member_number,photo_object_key,deleted_at')
+        .eq('cleanup_status', 'pending').order('deleted_at', { ascending: true }).limit(20);
+      if (!pendingPhotos.error) pendingCardPhotoCleanup = pendingPhotos.data || [];
+    }
     const me = myEmail();
     const issuer = canIssueCards();
     const approver = canApproveCards() && approvalReady;
@@ -4010,10 +4030,12 @@
     newBtn.type = 'button';
     const btnRow = make('div', 'card-buttons'); btnRow.append(saveBtn, downloadBtn, downloadBackBtn, newBtn);
 
-    const photoField = field('Foto anggota (opsional; unggah manual/pengganti)', photoIn, 'Jika memilih pendaftar tersimpan, foto profil privat dimuat otomatis—tidak perlu memilih file lagi. Foto manual hanya digunakan di sesi/perangkat ini; foto KTP tidak pernah dipakai.');
+    const photoField = field('Foto anggota (opsional; unggah manual/pengganti)', photoIn, isOwner()
+      ? 'Foto profil pendaftar yang tersimpan dapat dimuat otomatis. Foto manual disimpan privat pada KTA ini bila tidak ada foto profil pendaftar; foto KTP tidak pernah dipakai.'
+      : 'Foto profil pendaftar dapat dimuat otomatis. Penyimpanan foto baru hanya dapat dilakukan Pemilik; foto KTP tidak pernah dipakai.');
     const photoSourceStatus = make('small', 'privacy-mini', canSeeMembers()
-      ? (regLoadError ? 'Daftar/foto pendaftar tersimpan tidak dapat dimuat. Periksa izin Pemilik/Petugas Registrasi.' : 'Pilih pendaftar tersimpan agar foto profil otomatis dimuat.')
-      : 'Pilih foto manual untuk kartu ini.');
+      ? (regLoadError ? 'Daftar/foto pendaftar tersimpan tidak dapat dimuat. Periksa izin Pemilik/Petugas Registrasi.' : (isOwner() ? 'Pilih pendaftar tersimpan untuk foto profil; foto manual dapat disimpan privat pada KTA ini.' : 'Pilih pendaftar tersimpan untuk foto profil; foto baru hanya dapat disimpan Pemilik.'))
+      : (isOwner() ? 'Pilih foto manual untuk kartu ini.' : 'Pilih foto manual; penyimpanan privat hanya dapat dilakukan Pemilik.'));
     photoField.append(photoSourceStatus);
     const formFields = [statusLine];
     if (canSeeMembers()) formFields.push(memberPickField);
@@ -4095,6 +4117,37 @@
       redraw();
       return true;
     }
+    async function loadCardPhoto(card) {
+      const sequence = ++photoLoadSequence;
+      photo = null;
+      registrationPhotoId = null;
+      photoIn.value = '';
+      photoTools.hidden = true;
+      if (!card?.photo_object_key || !cardPhotoStorageReady) return false;
+      if (!isOwner()) {
+        photoSourceStatus.textContent = 'Foto privat KTA hanya dapat dibuka oleh Pemilik situs.';
+        return false;
+      }
+      photoSourceStatus.textContent = 'Memuat foto privat KTA…';
+      redraw();
+      const { data: signed, error } = await client.storage.from('member-documents').createSignedUrl(card.photo_object_key, 60);
+      if (sequence !== photoLoadSequence) return false;
+      if (error || !signed?.signedUrl) {
+        photoSourceStatus.textContent = 'Foto privat KTA tidak dapat dibuka. Pastikan sesi Pemilik masih aktif.';
+        return false;
+      }
+      const img = await window.GMPICard.loadImage(signed.signedUrl, true);
+      if (sequence !== photoLoadSequence) return false;
+      if (!img) {
+        photoSourceStatus.textContent = 'Foto privat KTA gagal dimuat. Pilih foto manual untuk menggantinya.';
+        return false;
+      }
+      photo = img;
+      photoTools.hidden = false;
+      photoSourceStatus.textContent = 'Foto privat KTA dimuat. Akses foto ini hanya untuk Pemilik situs.';
+      redraw();
+      return true;
+    }
     function clearSelectedRegistrationIfMismatch() {
       if (applyingRegistration || !selectedRegistrationId) return;
       const reg = regRows.find(r => r.id === selectedRegistrationId);
@@ -4133,7 +4186,8 @@
       syncPick();
       refillJabatanPick();
       applyingRegistration = false;
-      await loadRegistrationPhoto(reg);
+      const loaded = await loadRegistrationPhoto(reg);
+      if (!loaded && editing?.photo_object_key) await loadCardPhoto(editing);
     });
     nameIn.addEventListener('input', clearSelectedRegistrationIfMismatch);
     districtIn.addEventListener('change', clearSelectedRegistrationIfMismatch);
@@ -4245,17 +4299,25 @@
         if (matches.length === 1) reg = matches[0];
         else if (matches.length > 1) ambiguous = true;
       }
+      let loadedRegistrationPhoto = false;
+      let loadedCardPhoto = false;
       if (reg) {
         selectedRegistrationId = reg.id;
         memberPick.value = reg.id;
-        await loadRegistrationPhoto(reg);
+        loadedRegistrationPhoto = await loadRegistrationPhoto(reg);
+        if (!loadedRegistrationPhoto && card.photo_object_key) loadedCardPhoto = await loadCardPhoto(card);
+      } else if (card.photo_object_key) {
+        loadedCardPhoto = await loadCardPhoto(card);
       } else {
         photoSourceStatus.textContent = ambiguous
-          ? 'Ada beberapa pendaftar dengan nama/kecamatan sama. Pilih entri yang benar di daftar pendaftar tersimpan.'
-          : (canSeeMembers() ? 'Belum ada foto profil tersimpan yang cocok. Pilih pendaftar atau foto manual.' : 'Pilih foto manual untuk kartu ini.');
+          ? 'Ada beberapa pendaftar dengan nama/kecamatan sama. Pilih entri yang benar di daftar pendaftar tersimpan, atau simpan foto privat pada KTA ini.'
+          : (isOwner() ? 'Tidak ada profil pendaftar tertaut. Foto manual dapat disimpan privat pada KTA ini.' : 'Tidak ada profil pendaftar tertaut. Hanya Pemilik dapat menyimpan foto privat KTA.');
       }
       setMode();
-      setMessage(reg && photo ? 'Kartu dibuka. Foto profil tersimpan dimuat otomatis.' : (ambiguous ? 'Kartu dibuka. Pilih pendaftar yang tepat agar foto tersimpan dimuat.' : 'Kartu dibuka. Foto belum tersedia; pilih pendaftar tersimpan atau foto manual.'));
+      setMessage(loadedRegistrationPhoto ? 'Kartu dibuka. Foto profil pendaftar dimuat.'
+        : loadedCardPhoto ? 'Kartu dibuka. Foto privat KTA dimuat.'
+        : ambiguous ? 'Kartu dibuka. Pilih pendaftar yang tepat atau unggah foto privat KTA.'
+        : 'Kartu dibuka. Foto belum tersedia; pilih foto manual bila perlu.');
       designer.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
@@ -4272,13 +4334,47 @@
       photoLoadSequence += 1;
       photo = img;
       registrationPhotoId = null;
-      photoSourceStatus.textContent = selectedRegistrationId
-        ? 'Foto pengganti dipilih. Klik Simpan untuk mengganti foto profil pendaftar.'
-        : 'Foto manual dipilih. Pilih pendaftar tersimpan sebelum menyimpan perubahan foto.';
+      const selectedReg = regRows.find(row => row.id === selectedRegistrationId);
+      photoSourceStatus.textContent = !isOwner()
+        ? 'Foto dipilih untuk pratinjau; hanya Pemilik dapat menyimpannya.'
+        : selectedReg?.profile_object_key
+          ? 'Foto pengganti dipilih. Klik Simpan untuk mengganti foto profil pendaftar.'
+          : 'Foto pengganti dipilih. Klik Simpan untuk menyimpan foto privat pada KTA ini.';
       zoomIn.value = 100; xIn.value = 0; yIn.value = 0;
       photoTools.hidden = false;
       redraw();
     });
+
+    async function persistCardPhoto(card) {
+      if (!isOwner()) return { error: 'Hanya Pemilik situs yang dapat menyimpan foto privat pada KTA.' };
+      if (!card?.id || !photo) return { error: 'Kartu atau foto pengganti tidak tersedia.' };
+      if (!cardPhotoStorageReady) return { error: 'Fitur foto privat KTA belum aktif. Minta pengelola menerapkan migrasi foto KTA lalu muat ulang Admin.' };
+      const sourceWidth = photo.naturalWidth || photo.width;
+      const sourceHeight = photo.naturalHeight || photo.height;
+      const scale = Math.min(1, 2200 / Math.max(sourceWidth, sourceHeight));
+      const exportCanvas = document.createElement('canvas');
+      exportCanvas.width = Math.max(1, Math.round(sourceWidth * scale));
+      exportCanvas.height = Math.max(1, Math.round(sourceHeight * scale));
+      exportCanvas.getContext('2d').drawImage(photo, 0, 0, exportCanvas.width, exportCanvas.height);
+      const blob = await new Promise(resolve => exportCanvas.toBlob(resolve, 'image/jpeg', 0.9));
+      if (!blob) return { error: 'Foto tidak berhasil disiapkan untuk disimpan.' };
+      if (blob.size > 5 * 1024 * 1024) return { error: 'Ukuran foto hasil proses melebihi batas 5 MB.' };
+      const objectKey = `kta-card-photos/${card.id}.jpg`;
+      const previousObjectKey = cards.find(item => item.id === card.id)?.photo_object_key || card.photo_object_key || null;
+      const { error: uploadError } = await client.storage.from('member-documents').upload(objectKey, blob, {
+        contentType: 'image/jpeg', cacheControl: '0', upsert: true
+      });
+      if (uploadError) return { error: `Foto privat KTA gagal diunggah: ${uploadError.message || 'periksa izin Pemilik dan migrasi foto KTA.'}` };
+      const { error: linkError } = await client.from('member_cards').update({ photo_object_key: objectKey }).eq('id', card.id);
+      if (linkError) {
+        if (previousObjectKey !== objectKey) await client.storage.from('member-documents').remove([objectKey]);
+        return { error: `Foto terunggah tetapi belum tertaut ke KTA: ${linkError.message || 'muat ulang Admin lalu coba lagi.'}` };
+      }
+      card.photo_object_key = objectKey;
+      if (editing?.id === card.id) editing.photo_object_key = objectKey;
+      photoSourceStatus.textContent = 'Foto berhasil disimpan secara privat pada KTA ini. KTA lain tidak ikut berubah.';
+      return { error: null };
+    }
 
     async function persistRegistrationProfilePhoto(registrationId) {
       if (!isOwner()) return { error: 'Hanya Pemilik situs yang dapat mengganti foto profil pendaftar.' };
@@ -4324,8 +4420,11 @@
       }
       if (!editing || selectedRegistrationId || registrationSelectionTouched) payload.registration_id = selectedRegistrationId || null;
       const photoReplacementPending = Boolean(photo && !registrationPhotoId && photoIn.files?.[0]);
-      if (photoReplacementPending && !selectedRegistrationId) { setMessage('Pilih pendaftar tersimpan terlebih dahulu agar foto pengganti dapat disimpan ke profilnya.', 'error'); return; }
-      if (photoReplacementPending && !isOwner()) { setMessage('Hanya Pemilik situs yang dapat mengganti foto profil pendaftar.', 'error'); return; }
+      const selectedPhotoReg = regRows.find(row => row.id === selectedRegistrationId);
+      const savePhotoToRegistration = Boolean(photoReplacementPending && selectedPhotoReg?.profile_object_key);
+      const savePhotoToCard = Boolean(photoReplacementPending && !savePhotoToRegistration);
+      if (photoReplacementPending && !isOwner()) { setMessage('Hanya Pemilik situs yang dapat menyimpan foto pengganti.', 'error'); return; }
+      if (savePhotoToCard && !cardPhotoStorageReady) { setMessage('Penyimpanan foto privat KTA belum aktif. Minta pengelola menerapkan migrasi foto KTA lalu muat ulang Admin.', 'error'); return; }
       if (payload.full_name.length < 2) { setMessage('Isi nama lengkap anggota.', 'error'); return; }
       if (!payload.district) { setMessage('Pilih kecamatan.', 'error'); return; }
       if (payload.valid_until < payload.issued_at) { setMessage('Tanggal berlaku harus setelah tanggal terbit.', 'error'); return; }
@@ -4368,7 +4467,9 @@
       editing = result.data;
       let photoSaveError = null;
       if (photoReplacementPending) {
-        const photoResult = await persistRegistrationProfilePhoto(selectedRegistrationId);
+        const photoResult = savePhotoToRegistration
+          ? await persistRegistrationProfilePhoto(selectedRegistrationId)
+          : await persistCardPhoto(editing);
         photoSaveError = photoResult.error;
       }
       saveBtn.disabled = false;
@@ -4380,7 +4481,9 @@
         photoSourceStatus.textContent = 'Foto profil belum tersimpan. Periksa pesan Admin lalu klik Simpan lagi untuk mencoba ulang.';
         setMessage(photoSaveError, 'error');
       } else if (photoReplacementPending && !cardDataChanged && editing.status === 'aktif') {
-        setMessage('Foto profil pendaftar berhasil diganti. Status KTA dan QR tetap sama; unduh/cetak ulang KTA untuk memakai foto baru.');
+        setMessage(savePhotoToRegistration
+          ? 'Foto profil pendaftar berhasil diganti. Status KTA dan QR tetap sama; unduh/cetak ulang KTA untuk memakai foto baru.'
+          : 'Foto privat KTA berhasil disimpan. Status KTA dan QR tetap sama; unduh/cetak ulang kartu untuk memakai foto baru.');
       } else if (editing.status === 'menunggu') setMessage(wasNew ? 'Kartu tersimpan dan MENUNGGU PERSETUJUAN. QR belum berlaku; kartu bisa diunduh setelah disetujui Penyetuju Kartu.' : 'Perubahan tersimpan. Kartu menunggu persetujuan ulang dari Penyetuju Kartu.');
       else setMessage(wasNew ? 'Kartu terbit dan QR sudah aktif. Unduh sisi depan dan belakang (PNG) untuk dicetak.' : 'Perubahan kartu tersimpan. QR tetap sama, jadi kartu lama yang sudah dicetak tetap bisa diverifikasi.');
     });
@@ -4500,6 +4603,10 @@
             const signed = await client.storage.from('member-documents').createSignedUrl(registration.profile_object_key, 120);
             if (!signed.error && signed.data?.signedUrl) photoImage = await window.GMPICard.loadImage(signed.data.signedUrl, true);
           }
+          if (!photoImage && card.photo_object_key && cardPhotoStorageReady && isOwner()) {
+            const signed = await client.storage.from('member-documents').createSignedUrl(card.photo_object_key, 120);
+            if (!signed.error && signed.data?.signedUrl) photoImage = await window.GMPICard.loadImage(signed.data.signedUrl, true);
+          }
           const cardData = {
             name: card.full_name, number: card.member_number, district: card.district, jabatan: card.jabatan,
             issued: card.issued_at, validUntil: card.valid_until, token: card.card_token,
@@ -4589,6 +4696,17 @@
       nameInput.focus();
     }
 
+    async function finishDeletedCardPhotoCleanup(entry) {
+      const { error: storageError } = await client.storage.from('member-documents').remove([entry.photo_object_key]);
+      if (storageError) {
+        // If the object was already removed, the database check below can still finish the audit.
+        const { error: completeAfterRemove } = await client.rpc('owner_complete_member_card_photo_cleanup', { p_audit_id: entry.id });
+        return completeAfterRemove ? `Foto KTA belum dapat dibersihkan: ${storageError.message || 'coba lagi.'}` : null;
+      }
+      const { error: completeError } = await client.rpc('owner_complete_member_card_photo_cleanup', { p_audit_id: entry.id });
+      return completeError ? `Berkas foto sudah dihapus, tetapi audit pembersihan belum selesai: ${completeError.message || 'coba lagi.'}` : null;
+    }
+
     async function permanentlyDeleteRevokedCard(card, typedName, typedNumber, reason) {
       setMessage('Memeriksa keterkaitan KTA dan menghapus data secara aman…', 'warning');
       const { data, error } = await client.rpc('owner_delete_revoked_member_card', {
@@ -4607,6 +4725,19 @@
       cards = cards.filter(item => item.id !== card.id);
       if (editing?.id === card.id) resetForm();
       renderList(); refillJabatanPick();
+      if (card.photo_object_key) {
+        const queued = await client.from('member_card_photo_cleanup_audit')
+          .select('id,photo_object_key').eq('member_card_id', card.id).eq('cleanup_status', 'pending').maybeSingle();
+        if (queued.error || !queued.data) {
+          setMessage('KTA terhapus, tetapi catatan pembersihan foto KTA tidak dapat dimuat. Periksa tab KTA lagi.', 'warning');
+          return true;
+        }
+        const cleanupError = await finishDeletedCardPhotoCleanup(queued.data);
+        if (cleanupError) {
+          setMessage(`${cleanupError} Buka kembali tab KTA untuk mencoba pembersihan tertunda.`, 'warning');
+          return true;
+        }
+      }
       const keys = [...new Set([data.ktp_object_key, data.profile_object_key].filter(Boolean))];
       if (data.registration_audit_id && keys.length) {
         const { error: storageError } = await client.storage.from('member-documents').remove(keys);
@@ -4624,7 +4755,7 @@
       }
       setMessage(data.registration_deleted
         ? `KTA ${card.member_number}, pendaftaran, foto profil, dan foto KTP terkait berhasil dihapus permanen. Catatan audit tanpa nama/NIK tetap disimpan.`
-        : `KTA ${card.member_number} berhasil dihapus permanen. Tidak ada pendaftaran/berkas privat yang tertaut.`);
+        : `KTA ${card.member_number} berhasil dihapus permanen. Foto privat KTA (bila ada) ikut dibersihkan; tidak ada pendaftaran atau dokumen pendaftaran yang tertaut.`);
       return true;
     }
 
@@ -4735,7 +4866,27 @@
     }
     search.addEventListener('input', renderList);
 
-    workspace.replaceChildren(...[heading, setupNote, pendingBox, designer, listHeading, bulkPrintBar, listWrap].filter(Boolean));
+    const photoCleanupBox = make('div', 'member-cleanup-warning');
+    photoCleanupBox.hidden = !pendingCardPhotoCleanup.length;
+    if (pendingCardPhotoCleanup.length) {
+      photoCleanupBox.append(make('b', '', 'Foto privat KTA menunggu pembersihan'));
+      pendingCardPhotoCleanup.forEach(entry => {
+        const row = make('div', 'member-cleanup-row');
+        row.append(make('span', '', `${entry.member_number} · dihapus ${new Date(entry.deleted_at).toLocaleDateString('id-ID')}`));
+        const retry = make('button', 'admin-button admin-button-outline', 'Bersihkan foto');
+        retry.type = 'button';
+        retry.addEventListener('click', async () => {
+          retry.disabled = true;
+          const cleanupError = await finishDeletedCardPhotoCleanup(entry);
+          if (cleanupError) { retry.disabled = false; setMessage(cleanupError, 'error'); return; }
+          setMessage(`Foto privat KTA ${entry.member_number} dibersihkan.`);
+          await renderCards();
+        });
+        row.append(retry);
+        photoCleanupBox.append(row);
+      });
+    }
+    workspace.replaceChildren(...[heading, setupNote, photoCleanupBox, pendingBox, designer, listHeading, bulkPrintBar, listWrap].filter(Boolean));
     resetForm();
     renderList();
     if (openCardOnNextRenderId) {
