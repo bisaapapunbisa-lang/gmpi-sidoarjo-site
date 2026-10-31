@@ -66,7 +66,7 @@
     const media = el('div', 'news-cover');
     const cover = assetUrl(post.cover_path);
     if (cover) { const img = el('img'); img.src = cover; img.alt = ''; img.loading = 'lazy'; img.decoding = 'async'; media.append(img); }
-    else { media.classList.add('is-empty'); const logo = el('img'); logo.src = 'assets/logo-gmpi-sidoarjo-crop.webp'; logo.alt = ''; media.append(logo); }
+    else { media.classList.add('is-empty'); const logo = el('img'); logo.src = 'assets/logo-gmpi-sidoarjo.webp'; logo.alt = ''; media.append(logo); }
     const body = el('div', 'news-body');
     const meta = el('div', 'news-meta');
     meta.append(sourceBadge(post, true), el('time', '', fmtDate(post.published_at)));
@@ -228,7 +228,8 @@
     if (!root || !config.publishableKey) return;
     try {
       const rows = await api('site_content?select=value&key=eq.site_logo');
-      const path = rows[0]?.value?.text || '';
+      const LOGO_REVISION = '2026-10-31-gmpi-sidoarjo';
+      const path = rows[0]?.value?.revision === LOGO_REVISION ? (rows[0].value.text || '') : '';
       if (/^logos\/[A-Za-z0-9][A-Za-z0-9._-]{0,119}$/.test(path)) {
         const url = `${root}/storage/v1/object/public/site-assets/${path}`;
         document.querySelectorAll('img[data-site-logo]').forEach(img => { img.src = url; });

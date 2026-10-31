@@ -1,7 +1,8 @@
 # Cahaya Perjuangan — studio film identitas
 
-Film 24 detik, 3840×2160, 24 fps, H.264 + AAC. Figur dan lambang diambil dari
-`assets/posters/poster-dpd-gmpi-sidoarjo.webp` (poster asli pengguna). Latar
+Film 24 detik, 3840×2160, 24 fps, H.264 + AAC. Figur diambil dari
+`assets/posters/poster-dpd-gmpi-sidoarjo.webp` (poster asli pengguna); lambang
+resmi transparan diambil dari `assets/logo-gmpi-sidoarjo.webp`. Latar
 panggung kosong dibuat sebagai aset generatif; asap, bara, kilat, judul metalik,
 kilau, dan gelombang cahaya dirender secara deterministik. Musik adalah sintesis
 asli, bukan sampel/rekaman pihak ketiga.

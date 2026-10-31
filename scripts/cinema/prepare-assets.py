@@ -69,12 +69,10 @@ right.putalpha(Image.fromarray(np.uint8(np.clip(a * right_mask, 0, 1) * 255)).re
 left.save(OUT / 'figure-sayegi.webp', quality=95, method=6)
 right.save(OUT / 'figure-hasmin.webp', quality=95, method=6)
 
-# Keep the original emblem, with a softly feathered edge.
-crest = master.crop((1030, 495, 1385, 885)).convert('RGBA')
-cm = Image.new('L', crest.size)
-d = ImageDraw.Draw(cm)
-d.rounded_rectangle((7, 7, crest.width-8, crest.height-8), radius=70, fill=255)
-crest.putalpha(cm.filter(ImageFilter.GaussianBlur(9)))
-crest.save(OUT / 'crest.webp', quality=94, method=6)
+# Official transparent DPD GMPI Sidoarjo shield (never the poster crop).
+official = Image.open(ROOT / 'assets/logo-gmpi-sidoarjo.webp').convert('RGBA')
+crest_h = 540
+crest = official.resize((round(crest_h * official.width / official.height), crest_h), Image.Resampling.LANCZOS)
+crest.save(OUT / 'crest.webp', quality=95, method=6)
 
 print('Prepared original-photo depth layers in', OUT)

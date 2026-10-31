@@ -264,7 +264,7 @@
       ctx.beginPath();
       ctx.arc(W / 2, 470, 300, 0, Math.PI * 2);
       ctx.clip();
-      drawCover(ctx, data.logo, W / 2 - 300, 170, 600, 600);
+      drawContain(ctx, data.logo, W / 2 - 300, 170, 600, 600, 24);
       ctx.restore();
     }
 
@@ -611,7 +611,7 @@
       ctx.save();
       ctx.globalAlpha = 0.045;
       ctx.beginPath(); ctx.arc(W / 2, 540, 280, 0, Math.PI * 2); ctx.clip();
-      drawCover(ctx, data.logo, W / 2 - 280, 260, 560, 560);
+      drawContain(ctx, data.logo, W / 2 - 280, 260, 560, 560, 24);
       ctx.restore();
     }
 
@@ -627,7 +627,7 @@
     const lx = W - 70, ly = 70, lr = 28;
     if (data.logo) {
       ctx.save(); ctx.beginPath(); ctx.arc(lx, ly, lr, 0, Math.PI * 2); ctx.fillStyle = '#10100f'; ctx.fill(); ctx.clip();
-      drawCover(ctx, data.logo, lx - lr, ly - lr, lr * 2, lr * 2); ctx.restore();
+      drawContain(ctx, data.logo, lx - lr, ly - lr, lr * 2, lr * 2, lr * 0.12); ctx.restore();
     }
     ctx.lineWidth = 2; ctx.lineCap = 'round';
     [[C.cyan, -0.35, 0.3], [C.red, 1.7, 2.3], [C.goldHi, 3.7, 4.3], ['rgba(100,244,255,.25)', 0, Math.PI * 2]].forEach(([color, a, b]) => {

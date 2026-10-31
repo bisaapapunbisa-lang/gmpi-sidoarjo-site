@@ -136,7 +136,7 @@
       // The original crest occupies its own intermediate depth plane.
       ctx.save();ctx.globalAlpha=reveal*.92;const cs=.96+push*.055;
       ctx.translate(960-px*5,382-py*3);ctx.scale(cs,cs);ctx.shadowColor='#ff5a16';ctx.shadowBlur=25+10*Math.sin(t*.8);
-      ctx.drawImage(assets.crest,-100,-110,200,220);ctx.restore();
+      const ch=220,cw=ch*(assets.crest.width/assets.crest.height);ctx.drawImage(assets.crest,-cw/2,-ch/2,cw,ch);ctx.restore();
       radial(960,405,215,[[0,`rgba(255,126,30,${reveal*(.13+.035*Math.sin(t*1.2)+afterglow*.15)})`],[.4,'rgba(242,58,9,.06)'],[1,'rgba(0,0,0,0)']]);
       // Branching lightning is a single discrete event, never a strobe loop.
       if(lightning>.015) {

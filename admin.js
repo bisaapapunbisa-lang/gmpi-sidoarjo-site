@@ -1438,7 +1438,8 @@
   const LOGO_FOLDER = 'logos';
   const LOGO_TYPES = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
   const LOGO_MAX_BYTES = 2 * 1024 * 1024;
-  const DEFAULT_LOGO = 'assets/logo-gmpi-sidoarjo-crop.webp';
+  const DEFAULT_LOGO = 'assets/logo-gmpi-sidoarjo.webp';
+  const LOGO_REVISION = '2026-10-31-gmpi-sidoarjo';
 
   function logoPublicUrl(path) {
     return client.storage.from(LOGO_BUCKET).getPublicUrl(path).data.publicUrl;
@@ -1457,7 +1458,7 @@
   async function setActiveLogo(path) {
     const { error } = await client.from('site_content').upsert({
       key: 'site_logo',
-      value: { text: path },
+      value: { text: path, revision: LOGO_REVISION },
       updated_at: new Date().toISOString()
     }, { onConflict: 'key' });
     return error;
@@ -1468,7 +1469,7 @@
     const heading = make('div', 'workspace-heading');
     const titleBlock = make('div');
     titleBlock.append(make('h3', '', 'Logo situs'));
-    titleBlock.append(make('p', '', 'Logo ini dipakai di header, lingkaran hero (dengan ring berputar), dan footer. Gunakan gambar persegi dengan lambang di tengah. Format PNG, JPG, atau WebP, maksimal 2 MB.'));
+    titleBlock.append(make('p', '', 'Logo ini dipakai di header, hero, footer, dan kartu anggota. Lambang ditampilkan utuh (tidak dipotong lingkaran). Disarankan PNG/WebP transparan; format PNG, JPG, atau WebP, maksimal 2 MB.'));
     heading.append(titleBlock);
     section.append(heading);
 
@@ -1477,7 +1478,7 @@
       section.append(make('div', 'admin-message is-error', 'Pengaturan logo belum aktif. Jalankan migrasi 202610200003_site_logo.sql di Supabase terlebih dahulu.'));
       return section;
     }
-    let activePath = logoRow?.value?.text || '';
+    let activePath = logoRow?.value?.revision === LOGO_REVISION ? (logoRow.value.text || '') : '';
 
     const current = make('div', 'logo-current');
     const currentFrame = make('div', 'logo-frame');
@@ -1579,7 +1580,7 @@
       const ratio = size.width / size.height;
       const notes = [`${size.width}×${size.height} px, ${(file.size / 1024).toFixed(0)} KB.`];
       if (Math.min(size.width, size.height) < 300) notes.push('Resolusi kecil; logo bisa tampak buram. Disarankan minimal 500×500 px.');
-      if (ratio < 0.9 || ratio > 1.1) notes.push('Gambar tidak persegi; bagian tepi bisa terpotong oleh bingkai lingkaran.');
+      if (ratio < 0.6 || ratio > 1.6) notes.push('Rasio gambar sangat lebar/tinggi; logo tetap ditampilkan utuh, tetapi mungkin tampak kecil di header.');
       uploadNote.textContent = notes.join(' ');
       chosenFile = file;
       uploadButton.disabled = false;
@@ -3804,10 +3805,10 @@
   }
 
   async function cardLogo() {
-    const fallback = 'assets/logo-gmpi-sidoarjo-crop.webp';
+    const fallback = 'assets/logo-gmpi-sidoarjo.webp';
     try {
       const { data } = await client.from('site_content').select('value').eq('key', 'site_logo').maybeSingle();
-      const path = data?.value?.text || '';
+      const path = data?.value?.revision === LOGO_REVISION ? (data.value.text || '') : '';
       if (path) {
         const url = client.storage.from('site-assets').getPublicUrl(path).data.publicUrl;
         const img = await window.GMPICard.loadImage(url, true);

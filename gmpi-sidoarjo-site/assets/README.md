@@ -1,6 +1,6 @@
 # Aset media GMPI DPC Sidoarjo
 
-Situs menggunakan aset lokal agar halaman tetap dapat dipratinjau tanpa CDN. Logo terbaru dari pengguna dipasang dalam versi terpotong di `assets/logo-gmpi-sidoarjo-crop.webp` dan digunakan di header, hero, serta footer. Sumber asli tetap disimpan sebagai `assets/logo-gmpi-sidoarjo.jpg`.
+Situs menggunakan aset lokal agar halaman tetap dapat dipratinjau tanpa CDN. Logo terbaru dari pengguna dipasang dalam versi terpotong di `assets/logo-gmpi-sidoarjo.webp` dan digunakan di header, hero, serta footer. Sumber asli tetap disimpan sebagai `assets/logo-gmpi-sidoarjo.jpg`.
 
 ## Video hero
 

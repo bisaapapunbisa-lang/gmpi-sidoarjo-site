@@ -36,9 +36,9 @@ Arsip perubahan harus mencakup `admin.html`, `admin.css`, `admin.js`, `supabase-
 
 1. Jalankan sekali `supabase/migrations/202610200003_site_logo.sql` di Supabase SQL Editor.
 2. Masuk Admin → tab **Isi situs** → bagian **Logo situs**.
-3. **Pilih gambar logo baru** (PNG/JPG/WebP, maks. 2 MB, sebaiknya persegi ≥ 500×500 px) → **Unggah & pakai logo ini**.
+3. **Pilih gambar logo baru** (PNG/JPG/WebP, maks. 2 MB, disarankan PNG/WebP transparan ≥ 500 px) → **Unggah & pakai logo ini**. Logo ditampilkan utuh (`object-fit: contain`), bukan dipotong lingkaran.
 4. Logo lama tetap tersimpan di **Logo tersimpan**; klik **Pakai** untuk kembali ke logo itu, atau **Hapus** jika tidak diperlukan.
-5. **Kembalikan logo bawaan** memakai file `assets/logo-gmpi-sidoarjo-crop.webp` dari repo.
+5. **Kembalikan logo bawaan** memakai lambang resmi transparan `assets/logo-gmpi-sidoarjo.webp` dari repo. Pengaturan logo lama di database yang belum memakai revisi `2026-10-31-gmpi-sidoarjo` otomatis diabaikan oleh halaman publik, sehingga logo bawaan baru langsung tampil tanpa perlu reset manual.
 
 Hanya peran Pemilik dan Editor Situs yang boleh mengganti logo. Bucket `site-assets` bersifat publik dan **tidak boleh** dipakai untuk data pribadi.
 

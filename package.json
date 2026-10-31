@@ -12,6 +12,7 @@
     "start": "node scripts/cinema/serve.mjs",
     "cinema:poster": "node scripts/cinema/render.mjs --poster-only",
     "cinema:render": "node scripts/cinema/render.mjs",
-    "cinema:test": "node scripts/cinema/test.mjs"
+    "cinema:test": "node scripts/cinema/test.mjs",
+    "logo:test": "node scripts/branding/test-logo.mjs"
   }
 }

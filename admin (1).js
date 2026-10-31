@@ -1381,7 +1381,7 @@
   const LOGO_FOLDER = 'logos';
   const LOGO_TYPES = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
   const LOGO_MAX_BYTES = 2 * 1024 * 1024;
-  const DEFAULT_LOGO = 'assets/logo-gmpi-sidoarjo-crop.webp';
+  const DEFAULT_LOGO = 'assets/logo-gmpi-sidoarjo.webp';
 
   function logoPublicUrl(path) {
     return client.storage.from(LOGO_BUCKET).getPublicUrl(path).data.publicUrl;
@@ -2420,7 +2420,7 @@
   }
 
   async function cardLogo() {
-    const fallback = 'assets/logo-gmpi-sidoarjo-crop.webp';
+    const fallback = 'assets/logo-gmpi-sidoarjo.webp';
     try {
       const { data } = await client.from('site_content').select('value').eq('key', 'site_logo').maybeSingle();
       const path = data?.value?.text || '';

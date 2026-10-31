@@ -8,7 +8,7 @@ body{margin:0;min-height:100vh;display:flex;flex-direction:column;font-family:'G
 a{color:inherit}
 .vf-header{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px clamp(18px,6vw,70px);border-bottom:1px solid rgba(255,255,255,.08)}
 .vf-brand{display:flex;align-items:center;gap:11px;text-decoration:none}
-.vf-brand img{width:44px;height:44px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 2px #0c0c0b,0 0 0 3.5px rgba(100,244,255,.45)}
+.vf-brand img{width:44px;height:44px;object-fit:contain;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))}
 .vf-brand span{display:flex;flex-direction:column;line-height:1}
 .vf-brand strong{font:26px 'GMPI Anton',Impact,sans-serif;letter-spacing:2px}
 .vf-brand small{font-size:8px;font-weight:800;letter-spacing:2.4px;color:#d7ac4c;margin-top:4px}

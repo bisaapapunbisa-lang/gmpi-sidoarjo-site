@@ -3,7 +3,7 @@
 /* Logo situs */
 .logo-manager{margin-bottom:34px;padding-bottom:28px;border-bottom:1px solid #d9d4c9}
 .logo-current{display:flex;align-items:center;gap:20px;margin:6px 0 20px;flex-wrap:wrap}
-.logo-frame{width:112px;height:112px;border-radius:50%;overflow:hidden;background:#10100f;border:2px solid #e0b855;display:grid;place-items:center;flex:none}
+.logo-frame{width:112px;height:112px;border-radius:18px;overflow:hidden;background:#10100f;border:2px solid #e0b855;display:grid;place-items:center;flex:none;padding:8px}
 .logo-frame img{width:100%;height:100%;object-fit:contain}
 .logo-current-info{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
 .logo-current-info b{font-size:15px}

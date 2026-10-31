@@ -122,7 +122,8 @@
   });
 
   // Public CMS fields are read-only for visitors; Supabase RLS controls all writes.
-  const DEFAULT_LOGO = 'assets/logo-gmpi-sidoarjo-crop.webp';
+  const DEFAULT_LOGO = 'assets/logo-gmpi-sidoarjo.webp';
+  const LOGO_REVISION = '2026-10-31-gmpi-sidoarjo';
   let resolveLogo;
   const logoReady = new Promise(resolve => { resolveLogo = resolve; });
   const supabaseConfig = window.GMPI_SUPABASE_CONFIG || {};
@@ -137,7 +138,7 @@
           const text = row.value && typeof row.value.text === 'string' ? row.value.text : null;
           if (row.key === 'site_logo') {
             // Only accept files from the public logo folder; empty value keeps the built-in logo.
-            if (text && /^logos\/[A-Za-z0-9][A-Za-z0-9._-]{0,119}$/.test(text)) {
+            if (text && row.value && row.value.revision === LOGO_REVISION && /^logos\/[A-Za-z0-9][A-Za-z0-9._-]{0,119}$/.test(text)) {
               logoHandled = true;
               const logoUrl = `${apiRoot}/storage/v1/object/public/site-assets/${text}`;
               const probe = new Image();
