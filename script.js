@@ -19,19 +19,6 @@
     nav.classList.remove('open');
   }));
 
-  const copyJoinLink = document.querySelector('#join-copy-link');
-  const joinLinkStatus = document.querySelector('#join-copy-status');
-  copyJoinLink?.addEventListener('click', async () => {
-    const url = 'https://www.gmpisidoarjo.com/#pendaftaran';
-    try {
-      await navigator.clipboard.writeText(url);
-      joinLinkStatus.textContent = 'Tautan pendaftaran tersalin. Silakan bagikan.';
-    } catch (error) {
-      window.prompt('Salin tautan pendaftaran ini:', url);
-      joinLinkStatus.textContent = 'Salin tautan di atas untuk dibagikan.';
-    }
-  });
-
   const sections = [...document.querySelectorAll('main section[id]')];
   if ('IntersectionObserver' in window) {
     const observer = new IntersectionObserver(entries => {
@@ -79,6 +66,19 @@
 
   const reportForm = document.querySelector('#report-form');
   const reportStatus = document.querySelector('#report-status');
+  const actionParams = new URLSearchParams(window.location.search);
+  const reportPresets = {
+    hukum: { value: 'Sengketa / persoalan hukum', context: 'Pengaduan LBH GMPI dipilih. Topik hukum sudah terisi; lengkapi data lalu kirim.' },
+    pekerja: { value: 'Hak pekerja', context: 'Aduan Serikat Buruh dipilih. Topik hak pekerja sudah terisi; lengkapi data lalu kirim.' },
+    tagana: { value: 'Kebencanaan / Tagana', context: 'Laporan kebencanaan dipilih. Untuk keadaan darurat segera, gunakan tombol SOS Darurat.' }
+  };
+  const reportPreset = reportPresets[actionParams.get('topik')];
+  if (reportPreset) {
+    document.querySelector('#report-type').value = reportPreset.value;
+    const context = document.querySelector('#report-context');
+    context.textContent = reportPreset.context;
+    context.hidden = false;
+  }
   reportForm.addEventListener('submit', event => {
     event.preventDefault();
     if (!SITE_CONFIG.lbhEmail) {
@@ -96,6 +96,19 @@
 
   const joinForm = document.querySelector('#join-form');
   const joinStatus = document.querySelector('#join-status');
+  const joinDivision = document.querySelector('#join-division');
+  const joinPresets = {
+    mpi: 'Militansi Perempuan Indonesia (MPI Sidoarjo)',
+    squad: 'Squad Militansi — Pengamanan & Solidaritas',
+    ekonomi: 'Pemberdayaan Ekonomi & Sosial Masyarakat Desa'
+  };
+  const joinPreset = joinPresets[actionParams.get('bidang')];
+  if (joinPreset && joinDivision) {
+    joinDivision.value = joinPreset;
+    const context = document.querySelector('#join-context');
+    context.textContent = `Bidang ${joinPreset} sudah dipilih. Lengkapi formulir untuk mendaftar.`;
+    context.hidden = false;
+  }
   const nikInput = document.querySelector('#join-nik');
   nikInput.addEventListener('input', () => {
     nikInput.value = nikInput.value.replace(/\D/g, '').slice(0, 16);
@@ -247,6 +260,7 @@
         p_rw: luar ? null : val('rw'),
         p_kode_pos: luar ? null : val('kode_pos'),
         p_kota_luar: luar ? val('kota_luar') : null,
+        p_division: val('division'),
         p_jabatan: val('jabatan') || null,
         p_ktp_key: ktpKey, p_profile_key: profilKey
       };
