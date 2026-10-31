@@ -24,6 +24,7 @@
   <link rel="stylesheet" href="sebaran.css">
   <link rel="stylesheet" href="struktur.css">
   <link rel="stylesheet" href="iuran.css">
+  <link rel="stylesheet" href="poster-cinema.css">
 </head>
 <body>
   <canvas id="starfield" aria-hidden="true"></canvas>
@@ -70,6 +71,26 @@
       </div>
       <div class="hero-side-note"><span>01</span><i></i> AKSI LOKAL • DAMPAK NYATA</div>
       <div class="hero-bottomline"><span>BERANI BERGERAK. SETIA BERSAUDARA.</span><span>GULIR UNTUK MENJELAJAH <b>↓</b></span></div>
+    </section>
+
+    <section class="poster-cinema" id="pimpinan" aria-labelledby="pimpinan-title">
+      <div class="poster-cinema-head">
+        <span class="cinema-kicker">DPD GMPI SIDOARJO</span>
+        <h2 id="pimpinan-title">Pimpinan <em>GMPI</em></h2>
+      </div>
+      <figure class="cinema-frame">
+        <img class="cinema-poster" src="assets/posters/pimpinan-gmpi-cinematic.webp" alt="Poster pimpinan GMPI: H. M. Sayegi Dewasena, Ketua Umum GMPI, dan Hasmin Marjan, Ketua DPD GMPI Sidoarjo" width="2200" height="1833" loading="lazy" decoding="async">
+        <span class="cinema-lightning" aria-hidden="true"></span>
+        <span class="cinema-impact" aria-hidden="true"></span>
+        <span class="cinema-energy" aria-hidden="true"></span>
+        <span class="cinema-embers" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+        <span class="cinema-vignette" aria-hidden="true"></span>
+      </figure>
+      <button class="cinema-play" type="button" aria-pressed="false"><span class="cinema-play-icon" aria-hidden="true">▶</span><span class="cinema-play-label">Putar adegan &amp; narasi</span></button>
+      <audio class="cinema-voiceover" src="assets/audio/pimpinan-gmpi-voiceover.mp3" preload="metadata"></audio>
+      <p class="cinema-status" aria-live="polite"></p>
+      <a class="cinema-download" href="assets/audio/pimpinan-gmpi-voiceover.mp3" download="GMPI-DPD-Sidoarjo-voiceover.mp3">Unduh voiceover MP3 <span aria-hidden="true">↓</span></a>
+      <a class="cinema-cta" href="#struktur">Lihat Struktur Organisasi <span aria-hidden="true">↘</span></a>
     </section>
 
     <section class="section pillars-section" id="pilar">
@@ -409,5 +430,6 @@
   <script src="news.js"></script>
   <script src="sebaran.js"></script>
   <script src="struktur.js"></script>
+  <script src="poster-cinema.js"></script>
 </body>
 </html>
