@@ -11,3 +11,7 @@ Thumbs.db
 .supabase/
 /uploads/
 /exports/
+
+# Local cinematic production tools and intermediate media
+.cache/
+.venv/

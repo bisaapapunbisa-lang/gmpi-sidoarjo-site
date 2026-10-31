@@ -1,0 +1,17 @@
+{
+  "devDependencies": {
+    "@napi-rs/canvas": "^1.1.0",
+    "@sparticuz/chromium": "^153.0.0",
+    "playwright-core": "^1.64.1"
+  },
+  "name": "gmpi-sidoarjo-site",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Situs statis GMPI DPD Sidoarjo dan studio film identitas sinematik",
+  "scripts": {
+    "start": "node scripts/cinema/serve.mjs",
+    "cinema:poster": "node scripts/cinema/render.mjs --poster-only",
+    "cinema:render": "node scripts/cinema/render.mjs",
+    "cinema:test": "node scripts/cinema/test.mjs"
+  }
+}

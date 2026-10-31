@@ -72,3 +72,19 @@
 .pillars-section .pillar-card p{color:#625e56}
 .pillars-section .pillar-link{color:#25231e;border-bottom-color:rgba(23,23,21,.28)}
 .pillars-section .pillar-link span{color:#9c2928}
+
+/* Cinematic companion to the original leadership poster. */
+.leadership-film-link{display:flex;align-items:center;gap:15px;width:min(78%,520px);padding:15px 18px;background:#171715;color:#f5f1e7;border:1px solid #a78643;box-shadow:0 8px 24px rgba(23,23,21,.12);transition:transform .2s,background .2s}
+.leadership-film-link:hover{transform:translateY(-2px);background:#272219}
+.leadership-film-link:focus-visible{outline:3px solid var(--gold-hi);outline-offset:4px}
+.leadership-film-play{display:grid;place-items:center;flex:0 0 36px;height:36px;padding-left:2px;border-radius:50%;background:var(--gold);color:#17140c;font-size:11px}
+.leadership-film-link>span:nth-child(2){display:grid;gap:5px}
+.leadership-film-link strong{font-size:11px;font-weight:900;letter-spacing:.65px;text-transform:uppercase}
+.leadership-film-link small{font-size:8px;letter-spacing:1.1px;color:#c6b184}
+.leadership-film-arrow{margin-left:auto;color:var(--gold-hi);font-size:20px}
+@media(max-width:760px){.leadership-film-link{width:100%;padding:13px 14px;gap:12px}.leadership-film-link strong{font-size:10px}.leadership-film-link small{font-size:7px}}
+.leadership-download-link{display:inline-flex;align-items:center;justify-content:center;gap:12px;min-height:44px;padding:0 20px;border:1px solid var(--gold);color:#17140c;background:transparent;font-size:10px;font-weight:900;letter-spacing:.6px;text-transform:uppercase;transition:background .2s,transform .2s}
+.leadership-download-link:hover{background:rgba(198,155,59,.14);transform:translateY(-2px)}
+.leadership-download-link:focus-visible{outline:3px solid var(--gold-hi);outline-offset:4px}
+.leadership-download-link span{font-size:17px}
+@media(max-width:760px){.leadership-download-link{width:100%}}

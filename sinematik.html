@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b0c0e">
+  <meta name="description" content="Film identitas sinematik DPD GMPI Sidoarjo. Parallax 2.5D dari poster asli, dengan kilat, bara api, dan cahaya perjuangan. Tonton dan unduh versi 4K.">
+  <meta property="og:title" content="Cahaya Perjuangan — Film Identitas DPD GMPI Sidoarjo">
+  <meta property="og:description" content="Satu tekad. Satu pengabdian. Tonton film identitas sinematik DPD GMPI Sidoarjo.">
+  <meta property="og:image" content="assets/cinema/film-poster.jpg">
+  <title>Cahaya Perjuangan — Film Identitas DPD GMPI Sidoarjo</title>
+  <link rel="icon" type="image/png" href="assets/favicon.png">
+  <link rel="preload" href="assets/fonts/anton-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/inter-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="cinema.css">
+  <script src="assets/cinema/film.js" defer></script>
+  <script src="cinema.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#film">Langsung ke pemutar film</a>
+  <header class="studio-header">
+    <a class="studio-brand" href="index.html#pimpinan" aria-label="GMPI Sidoarjo, kembali ke pimpinan">
+      <img src="assets/logo-gmpi-sidoarjo-crop.webp" alt="" width="42" height="42">
+      <span><strong>GMPI <i>SIDOARJO</i></strong><small>STUDIO IDENTITAS ORGANISASI</small></span>
+    </a>
+    <a class="back-link" href="index.html#pimpinan"><span aria-hidden="true">←</span> Kembali ke situs</a>
+  </header>
+
+  <main class="studio-main">
+    <div class="film-heading">
+      <div>
+        <p class="eyebrow"><span></span> FILM IDENTITAS · EDISI SINEMATIK</p>
+        <h1>Cahaya <em>perjuangan.</em></h1>
+      </div>
+      <div class="heading-actions">
+        <p class="heading-note">Satu tekad. Satu pengabdian.<br><span>Dari Sidoarjo, untuk masyarakat.</span></p>
+        <a id="download-top" class="heading-download" href="unduh-film" download="DPD-GMPI-Sidoarjo-Cahaya-Perjuangan-4K.mp4" type="video/mp4" target="_blank" rel="noopener"><span aria-hidden="true">↓</span> Unduh MP4 4K <small>27 MB</small></a>
+      </div>
+    </div>
+
+    <section id="film" class="film-console" aria-label="Pemutar film Cahaya Perjuangan">
+      <div class="film-stage" id="film-stage">
+        <img id="film-fallback" class="film-fallback" src="assets/cinema/film-poster.jpg" alt="DPD GMPI. H.M Sayegi Dewasena dan Hasmin Marjan SPD berdiri tegap di panggung hitam merah dengan lambang GMPI Sidoarjo." width="1920" height="1080" fetchpriority="high">
+        <canvas id="film-canvas" width="1920" height="1080" role="img" aria-label="Film identitas DPD GMPI Sidoarjo" aria-describedby="film-description" hidden></canvas>
+        <div class="stage-topline" aria-hidden="true"><span><i></i> DPD GMPI SIDOARJO</span><span>4K UHD <b> / </b> 24 DETIK</span></div>
+        <div class="stage-overlay" id="stage-overlay">
+          <button class="hero-play" id="hero-play" type="button" disabled><span class="play-disc" aria-hidden="true">▶</span><span id="hero-play-label">Menyiapkan film…</span></button>
+        </div>
+        <div class="film-error" id="film-error" role="alert" hidden>Film interaktif belum dapat dimuat. Anda tetap dapat melihat poster atau mengunduh videonya di bawah.</div>
+        <span class="stage-corner corner-tl" aria-hidden="true"></span><span class="stage-corner corner-br" aria-hidden="true"></span>
+      </div>
+
+      <div class="player-controls">
+        <div class="transport-row">
+          <button class="icon-button primary-control" id="play-toggle" type="button" aria-label="Putar film" title="Putar / jeda (Spasi)" disabled><span id="play-symbol" aria-hidden="true">▶</span></button>
+          <button class="icon-button replay-control" id="replay" type="button" aria-label="Putar ulang dari awal" title="Putar ulang" disabled><span aria-hidden="true">↺</span></button>
+          <output class="timecode" id="time-current" for="timeline">00:00</output>
+          <label class="sr-only" for="timeline">Posisi film</label>
+          <input id="timeline" class="timeline" type="range" min="0" max="24" step="0.01" value="0" aria-valuetext="0 detik dari 24 detik" disabled>
+          <output class="timecode duration" for="timeline">00:24</output>
+          <span class="control-divider" aria-hidden="true"></span>
+          <button class="icon-button" id="sound-toggle" type="button" aria-label="Aktifkan suara" aria-pressed="false" title="Suara (M)" disabled><span id="sound-symbol" aria-hidden="true">🔇</span></button>
+          <button class="icon-button" id="fullscreen" type="button" aria-label="Layar penuh" title="Layar penuh (F)"><span aria-hidden="true">⛶</span></button>
+        </div>
+        <div class="comfort-row">
+          <p class="flash-notice"><span aria-hidden="true">◇</span> Mengandung kilatan cahaya. Pilih mode lembut untuk kilat yang lebih redup.</p>
+          <button id="gentle-toggle" class="gentle-toggle" type="button" aria-pressed="false" disabled><span class="switch-track" aria-hidden="true"><i></i></span> Cahaya lembut</button>
+        </div>
+      </div>
+      <audio id="film-audio" src="assets/cinema/score.m4a" preload="none"></audio>
+    </section>
+
+    <div class="download-strip" aria-label="Unduhan film">
+      <div><strong>Film siap diunduh.</strong><span>MP4 4K · 24 detik · dengan musik · 27 MB</span></div>
+      <a class="download-button download-button-strip" href="unduh-film" download="DPD-GMPI-Sidoarjo-Cahaya-Perjuangan-4K.mp4" type="video/mp4" target="_blank" rel="noopener"><span>Unduh film 4K</span><span aria-hidden="true">↓</span></a>
+      <a class="open-video-link" href="assets/cinema/dpd-gmpi-cinematic-4k.mp4" target="_blank" rel="noopener">Buka video langsung <span aria-hidden="true">↗</span></a>
+    </div>
+
+    <nav class="chapter-nav" aria-label="Bab film">
+      <button type="button" data-time="0" disabled><span>01</span> Kegelapan <small>00:00</small></button>
+      <button type="button" data-time="2.1" disabled><span>02</span> Kebangkitan <small>00:02</small></button>
+      <button type="button" data-time="7" disabled><span>03</span> Keteguhan <small>00:07</small></button>
+      <button type="button" data-time="12" disabled><span>04</span> Pengabdian <small>00:12</small></button>
+      <button type="button" data-time="18.2" disabled><span>05</span> Cahaya <small>00:18</small></button>
+    </nav>
+
+    <div class="film-details">
+      <section class="about-film" aria-labelledby="about-title">
+        <p class="eyebrow"><span></span> DI BALIK VISUAL</p>
+        <h2 id="about-title">Wajah asli. Semangat yang hidup.</h2>
+        <p id="film-description">Dua pimpinan, satu pengabdian. Sosok H.M Sayegi Dewasena dan Hasmin Marjan SPD dari poster asli dihidupkan melalui animasi parallax 2.5D: kedalaman berlapis, gerak kamera perlahan, kilat, asap, dan bara api. Bukan rekonstruksi wajah atau gerakan tubuh baru.</p>
+        <div class="film-specs"><span>2.5D PARALLAX</span><span>24 FPS</span><span>16:9</span><span>24 DETIK</span></div>
+      </section>
+      <section class="download-panel" aria-labelledby="download-title">
+        <div><p class="eyebrow">ARSIP VISUAL</p><h2 id="download-title">Bawa pulang cahayanya.</h2><p>MP4 · 3840 × 2160 · H.264 + AAC</p></div>
+        <a id="download-film" class="download-button" href="unduh-film" download="DPD-GMPI-Sidoarjo-Cahaya-Perjuangan-4K.mp4" target="_blank" rel="noopener"><span>Unduh film 4K</span><span aria-hidden="true">↓</span></a>
+        <small id="download-note">Versi penuh dengan musik sinematik. Untuk penggunaan resmi DPD GMPI Sidoarjo.</small>
+      </section>
+    </div>
+
+    <footer class="studio-footer"><span>DPD GMPI KABUPATEN SIDOARJO</span><p>“Setia Bersaudara Sampai Urat Nadi”</p><a href="assets/posters/poster-dpd-gmpi-sidoarjo.webp" target="_blank" rel="noopener">Lihat poster asli <span aria-hidden="true">↗</span></a></footer>
+  </main>
+  <p id="player-status" class="sr-only" role="status" aria-live="polite"></p>
+  <noscript><p class="noscript-note">Aktifkan JavaScript untuk memutar animasi interaktif, atau unduh film 4K melalui tautan di atas.</p></noscript>
+</body>
+</html>
