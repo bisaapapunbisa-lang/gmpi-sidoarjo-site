@@ -34,14 +34,16 @@ if (!process.env.FFMPEG) {
   const python = resolve(root, '.venv/bin/python');
   if (existsSync(python)) ffmpeg = execFileSync(python, ['-c', 'import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())'], { encoding: 'utf8' }).trim();
 }
-const score = resolve(root, '.cache/cinema/score.wav');
-if (!existsSync(score)) throw new Error('Generate the original score first: python scripts/cinema/make-score.py');
+const scoreVo = resolve(root, '.cache/cinema/score-vo.wav');
+const scoreBase = resolve(root, '.cache/cinema/score.wav');
+const score = existsSync(scoreVo) ? scoreVo : scoreBase;
+if (!existsSync(score)) throw new Error('Generate the score first: python scripts/cinema/make-score.py (then mix-voiceover.py for the narrated mix)');
 const frameDir = resolve(root, '.cache/cinema/frames');
 mkdirSync(frameDir, { recursive: true });
 const args = ['-hide_banner', '-y', '-framerate', String(fps), '-i', resolve(frameDir, 'frame-%05d.jpg'), '-i', score,
   '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '21', '-pix_fmt', 'yuv420p', '-threads', '1', '-x264-params', 'rc-lookahead=0:sync-lookahead=0:sliced-threads=1',
   '-c:a', 'aac', '-b:a', '160k', '-shortest', '-movflags', '+faststart', '-metadata', 'title=DPD GMPI Sidoarjo — Cahaya Perjuangan',
-  '-metadata', 'comment=Original-photo 2.5D parallax; original synthesized score.', output];
+  '-metadata', 'comment=Original-photo 2.5D parallax; original synthesized score and Indonesian voiceover.', output];
 mkdirSync(resolve(root, '.cache/cinema'), { recursive: true });
 const logPath = resolve(root, '.cache/cinema/ffmpeg.log');
 const log = createWriteStream(logPath);

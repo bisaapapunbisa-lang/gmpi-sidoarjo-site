@@ -17,7 +17,9 @@ Ini **parallax 2.5D** dari foto asli, bukan rekonstruksi tubuh/pose 3D baru.
 - `index.html#pimpinan` — tautan "Putar Film Sinematik" di bawah poster asli.
 - `assets/cinema/dpd-gmpi-cinematic-4k.mp4` — ekspor video.
 - `assets/cinema/film-poster.jpg` — still 4K untuk fallback/metadata.
-- `assets/cinema/score.m4a` — musik untuk pemutar web.
+- `assets/cinema/score.m4a` — musik saja untuk pemutar web.
+- `assets/cinema/score-vo.m4a` — musik + voiceover Indonesia untuk pemutar web.
+- `assets/cinema/voiceover/` — take VO terpilih (0:02, 0:05, 0:08).
 
 ## Menjalankan situs
 
@@ -42,8 +44,9 @@ python -m venv .venv
 # dengan nama isnet-general-use.onnx (tidak di-commit).
 U2NET_HOME=/path/to/models .venv/bin/python scripts/cinema/prepare-assets.py
 
-# Musik asli dan still.
+# Musik asli, mix voiceover, dan still.
 .venv/bin/python scripts/cinema/make-score.py
+.venv/bin/python scripts/cinema/mix-voiceover.py
 node scripts/cinema/render.mjs --width 1920 --poster-only
 
 # Ekspor 4K. Frame antara disimpan di .cache/cinema/frames.

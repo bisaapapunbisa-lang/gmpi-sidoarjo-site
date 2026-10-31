@@ -18,6 +18,10 @@ try {
   await page.goto(`${base}/sinematik.html`, { waitUntil: 'networkidle' });
   await page.waitForFunction(() => window.cinemaPlayer?.getState().ready);
   assert.equal(await page.locator('#film-error').isVisible(), false);
+  assert.match(await page.locator('#film-audio').getAttribute('src'), /score-vo\.m4a$/);
+  const voMix = await page.request.get(`${base}/assets/cinema/score-vo.m4a`);
+  assert.equal(voMix.status(), 200);
+  assert.ok((await voMix.body()).length > 100000);
   assert.equal(await page.locator('#hero-play').isEnabled(), true);
   await page.screenshot({ path: '.cache/cinema/tests/desktop.png', fullPage: true });
   await page.locator('#hero-play').click();
