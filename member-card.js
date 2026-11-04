@@ -153,7 +153,7 @@
     ctx.drawImage(img, x + pad + (boxW - dw) / 2, y + pad + (boxH - dh) / 2, dw, dh);
   }
 
-  function drawQr(ctx, text, x, y, size) {
+  function drawQr(ctx, text, x, y, size, logo) {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(x, y, size, size);
     if (!text || typeof window.qrcode !== 'function') {
@@ -166,7 +166,8 @@
       ctx.fillText('SETELAH DISIMPAN', x + size / 2, y + size / 2 + 12);
       return;
     }
-    const qr = window.qrcode(0, 'M');
+    // Level H: wajib, karena bagian tengah ditutup lambang GMPI.
+    const qr = window.qrcode(0, 'H');
     qr.addData(text, /^[0-9A-Z $%*+\-./:]+$/.test(text) ? 'Alphanumeric' : 'Byte');
     qr.make();
     const count = qr.getModuleCount();
@@ -180,6 +181,22 @@
           ctx.fillRect(x + (c + quiet) * cell, y + (r + quiet) * cell, cell + 0.35, cell + 0.35);
         }
       }
+    }
+
+    // ---- lambang GMPI di tengah QR (maksimal 20% lebar QR) ----
+    const iw = logo && (logo.naturalWidth || logo.width);
+    const ih = logo && (logo.naturalHeight || logo.height);
+    if (iw && ih) {
+      const sisiLogo = size * 0.20;
+      const k = sisiLogo / Math.max(iw, ih);
+      const lw = iw * k;
+      const lh = ih * k;
+      const lx = x + (size - lw) / 2;
+      const ly = y + (size - lh) / 2;
+      const tepi = Math.max(1, sisiLogo * 0.08);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(lx - tepi, ly - tepi, lw + tepi * 2, lh + tepi * 2);
+      ctx.drawImage(logo, lx, ly, lw, lh);
     }
   }
 
@@ -456,7 +473,7 @@
     const qx = 40, qy = 780, qs = 168;
     ctx.fillStyle = '#fff';
     rr(ctx, qx, qy, qs, qs, 16); ctx.fill();
-    drawQr(ctx, token ? verifyUrl(token) : '', qx + 6, qy + 6, qs - 12);
+    drawQr(ctx, token ? verifyUrl(token) : '', qx + 6, qy + 6, qs - 12, data.logo);
     ctx.strokeStyle = C.gold; ctx.lineWidth = 2;
     rr(ctx, qx - 5, qy - 5, qs + 10, qs + 10, 20); ctx.stroke();
 
