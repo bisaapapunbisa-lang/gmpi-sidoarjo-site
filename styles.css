@@ -38,3 +38,9 @@
 .shop-disclosure{max-width:none}
 .shop-disclosure>summary{border-radius:14px;background:rgba(255,253,247,.78)}
 @media(max-width:600px){.section-disclosure>summary{min-height:66px;padding:13px 14px;gap:12px}.section-disclosure>summary strong{font-size:9px;letter-spacing:1px}.section-disclosure>summary small{font-size:9px}.disclosure-panel{padding-top:14px}}
+
+/* Make the secretary's address visibly clickable. */
+.site-footer .footer-map-link{color:#d7d1c5;text-decoration:underline;text-decoration-color:rgba(224,184,85,.65);text-underline-offset:3px}
+.site-footer .footer-map-link:hover{color:#fff}
+.site-footer .footer-map-link:focus-visible{outline:2px solid var(--gold-hi);outline-offset:3px}
+.site-footer .footer-map-label{display:block;margin-top:4px;color:var(--gold-hi);font-weight:700}
