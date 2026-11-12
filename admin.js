@@ -122,6 +122,32 @@
     await loadAuthorizedUser(data.user);
   });
 
+  const passwordResetForm = document.querySelector('#password-reset-form');
+  passwordResetForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    const feedback = document.querySelector('#password-reset-message');
+    if (!client) {
+      feedback.textContent = 'Layanan akun belum tersedia. Hubungi pemilik Admin.';
+      return;
+    }
+    const button = passwordResetForm.querySelector('button[type="submit"]');
+    button.disabled = true;
+    feedback.textContent = 'Mengirim permintaan…';
+    try {
+      const email = String(new FormData(passwordResetForm).get('email') || '').trim().toLowerCase();
+      const { error } = await client.auth.resetPasswordForEmail(email, {
+        redirectTo: 'https://www.gmpisidoarjo.com/admin-aktivasi'
+      });
+      feedback.textContent = error
+        ? 'Permintaan belum dapat diproses. Coba lagi nanti atau hubungi pemilik Admin.'
+        : 'Jika akun dapat menerima email, tautan akan dikirim. Periksa kotak masuk dan spam. Bila tidak diterima, hubungi pemilik Admin.';
+    } catch (_) {
+      feedback.textContent = 'Permintaan belum dapat diproses. Periksa koneksi dan coba lagi.';
+    } finally {
+      button.disabled = false;
+    }
+  });
+
   async function restoreSession() {
     if (!client) return;
     const { data, error } = await client.auth.getSession();
