@@ -100,7 +100,17 @@ a.news-all[hidden]{display:none}
 .news-brand-cover::before,.news-brand-cover::after{content:'';position:absolute;pointer-events:none}
 .news-brand-cover::before{inset:6%;border:1px solid rgba(202,169,103,.26)}
 .news-brand-cover::after{inset:-100%;z-index:-1;background:linear-gradient(110deg,transparent 43%,rgba(224,194,133,.07) 49%,transparent 55%);transform:translateX(-30%)}
-.news-brand-content{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;width:85%;height:85%;gap:clamp(4px,1vw,12px)}
+/* Kabut dan bintang hanya menghiasi latar; logo dan teks tetap di depan. */
+.news-brand-smoke,.news-brand-stars{position:absolute;inset:0;pointer-events:none}
+.news-brand-smoke{opacity:.7;background:radial-gradient(ellipse 30% 20% at 15% 78%,rgba(206,197,185,.12),transparent 75%),radial-gradient(ellipse 27% 18% at 84% 70%,rgba(206,197,185,.1),transparent 75%),radial-gradient(ellipse 35% 16% at 50% 95%,rgba(206,197,185,.09),transparent 75%);filter:blur(12px)}
+.news-brand-stars{background:radial-gradient(circle 1.5px at 17% 23%,rgba(255,231,180,.85) 15%,transparent 100%),radial-gradient(circle 1px at 28% 39%,rgba(255,246,219,.8) 15%,transparent 100%),radial-gradient(circle 1.5px at 74% 20%,rgba(255,231,180,.8) 15%,transparent 100%),radial-gradient(circle 1px at 85% 43%,rgba(255,246,219,.75) 15%,transparent 100%),radial-gradient(circle 1.5px at 22% 69%,rgba(255,231,180,.7) 15%,transparent 100%),radial-gradient(circle 1px at 78% 76%,rgba(255,246,219,.8) 15%,transparent 100%);opacity:.55}
+.news-brand-stars::after{content:'';position:absolute;inset:0;background:radial-gradient(circle 1px at 12% 51%,#ffedc4 15%,transparent 100%),radial-gradient(circle 1.5px at 35% 18%,#ffedc4 15%,transparent 100%),radial-gradient(circle 1px at 68% 37%,#ffedc4 15%,transparent 100%),radial-gradient(circle 1.5px at 89% 64%,#ffedc4 15%,transparent 100%),radial-gradient(circle 1px at 31% 82%,#ffedc4 15%,transparent 100%);opacity:.5}
+.news-brand-cover.is-playing .news-brand-smoke{animation:news-smoke-drift 12s ease-in-out infinite alternate}
+.news-brand-cover.is-playing .news-brand-stars{animation:news-stars-twinkle 4s ease-in-out infinite alternate}
+.news-brand-cover.is-playing .news-brand-stars::after{animation:news-stars-twinkle 3s 1s ease-in-out infinite alternate-reverse}
+@keyframes news-smoke-drift{from{transform:translate(-3%,2%) scale(1);opacity:.45}to{transform:translate(3%,-3%) scale(1.08);opacity:.8}}
+@keyframes news-stars-twinkle{from{opacity:.25}to{opacity:.85}}
+.news-brand-content{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;width:85%;height:85%;gap:clamp(4px,1vw,12px)}
 .news-cover.news-brand-cover .news-brand-logo{position:static;transform:none;width:auto;min-width:0;max-width:26%;height:40%;max-height:130px;opacity:1;object-fit:contain;filter:drop-shadow(0 5px 14px rgba(0,0,0,.6))}
 .news-card:hover .news-brand-cover .news-brand-logo{transform:none}
 .news-brand-lettering{text-align:center;color:#f3ead8;text-shadow:0 2px 8px rgba(0,0,0,.6);font:800 clamp(13px,2.6vw,28px)/1.05 var(--body);letter-spacing:.2em}
@@ -124,5 +134,5 @@ a.news-all[hidden]{display:none}
   .news-card:not(.is-featured) .news-brand-cover .news-brand-logo{max-width:40%;height:38%}
 }
 @media(prefers-reduced-motion:reduce){
-  .news-brand-cover.is-playing .news-brand-logo,.news-brand-cover.is-playing .news-brand-word span,.news-brand-cover.is-playing .news-brand-motto,.news-brand-cover.is-playing .news-brand-rule,.news-brand-cover.is-playing::after{animation:none}
+  .news-brand-cover.is-playing .news-brand-logo,.news-brand-cover.is-playing .news-brand-word span,.news-brand-cover.is-playing .news-brand-motto,.news-brand-cover.is-playing .news-brand-rule,.news-brand-cover.is-playing::after,.news-brand-cover.is-playing .news-brand-smoke,.news-brand-cover.is-playing .news-brand-stars,.news-brand-cover.is-playing .news-brand-stars::after{animation:none}
 }

@@ -86,7 +86,8 @@
     });
     lettering.append(line, el('div', 'news-brand-motto', 'Setia Bersaudara Sampai Urat Nadi'));
     brand.append(logo, lettering, el('span', 'news-brand-rule'));
-    media.append(brand);
+    // Lapisan dekoratif berada di belakang logo dan tidak mengubah foto berita asli.
+    media.append(el('span', 'news-brand-smoke'), el('span', 'news-brand-stars'), brand);
     if (coverObserver) coverObserver.observe(media);
     else media.classList.add('is-playing');
   }
