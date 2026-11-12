@@ -3290,7 +3290,7 @@
       row.append(kontakCell);
       const bidangCell = make('td', '', member.division || '—');
       if (!member.division) bidangCell.style.cssText = 'color:#a49d90';
-      if (!member.division) bidangCell.title = 'Bidang belum diisi (pendaftar tidak lagi ditanya bidang)';
+      if (!member.division) bidangCell.title = 'Bidang belum diisi';
       row.append(bidangCell);
       const jabatanCell = make('td');
       const jabSel = make('select');
@@ -3563,10 +3563,22 @@
       ['Serikat Buruh, Tani & Nelayan (SB GMPI)', 'Serikat Buruh, Tani & Nelayan (SB GMPI)'],
       ['Tagana — Tanggap Bencana', 'Tagana — Tanggap Bencana'],
       ['Pemberdayaan Ekonomi & Sosial Masyarakat Desa', 'Pemberdayaan Ekonomi & Sosial Masyarakat Desa'],
+      ['Divisi Agama', 'Divisi Agama'],
+      ['Divisi Ekonomi', 'Divisi Ekonomi'],
+      ['Divisi Hukum dan Hak Asasi Manusia (HAM)', 'Divisi Hukum dan Hak Asasi Manusia (HAM)'],
+      ['Divisi Pariwisata', 'Divisi Pariwisata'],
+      ['Divisi Pemberdayaan Perempuan', 'Divisi Pemberdayaan Perempuan'],
+      ['Divisi Pertahanan & Keamanan Anggota', 'Divisi Pertahanan & Keamanan Anggota'],
+      ['Divisi Politik', 'Divisi Politik'],
+      ['Divisi Sosial', 'Divisi Sosial'],
+      ['Divisi Tenaga Kerja', 'Divisi Tenaga Kerja'],
+      ['Litbang', 'Litbang'],
+      ['Organ Keanggotaan & Kaderisasi', 'Organ Keanggotaan & Kaderisasi'],
+      ['Publikasi/Media', 'Publikasi/Media'],
       ['Seluruh bidang (Ketua DPD)', 'Seluruh bidang (Ketua DPD)']
     ];
     const divisionField = addSelect('division', 'Bidang', divisions);
-    divisionField.append(make('small', 'privacy-mini', 'Pendaftar tidak lagi ditanya bidang. Isi di sini hanya bila perlu untuk catatan internal; untuk Ketua DPD pilih “Seluruh bidang (Ketua DPD)”.'));
+    divisionField.append(make('small', 'privacy-mini', 'Pilih bidang sesuai pendaftaran atau sesuaikan bila diperlukan; untuk Ketua DPD pilih “Seluruh bidang (Ketua DPD)”.'));
     addField('jabatan', 'Jabatan pengurus (kosongkan untuk anggota biasa)', 'text', { maxLength: 60 });
     addSelect('status', 'Status pendaftaran', MEMBER_STATUSES.map(value => [value.replaceAll('_',' '), value]));
     form.append(grid);
