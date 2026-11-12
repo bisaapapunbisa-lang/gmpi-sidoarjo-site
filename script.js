@@ -327,6 +327,30 @@
     resolveLogo(DEFAULT_LOGO);
   }
 
+  // Poster tetap menggunakan gambar bawaan jika pengaturan atau gambar belum tersedia.
+  const posterLink = document.querySelector('.leadership-poster-preview');
+  const posterImage = posterLink?.querySelector('img');
+  if (posterLink && posterImage && supabaseConfig.url && supabaseConfig.publishableKey) {
+    const root = supabaseConfig.url.replace(/\/$/, '');
+    fetch(`${root}/rest/v1/leadership_poster?select=image_path&id=eq.true`, {
+      headers: { apikey: supabaseConfig.publishableKey, Authorization: `Bearer ${supabaseConfig.publishableKey}` }
+    }).then(response => response.ok ? response.json() : [])
+      .then(rows => {
+        const path = Array.isArray(rows) && rows[0]?.image_path;
+        if (!path || !/^leadership\/[A-Za-z0-9][A-Za-z0-9._-]{0,119}$/.test(path)) return;
+        const url = `${root}/storage/v1/object/public/site-assets/${path}`;
+        const probe = new Image();
+        probe.onload = () => {
+          posterImage.width = probe.naturalWidth;
+          posterImage.height = probe.naturalHeight;
+          posterImage.alt = 'Poster pimpinan GMPI';
+          posterImage.src = url;
+          posterLink.href = url;
+        };
+        probe.src = url;
+      }).catch(() => {});
+  }
+
   // Contoh Kartu Tanda Anggota (data fiktif, ditandai CONTOH). QR mengarah ke kode CONTOH.
   const sampleCanvas = document.querySelector('#kta-sample');
   const sampleBack = document.querySelector('#kta-sample-back');

@@ -226,7 +226,8 @@
       setMessage(saveError ? 'Perubahan tidak tersimpan. Pastikan migrasi dan peran Editor Situs sudah aktif.' : 'Perubahan tersimpan. Muat ulang beranda untuk melihat hasilnya.', saveError ? 'error' : 'ok');
     });
     const logoSection = await buildLogoManager();
-    workspace.replaceChildren(logoSection, heading, form);
+    const posterSection = await buildLeadershipPosterManager();
+    workspace.replaceChildren(posterSection, logoSection, heading, form);
   }
 
   // ---- Toko perlengkapan: pengaturan pembayaran/legalitas + katalog barang ----
@@ -1430,6 +1431,115 @@
       grid.append(cardEl);
     });
     section.append(grid);
+    return section;
+  }
+
+  // Poster pimpinan terpisah dari logo situs dan logo pada KTA.
+  async function buildLeadershipPosterManager() {
+    const section = make('section', 'logo-manager poster-manager');
+    const heading = make('div', 'workspace-heading');
+    const text = make('div');
+    text.append(make('h3', '', 'Poster pimpinan beranda'));
+    text.append(make('p', '', 'Unggah poster lengkap pengganti. Gambar ditampilkan utuh dan menggantikan poster kedua pimpinan, bukan logo situs atau KTA. Gunakan JPG, PNG, atau WebP maksimal 2 MB.'));
+    heading.append(text);
+    section.append(heading);
+
+    const { data, error } = await client.from('leadership_poster').select('image_path').eq('id', true).maybeSingle();
+    if (error) {
+      section.append(make('div', 'admin-message is-error', 'Pengaturan poster belum siap. Minta pengelola menjalankan migrasi poster pimpinan di Supabase.'));
+      return section;
+    }
+    let currentPath = data?.image_path || '';
+    const image = make('img', 'poster-manager-image');
+    image.alt = 'Poster pimpinan yang sedang dipakai';
+    const status = make('p', 'privacy-mini');
+    const reset = make('button', 'admin-button admin-button-outline', 'Kembalikan poster bawaan');
+    reset.type = 'button';
+    function refreshCurrent() {
+      image.src = currentPath ? client.storage.from('site-assets').getPublicUrl(currentPath).data.publicUrl : 'assets/posters/poster-dpd-gmpi-sidoarjo-preview.webp';
+      status.textContent = currentPath ? 'Poster unggahan sedang digunakan.' : 'Poster bawaan sedang digunakan.';
+      reset.disabled = !currentPath;
+    }
+    refreshCurrent();
+    section.append(image, status, reset);
+
+    const form = make('form', 'logo-upload poster-upload');
+    const label = make('label', 'file-button', 'Pilih poster baru');
+    const fileInput = make('input', 'sr-only');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/jpeg,image/png,image/webp';
+    label.append(fileInput);
+    const preview = make('img', 'poster-manager-image poster-preview');
+    preview.alt = 'Pratinjau poster baru';
+    preview.hidden = true;
+    const note = make('small', 'privacy-mini', 'Belum ada file dipilih.');
+    const save = make('button', 'admin-button admin-button-gold', 'Unggah dan pakai poster');
+    save.type = 'submit';
+    save.disabled = true;
+    form.append(label, preview, note, save);
+    section.append(form);
+    let selected = null;
+    let previewUrl = '';
+    let selectionVersion = 0;
+    fileInput.addEventListener('change', async () => {
+      const version = ++selectionVersion;
+      selected = null;
+      save.disabled = true;
+      preview.hidden = true;
+      if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = ''; }
+      const file = fileInput.files?.[0];
+      if (!file) { note.textContent = 'Belum ada file dipilih.'; return; }
+      if (!LOGO_TYPES[file.type] || file.size > LOGO_MAX_BYTES || file.size === 0) {
+        note.textContent = 'Pilih gambar JPG, PNG, atau WebP yang ukurannya tidak lebih dari 2 MB.';
+        return;
+      }
+      const size = await readImageSize(file);
+      if (version !== selectionVersion) { if (size) URL.revokeObjectURL(size.url); return; }
+      if (!size) { note.textContent = 'File tidak dapat dibaca sebagai gambar.'; return; }
+      selected = file;
+      previewUrl = size.url;
+      preview.src = previewUrl;
+      preview.hidden = false;
+      note.textContent = `${size.width} × ${size.height} px · ${(file.size / 1024).toFixed(0)} KB`;
+      save.disabled = false;
+    });
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      if (!selected) return;
+      const file = selected;
+      save.disabled = true;
+      fileInput.disabled = true;
+      reset.disabled = true;
+      try {
+        const path = `leadership/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${LOGO_TYPES[file.type]}`;
+        const upload = await client.storage.from('site-assets').upload(path, file, { contentType: file.type, cacheControl: '31536000', upsert: false });
+        if (upload.error) throw upload.error;
+        const result = await client.from('leadership_poster').upsert({ id: true, image_path: path, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+        if (result.error) throw result.error;
+        currentPath = path;
+        selected = null;
+        form.reset();
+        preview.hidden = true;
+        if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = ''; }
+        note.textContent = 'Belum ada file dipilih.';
+        setMessage('Poster baru terpasang. Muat ulang beranda untuk melihat hasilnya.');
+      } catch (e) {
+        save.disabled = false;
+        setMessage('Poster belum berhasil dipasang. Periksa koneksi dan izin Pemilik/Editor Situs, lalu coba lagi.', 'error');
+      } finally {
+        fileInput.disabled = false;
+        refreshCurrent();
+      }
+    });
+    reset.addEventListener('click', async () => {
+      if (!window.confirm('Kembalikan poster bawaan? Gambar unggahan tetap tersimpan.')) return;
+      reset.disabled = true;
+      const { error: resetError } = await client.from('leadership_poster').delete().eq('id', true);
+      if (resetError) { setMessage('Poster bawaan belum dapat dikembalikan.', 'error'); reset.disabled = false; return; }
+      currentPath = '';
+      refreshCurrent();
+      setMessage('Poster bawaan dipakai kembali. Muat ulang beranda untuk melihat hasilnya.');
+    });
     return section;
   }
 

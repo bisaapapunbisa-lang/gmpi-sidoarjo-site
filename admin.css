@@ -287,3 +287,9 @@
 
 .card-actions .card-permanent-delete{color:#9a2928;font-weight:900;border:1px solid #d5b4af;padding:5px 7px;text-align:left}
 .card-actions .card-permanent-delete:hover{background:#f7e5e5;color:#702326}
+
+/* Poster pimpinan memiliki bingkai lebar, terpisah dari logo situs. */
+.poster-manager-image{display:block;width:min(100%,560px);height:auto;max-height:320px;object-fit:contain;object-position:left center;background:#181817;border:1px solid #d9d4c9}
+.poster-upload{margin-top:18px}
+.poster-upload .poster-preview{width:min(100%,320px);max-height:200px}
+.poster-upload .poster-preview[hidden]{display:none}
