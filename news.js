@@ -73,7 +73,7 @@
     media.classList.add('is-empty', 'news-brand-cover');
     media.setAttribute('aria-hidden', 'true');
     const logo = el('img', 'news-brand-logo');
-    logo.src = 'assets/logo-gmpi-sidoarjo-crop.webp';
+    logo.src = 'assets/logo-gmpi-sampul-transparan.webp';
     logo.alt = '';
     logo.decoding = 'async';
     const brand = el('div', 'news-brand-content');
