@@ -126,14 +126,14 @@
         <div class="form-heading"><div><span class="form-kicker">LBH GMPI DPD SIDOARJO</span><h3>Formulir pengaduan</h3></div><span class="form-number">01—04</span></div>
         <form id="report-form">
           <p class="form-context" id="report-context" hidden></p>
-          <div class="form-row"><div><label for="report-name">Nama</label><input id="report-name" name="name" placeholder="Nama panggilan / lengkap" required></div><div><label for="report-contact">Kontak yang bisa dihubungi</label><input id="report-contact" name="contact" type="tel" placeholder="No. WhatsApp / telepon" required></div></div>
+          <div class="form-row"><div><label for="report-name">Nama</label><input id="report-name" name="name" maxlength="120" placeholder="Nama panggilan / lengkap" required></div><div><label for="report-contact">Kontak yang bisa dihubungi</label><input id="report-contact" name="contact" type="tel" minlength="5" maxlength="40" placeholder="No. WhatsApp / telepon" required></div></div>
           <div class="form-row"><div><label for="report-area">Kecamatan</label><select id="report-area" name="area" required><option value="">Pilih kecamatan</option><option>Balongbendo</option><option>Buduran</option><option>Candi</option><option>Gedangan</option><option>Jabon</option><option>Krembung</option><option>Krian</option><option>Porong</option><option>Prambon</option><option>Sedati</option><option>Sidoarjo</option><option>Sukodono</option><option>Taman</option><option>Tanggulangin</option><option>Tarik</option><option>Tulangan</option><option>Waru</option><option>Wonoayu</option></select></div><div><label for="report-type">Topik pengaduan</label><select id="report-type" name="type" required><option value="">Pilih topik</option><option>Lingkungan</option><option>Ketidakadilan sosial</option><option>Sengketa / persoalan hukum</option><option>Hak pekerja</option><option>Kebencanaan / Tagana</option><option>Lainnya</option></select></div></div>
-          <label for="report-message">Ceritakan pokok persoalan</label><textarea id="report-message" name="message" rows="4" placeholder="Lokasi umum, kronologi singkat, dan bantuan yang dibutuhkan..." required></textarea>
-          <label class="consent"><input type="checkbox" required><span>Saya setuju dihubungi terkait pengaduan ini dan memahami kebijakan privasi.</span></label>
+          <label for="report-message">Ceritakan pokok persoalan</label><textarea id="report-message" name="message" rows="4" minlength="5" maxlength="5000" placeholder="Lokasi umum, kronologi singkat, dan bantuan yang dibutuhkan..." required></textarea>
+          <label class="consent"><input type="checkbox" name="consent" required><span>Saya telah membaca <a href="privasi-aduan.html" target="_blank" rel="noopener noreferrer">pemberitahuan privasi aduan</a> dan setuju dihubungi terkait pengaduan ini.</span></label>
           <button class="button button-red button-wide" type="submit">Kirim pengaduan ke LBH <span>↗</span></button>
           <p class="form-status" id="report-status" role="status" aria-live="polite"></p>
         </form>
-        <p class="form-footnote">Selesai mengisi, aplikasi email di perangkat Anda akan terbuka—tinjau lalu tekan Kirim. Laporan masuk ke <b><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="c4a3a9b4adb7a0a584a3a9a5ada8eaa7aba9">[email&#160;protected]</a></b> dengan subjek [ADUAN].</p>
+        <p class="form-footnote">Aduan dikirim langsung ke panel LBH dan dapat dibaca oleh Pemilik dan Petugas LBH. Aduan dijadwalkan dihapus dari database aktif setelah satu bulan, termasuk jika belum selesai ditangani. Baca <a href="privasi-aduan.html" target="_blank" rel="noopener noreferrer">pemberitahuan privasi</a>.</p>
       </div>
     </section>
 
@@ -428,7 +428,7 @@
   <script src="assets/wilayah-sidoarjo.js"></script>
   <script src="vendor/qrcode-generator.js"></script>
   <script src="member-card.js"></script>
-  <script src="script.js"></script>
+  <script src="script.js?v=aduan-langsung-1"></script>
   <script src="starfield.js"></script>
   <script src="store.js"></script>
   <script src="news.js"></script>
