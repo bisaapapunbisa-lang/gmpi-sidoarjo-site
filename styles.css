@@ -48,3 +48,7 @@
 /* Video pimpinan menggantikan poster bawaan; unggahan Admin tetap bisa dipakai. */
 .leadership-section .leadership-video{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:contain;background:#111}
 .leadership-section .leadership-video[hidden],.leadership-section .leadership-poster-preview[hidden]{display:none}
+.leadership-section .leadership-sound{display:block;margin:12px auto;padding:11px 18px;border:1px solid var(--gold);border-radius:4px;background:#191816;color:#f3d589;font-size:13px;font-weight:700;cursor:pointer}
+.leadership-section .leadership-sound:hover{background:#302819;color:#fff}
+.leadership-section .leadership-sound:focus-visible{outline:3px solid var(--gold-hi);outline-offset:3px}
+.leadership-section .leadership-sound[hidden]{display:none}
