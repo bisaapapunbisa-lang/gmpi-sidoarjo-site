@@ -99,3 +99,8 @@
   .org-person:not(.is-lg){padding:10px 6px}
   .org-person.is-lg{min-width:0;width:100%;padding:18px}
 }
+
+/* Satu kartu per divisi; pengurus di dalamnya tetap terpisah dan mudah dibaca. */
+.org-dept-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));align-items:start}
+.org-dept-name{margin:0;overflow-wrap:anywhere}
+.org-dept>.org-people{width:100%;grid-template-columns:repeat(auto-fit,minmax(min(100%,110px),1fr));gap:10px}
