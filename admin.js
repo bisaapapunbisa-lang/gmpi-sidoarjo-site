@@ -3207,14 +3207,18 @@
     const heading = make('div', 'workspace-heading');
     const titleBlock = make('div');
     titleBlock.append(make('h3', '', 'Aduan warga'));
-    titleBlock.append(make('p', '', 'Hanya petugas LBH dan pemilik Admin yang diberi peran ini dapat membaca laporan. Tidak ada pengaduan yang masuk sampai formulir publik diaktifkan dengan persetujuan DPD.'));
+    titleBlock.append(make('p', '', 'Aduan dari Posko Digital dapat dibaca Pemilik dan Petugas LBH. Periksa laporan secara berkala dan ubah status setelah ditindaklanjuti.'));
     heading.append(titleBlock);
-    const { data, error } = await client.from('citizen_reports').select('id,created_at,name,contact,district,topic,summary,status').order('created_at', { ascending: false }).limit(100);
-    if (error) return showWorkspaceError('Daftar aduan tidak dapat dibuka. Periksa migrasi dan peran LBH.');
-    const { wrap, body } = makeTable(['Diterima', 'Pelapor / kontak', 'Kecamatan / topik', 'Ringkasan', 'Status']);
-    (data || []).forEach(report => {
+    const { wrap, body } = makeTable(['Diterima / batas simpan', 'Pelapor / kontak', 'Kecamatan / topik', 'Ringkasan', 'Status']);
+    const more = make('button', 'admin-button admin-button-outline', 'Muat lebih banyak');
+    more.type = 'button';
+    more.hidden = true;
+    let offset = 0;
+    function addReport(report) {
       const row = make('tr');
-      row.append(make('td', '', new Date(report.created_at).toLocaleString('id-ID')));
+      const dateCell = make('td', '', new Date(report.created_at).toLocaleString('id-ID'));
+      dateCell.append(make('div', 'privacy-mini', report.retention_until ? `Tinjau batas simpan: ${report.retention_until}` : 'Batas simpan belum dicatat'));
+      row.append(dateCell);
       row.append(make('td', '', `${report.name} · ${report.contact}`));
       row.append(make('td', '', `${report.district} · ${report.topic}`));
       row.append(make('td', '', report.summary));
@@ -3235,9 +3239,26 @@
       statusCell.append(select);
       row.append(statusCell);
       body.append(row);
-    });
-    if (!data?.length) body.append(emptyRow(5, 'Belum ada aduan masuk. Formulir aduan publik sudah aktif di bagian #posko situs.'));
-    workspace.replaceChildren(heading, wrap, make('p', 'privacy-mini', 'Hindari menyalin rincian laporan ke perangkat atau kanal pribadi.'));
+    }
+    async function loadReports() {
+      more.disabled = true;
+      const { data, error } = await client.from('citizen_reports')
+        .select('id,created_at,name,contact,district,topic,summary,status,retention_until')
+        .order('created_at', { ascending: false }).order('id', { ascending: false })
+        .range(offset, offset + 99);
+      more.disabled = false;
+      if (error) {
+        if (!offset) return showWorkspaceError('Daftar aduan tidak dapat dibuka. Periksa migrasi dan peran LBH.');
+        return setMessage('Aduan berikutnya tidak dapat dimuat. Coba lagi.', 'error');
+      }
+      (data || []).forEach(addReport);
+      if (!offset && !data?.length) body.append(emptyRow(5, 'Belum ada aduan masuk.'));
+      offset += (data || []).length;
+      more.hidden = (data || []).length < 100;
+    }
+    more.addEventListener('click', loadReports);
+    workspace.replaceChildren(heading, wrap, more, make('p', 'privacy-mini', 'Jaga kerahasiaan aduan. Aduan dari formulir baru dijadwalkan terhapus otomatis dari database aktif pada tanggal batas simpan, termasuk yang belum selesai ditangani. Periksa aduan setiap hari kerja. Salinan dan cadangan perlu dikelola terpisah.'));
+    await loadReports();
   }
 
   async function renderMembers() {
