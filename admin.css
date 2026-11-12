@@ -293,3 +293,18 @@
 .poster-upload{margin-top:18px}
 .poster-upload .poster-preview{width:min(100%,320px);max-height:200px}
 .poster-upload .poster-preview[hidden]{display:none}
+
+/* Setiap departemen dapat dibuka sendiri tanpa mengubah data atau urutannya. */
+.org-department-list{display:grid;gap:10px}
+.org-department-panel{border:1px solid #ded7c7;border-radius:8px;background:#fffdf8;min-width:0}
+.org-department-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 15px;cursor:pointer;list-style:none}
+.org-department-summary::-webkit-details-marker{display:none}
+.org-department-summary:hover{background:#f7f2e7}
+.org-department-summary:focus-visible{outline:3px solid #c69b3b;outline-offset:2px}
+.org-department-names{display:grid;min-width:0;gap:4px}
+.org-department-names strong{font-size:12px;line-height:1.4;color:#29251e;overflow-wrap:anywhere}
+.org-department-names small{font-size:11px;line-height:1.4;color:#706a5f;overflow-wrap:anywhere}
+.org-department-toggle{display:grid;place-items:center;flex:none;width:28px;height:28px;border:1px solid #b8a672;border-radius:50%;color:#7a5a12;font-size:19px;line-height:1}
+.org-department-panel[open] .org-department-toggle{transform:rotate(45deg)}
+.org-department-panel>.org-admin-row{margin:0 15px 15px;padding:14px 0 0;border:0;border-top:1px solid #e4dfd4}
+@media(max-width:640px){.org-department-summary{padding:12px}.org-department-panel>.org-admin-row{margin:0 12px 12px}}

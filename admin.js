@@ -695,7 +695,7 @@
     let timer = 0;
     const refreshPreview = () => { clearTimeout(timer); timer = setTimeout(() => window.GMPIStruktur && window.GMPIStruktur.render(previewHost, rows, photoUrl), 150); };
 
-    function rowEditor(r) {
+    function rowEditor(r, updateDepartmentSummary = () => {}) {
       const line = make('div', 'org-admin-row');
       const thumb = make('div', 'org-admin-thumb');
       const paintThumb = () => {
@@ -726,14 +726,14 @@
       if (r.section === 'departemen') {
         const dep = make('input'); dep.maxLength = 80; dep.placeholder = 'Nama departemen, mis. Hukum & Advokasi'; dep.value = r.department || '';
         dep.setAttribute('aria-label', 'Nama departemen');
-        dep.addEventListener('input', () => { r.department = dep.value; refreshPreview(); });
+        dep.addEventListener('input', () => { r.department = dep.value; updateDepartmentSummary(); refreshPreview(); });
         fields.append(dep);
       }
       const jab = make('input'); jab.maxLength = 80; jab.value = r.jabatan; jab.setAttribute('aria-label', 'Jabatan'); jab.className = 'org-admin-jabatan';
       jab.addEventListener('input', () => { r.jabatan = jab.value; refreshPreview(); });
       const nm = make('input'); nm.maxLength = 120; nm.placeholder = 'Nama lengkap (kosong = "Segera diisi")'; nm.value = r.person_name || '';
       nm.setAttribute('aria-label', `Nama ${r.jabatan}`);
-      nm.addEventListener('input', () => { r.person_name = nm.value; refreshPreview(); });
+      nm.addEventListener('input', () => { r.person_name = nm.value; updateDepartmentSummary(); refreshPreview(); });
       fields.append(jab, nm);
       line.append(thumb, fields, tools);
       if (r.section === 'departemen') {
@@ -758,19 +758,47 @@
     }
 
     const groupsHost = make('div', 'org-admin-groups');
-    function build() {
+    const departmentPanels = new Map();
+    function build(openDepartment = null) {
+      const previouslyOpen = new Set([...departmentPanels].filter(([, panel]) => panel.open).map(([row]) => row));
+      if (openDepartment) previouslyOpen.add(openDepartment);
+      departmentPanels.clear();
       groupsHost.replaceChildren(...SECTIONS.map(([key, label]) => {
         const fs = make('fieldset', 'org-admin-group');
         fs.append(make('legend', '', label));
         const mine = rows.filter(r => r.section === key);
-        mine.forEach(r => fs.append(rowEditor(r)));
+        if (key !== 'departemen') mine.forEach(r => fs.append(rowEditor(r)));
         if (key === 'departemen') {
+          const list = make('div', 'org-department-list');
+          mine.forEach(r => {
+            const panel = make('details', 'org-department-panel');
+            panel.open = previouslyOpen.has(r);
+            const summary = make('summary', 'org-department-summary');
+            const names = make('span', 'org-department-names');
+            const departmentName = make('strong');
+            const personName = make('small');
+            const updateSummary = () => {
+              departmentName.textContent = (r.department || '').trim() || 'Departemen baru';
+              personName.textContent = (r.person_name || '').trim() || 'Nama pengurus belum diisi';
+            };
+            updateSummary();
+            names.append(departmentName, personName);
+            const indicator = make('span', 'org-department-toggle', '+');
+            indicator.setAttribute('aria-hidden', 'true');
+            summary.append(names, indicator);
+            panel.append(summary, rowEditor(r, updateSummary));
+            departmentPanels.set(r, panel);
+            list.append(panel);
+          });
+          if (!mine.length) list.append(make('p', 'privacy-mini', 'Belum ada departemen.'));
+          fs.append(list);
           const add = make('button', 'admin-button admin-button-outline', '＋ Tambah departemen'); add.type = 'button';
           add.addEventListener('click', () => {
             const maxSort = rows.reduce((m, x) => Math.max(m, x.sort_order || 0), 90);
-            rows.push({ section: 'departemen', jabatan: 'Wakil Ketua Departemen', department: '', person_name: '', photo_path: null, sort_order: maxSort + 1 });
-            build(); refreshPreview();
-            const last = groupsHost.querySelector('.org-admin-group:last-child .org-admin-row:last-of-type input'); if (last) last.focus();
+            const added = { section: 'departemen', jabatan: 'Wakil Ketua Departemen', department: '', person_name: '', photo_path: null, sort_order: maxSort + 1 };
+            rows.push(added);
+            build(added); refreshPreview();
+            departmentPanels.get(added)?.querySelector('input[aria-label="Nama departemen"]')?.focus();
           });
           fs.append(add);
         } else if (key !== 'ketua') {
@@ -793,7 +821,18 @@
       event.preventDefault();
       rows = rows.filter(r => SECTIONS.some(([key]) => key === r.section));
       const bad = rows.find(r => (r.jabatan || '').trim().length < 2 || (r.section === 'departemen' && !(r.department || '').trim()));
-      if (bad) { setMessage(bad.section === 'departemen' ? 'Isi nama setiap departemen (atau hapus departemen yang kosong).' : 'Jabatan tidak boleh kosong.', 'error'); return; }
+      if (bad) {
+        if (bad.section === 'departemen') {
+          const panel = departmentPanels.get(bad);
+          if (panel) {
+            panel.open = true;
+            const field = !(bad.department || '').trim() ? 'Nama departemen' : 'Jabatan';
+            panel.querySelector(`input[aria-label="${field}"]`)?.focus();
+          }
+        }
+        setMessage(bad.section === 'departemen' && !(bad.department || '').trim() ? 'Isi nama setiap departemen (atau hapus departemen yang kosong).' : 'Jabatan tidak boleh kosong.', 'error');
+        return;
+      }
       const pick = r => ({ section: r.section, jabatan: r.jabatan.trim(), department: r.section === 'departemen' ? (r.department || '').trim() : null, person_name: (r.person_name || '').trim() || null, photo_path: r.photo_path || null, sort_order: r.sort_order || 0 });
       save.disabled = true;
       const existing = rows.filter(r => r.id).map(r => ({ id: r.id, ...pick(r) }));
