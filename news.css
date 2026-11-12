@@ -106,11 +106,12 @@ a.news-all[hidden]{display:none}
 .news-brand-lettering{text-align:center;color:#f3ead8;text-shadow:0 2px 8px rgba(0,0,0,.6);font:800 clamp(13px,2.6vw,28px)/1.05 var(--body);letter-spacing:.2em}
 .news-brand-word{white-space:nowrap;padding-left:.2em}
 .news-brand-word span{display:inline-block}
-.news-brand-word.is-place{margin-top:4px;font-size:.43em;letter-spacing:.4em;color:#d8ba7e;padding-left:.4em}
+.news-brand-motto{margin-top:8px;color:#d8ba7e;font:700 clamp(9px,1vw,12px)/1.4 var(--body);letter-spacing:.12em;text-transform:uppercase}
 .news-brand-rule{display:block;width:45px;max-width:30%;height:1px;background:linear-gradient(90deg,transparent,#d9b975,transparent)}
 .news-brand-cover.is-playing .news-brand-logo{animation:news-logo-reveal 1.25s cubic-bezier(.2,.7,.2,1) both}
 .news-brand-cover.is-playing .news-brand-word span{animation:news-letter-reveal .75s cubic-bezier(.2,.7,.2,1) both;animation-delay:var(--letter-delay)}
-.news-brand-cover.is-playing .news-brand-rule{animation:news-rule-reveal 1s ease both;animation-delay:1.8s}
+.news-brand-cover.is-playing .news-brand-motto{animation:news-letter-reveal .8s ease both;animation-delay:1.7s}
+.news-brand-cover.is-playing .news-brand-rule{animation:news-rule-reveal 1s ease both;animation-delay:2s}
 .news-brand-cover.is-playing::after{animation:news-light-sweep 3s ease-out both}
 @keyframes news-logo-reveal{from{opacity:0;transform:translateY(14px) scale(.84);filter:blur(5px)}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0) drop-shadow(0 5px 14px rgba(0,0,0,.6))}}
 @keyframes news-letter-reveal{from{opacity:0;transform:translateY(8px) scale(.9);filter:blur(3px)}to{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
@@ -119,9 +120,9 @@ a.news-all[hidden]{display:none}
 @media(max-width:640px){
   .news-card:not(.is-featured) .news-brand-content{gap:4px}
   .news-card:not(.is-featured) .news-brand-lettering{font-size:10px}
-  .news-card:not(.is-featured) .news-brand-word.is-place{font-size:6px;letter-spacing:.18em}
+  .news-card:not(.is-featured) .news-brand-motto{margin-top:3px;font-size:6px;letter-spacing:.04em;line-height:1.3}
   .news-card:not(.is-featured) .news-brand-cover .news-brand-logo{max-width:40%;height:38%}
 }
 @media(prefers-reduced-motion:reduce){
-  .news-brand-cover.is-playing .news-brand-logo,.news-brand-cover.is-playing .news-brand-word span,.news-brand-cover.is-playing .news-brand-rule,.news-brand-cover.is-playing::after{animation:none}
+  .news-brand-cover.is-playing .news-brand-logo,.news-brand-cover.is-playing .news-brand-word span,.news-brand-cover.is-playing .news-brand-motto,.news-brand-cover.is-playing .news-brand-rule,.news-brand-cover.is-playing::after{animation:none}
 }
