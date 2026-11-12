@@ -7,7 +7,7 @@
  const root='https://iapwzhlcwprzojeruymm.supabase.co';
  const key='sb_publishable_R8Ua9s93ZK88kcFpTY7Tng_pQyapURb';
  const canvas=document.querySelector('#poster'),ctx=canvas.getContext('2d'),status=document.querySelector('#status'),button=document.querySelector('#download'),retry=document.querySelector('#retry');
- const load=(src,cross=false)=>new Promise((resolve,reject)=>{const i=new Image();if(cross)i.crossOrigin='anonymous';i.onload=()=>resolve(i);i.onerror=()=>reject(new Error('Gambar tidak dapat dimuat'));i.src=src});
+ const load=(src,cross=false,description='Gambar')=>new Promise((resolve,reject)=>{const i=new Image();if(cross)i.crossOrigin='anonymous';i.onload=()=>resolve(i);i.onerror=()=>reject(new Error(`${description} tidak dapat dimuat`));i.src=src});
  const round=(x,y,w,h,r)=>{ctx.beginPath();ctx.roundRect(x,y,w,h,r)};
  function cover(img,x,y,w,h,focus=.35){let scale=Math.max(w/img.width,h/img.height),sw=w/scale,sh=h/scale,sx=(img.width-sw)/2,sy=Math.max(0,Math.min(img.height-sh,(img.height-sh)*focus));ctx.drawImage(img,sx,sy,sw,sh,x,y,w,h)}
  function nameKey(n){return n.split(',')[0].replace(/[^a-z0-9]/gi,'').toLowerCase()}
@@ -16,7 +16,7 @@
  async function render(){
   button.disabled=true;retry.hidden=true;status.textContent='Menyiapkan poster dari foto publik di website…';
   try {
-   const [background,logo,response]=await Promise.all([load('latar.png'),load('logo.webp'),fetch(root+'/rest/v1/org_structure?select=person_name,photo_path,sort_order&order=sort_order.asc',{headers:{apikey:key,Authorization:'Bearer '+key}})]);
+   const [background,logo,response]=await Promise.all([load('/poster-pahlawan/latar.png',false,'Latar poster'),load('/poster-pahlawan/logo.webp',false,'Logo GMPI'),fetch(root+'/rest/v1/org_structure?select=person_name,photo_path,sort_order&order=sort_order.asc',{headers:{apikey:key,Authorization:'Bearer '+key}})]);
    if(!response.ok)throw Error('Struktur organisasi belum dapat diakses.');
    let data=await response.json();let seen=new Set();const people=data.filter(p=>{if(!p.person_name?.trim()||!p.photo_path)return false;const k=nameKey(p.person_name);if(seen.has(k))return false;seen.add(k);return true});
    if(!people.length)throw Error('Foto pengurus belum tersedia pada struktur organisasi.');
