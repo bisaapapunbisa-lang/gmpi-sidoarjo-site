@@ -44,3 +44,7 @@
 .site-footer .footer-map-link:hover{color:#fff}
 .site-footer .footer-map-link:focus-visible{outline:2px solid var(--gold-hi);outline-offset:3px}
 .site-footer .footer-map-label{display:block;margin-top:4px;color:var(--gold-hi);font-weight:700}
+
+/* Video pimpinan menggantikan poster bawaan; unggahan Admin tetap bisa dipakai. */
+.leadership-section .leadership-video{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:contain;background:#111}
+.leadership-section .leadership-video[hidden],.leadership-section .leadership-poster-preview[hidden]{display:none}

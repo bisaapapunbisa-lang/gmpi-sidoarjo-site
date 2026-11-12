@@ -1440,7 +1440,7 @@
     const heading = make('div', 'workspace-heading');
     const text = make('div');
     text.append(make('h3', '', 'Poster pimpinan beranda'));
-    text.append(make('p', '', 'Unggah poster lengkap pengganti. Gambar ditampilkan utuh dan menggantikan poster kedua pimpinan, bukan logo situs atau KTA. Gunakan JPG, PNG, atau WebP maksimal 2 MB.'));
+    text.append(make('p', '', 'Video pimpinan ditampilkan sebagai bawaan. Unggah poster lengkap untuk menggantikan video dengan gambar, tanpa mengubah logo situs atau KTA. Gunakan JPG, PNG, atau WebP maksimal 2 MB.'));
     heading.append(text);
     section.append(heading);
 
@@ -1453,11 +1453,11 @@
     const image = make('img', 'poster-manager-image');
     image.alt = 'Poster pimpinan yang sedang dipakai';
     const status = make('p', 'privacy-mini');
-    const reset = make('button', 'admin-button admin-button-outline', 'Kembalikan poster bawaan');
+    const reset = make('button', 'admin-button admin-button-outline', 'Kembalikan video bawaan');
     reset.type = 'button';
     function refreshCurrent() {
-      image.src = currentPath ? client.storage.from('site-assets').getPublicUrl(currentPath).data.publicUrl : 'assets/posters/poster-dpd-gmpi-sidoarjo-preview.webp';
-      status.textContent = currentPath ? 'Poster unggahan sedang digunakan.' : 'Poster bawaan sedang digunakan.';
+      image.src = currentPath ? client.storage.from('site-assets').getPublicUrl(currentPath).data.publicUrl : 'assets/videos/pimpinan-gmpi.jpg';
+      status.textContent = currentPath ? 'Poster unggahan sedang digunakan.' : 'Video bawaan sedang digunakan (gambar di atas adalah cuplikannya).';
       reset.disabled = !currentPath;
     }
     refreshCurrent();
@@ -1532,13 +1532,13 @@
       }
     });
     reset.addEventListener('click', async () => {
-      if (!window.confirm('Kembalikan poster bawaan? Gambar unggahan tetap tersimpan.')) return;
+      if (!window.confirm('Kembalikan video bawaan? Gambar unggahan tetap tersimpan.')) return;
       reset.disabled = true;
       const { error: resetError } = await client.from('leadership_poster').delete().eq('id', true);
-      if (resetError) { setMessage('Poster bawaan belum dapat dikembalikan.', 'error'); reset.disabled = false; return; }
+      if (resetError) { setMessage('Video bawaan belum dapat dikembalikan.', 'error'); reset.disabled = false; return; }
       currentPath = '';
       refreshCurrent();
-      setMessage('Poster bawaan dipakai kembali. Muat ulang beranda untuk melihat hasilnya.');
+      setMessage('Video bawaan dipakai kembali. Muat ulang beranda untuk melihat hasilnya.');
     });
     return section;
   }

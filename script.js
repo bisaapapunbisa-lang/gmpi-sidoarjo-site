@@ -327,9 +327,20 @@
     resolveLogo(DEFAULT_LOGO);
   }
 
-  // Poster tetap menggunakan gambar bawaan jika pengaturan atau gambar belum tersedia.
+  // Video bawaan ditampilkan sampai ada poster pengganti dari Admin.
   const posterLink = document.querySelector('.leadership-poster-preview');
   const posterImage = posterLink?.querySelector('img');
+  const leadershipVideo = document.querySelector('.leadership-video');
+  if (leadershipVideo) {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      leadershipVideo.autoplay = false;
+      leadershipVideo.pause();
+    }
+    leadershipVideo.addEventListener('error', () => {
+      leadershipVideo.hidden = true;
+      if (posterLink) posterLink.hidden = false;
+    });
+  }
   if (posterLink && posterImage && supabaseConfig.url && supabaseConfig.publishableKey) {
     const root = supabaseConfig.url.replace(/\/$/, '');
     fetch(`${root}/rest/v1/leadership_poster?select=image_path&id=eq.true`, {
@@ -346,6 +357,8 @@
           posterImage.alt = 'Poster pimpinan GMPI';
           posterImage.src = url;
           posterLink.href = url;
+          posterLink.hidden = false;
+          if (leadershipVideo) { leadershipVideo.pause(); leadershipVideo.hidden = true; }
         };
         probe.src = url;
       }).catch(() => {});
