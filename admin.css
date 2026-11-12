@@ -308,3 +308,5 @@
 .org-department-panel[open] .org-department-toggle{transform:rotate(45deg)}
 .org-department-panel>.org-admin-row{margin:0 15px 15px;padding:14px 0 0;border:0;border-top:1px solid #e4dfd4}
 @media(max-width:640px){.org-department-summary{padding:12px}.org-department-panel>.org-admin-row{margin:0 12px 12px}}
+.org-department-panel .org-department-add{margin:0 15px 15px}
+@media(max-width:640px){.org-department-panel .org-department-add{margin:0 12px 12px}}

@@ -737,9 +737,9 @@
       fields.append(jab, nm);
       line.append(thumb, fields, tools);
       if (r.section === 'departemen') {
-        const del = make('button', 'admin-link-button org-admin-del', 'Hapus departemen'); del.type = 'button';
+        const del = make('button', 'admin-link-button org-admin-del', 'Hapus pengurus ini'); del.type = 'button';
         del.addEventListener('click', () => {
-          if (!window.confirm('Hapus departemen ini dari bagan?')) return;
+          if (!window.confirm(`Hapus ${r.person_name ? 'pengurus “' + r.person_name + '”' : 'posisi pengurus ini'} dari bagan? Pengurus lain dalam divisi ini tidak dihapus.`)) return;
           if (r.id) removed.push(r.id);
           rows = rows.filter(x => x !== r); build(); refreshPreview();
         });
@@ -759,35 +759,67 @@
 
     const groupsHost = make('div', 'org-admin-groups');
     const departmentPanels = new Map();
+    const departmentEditors = new Map();
     function build(openDepartment = null) {
       const previouslyOpen = new Set([...departmentPanels].filter(([, panel]) => panel.open).map(([row]) => row));
       if (openDepartment) previouslyOpen.add(openDepartment);
       departmentPanels.clear();
+      departmentEditors.clear();
       groupsHost.replaceChildren(...SECTIONS.map(([key, label]) => {
         const fs = make('fieldset', 'org-admin-group');
         fs.append(make('legend', '', label));
         const mine = rows.filter(r => r.section === key);
         if (key !== 'departemen') mine.forEach(r => fs.append(rowEditor(r)));
         if (key === 'departemen') {
+          fs.append(make('p', 'privacy-mini', 'Pengurus dengan nama divisi yang sama ditampilkan bersama. Jika nama divisi diubah, kelompok diperbarui setelah disimpan.'));
           const list = make('div', 'org-department-list');
+          const divisions = new Map();
           mine.forEach(r => {
+            const name = (r.department || '').trim().replace(/\s+/g, ' ');
+            // Hanya samakan huruf besar-kecil dan spasi; ejaan berbeda tidak digabung otomatis.
+            const groupKey = name ? name.normalize('NFKC').toLocaleLowerCase('id-ID') : r;
+            if (!divisions.has(groupKey)) divisions.set(groupKey, []);
+            divisions.get(groupKey).push(r);
+          });
+          divisions.forEach(members => {
             const panel = make('details', 'org-department-panel');
-            panel.open = previouslyOpen.has(r);
+            panel.open = members.some(r => previouslyOpen.has(r));
             const summary = make('summary', 'org-department-summary');
             const names = make('span', 'org-department-names');
             const departmentName = make('strong');
             const personName = make('small');
             const updateSummary = () => {
-              departmentName.textContent = (r.department || '').trim() || 'Departemen baru';
-              personName.textContent = (r.person_name || '').trim() || 'Nama pengurus belum diisi';
+              departmentName.textContent = (members[0].department || '').trim() || 'Departemen baru';
+              const people = members.map(r => (r.person_name || '').trim() || 'Belum diisi');
+              personName.textContent = `${members.length} pengurus · ${people.join(' · ')}`;
             };
             updateSummary();
             names.append(departmentName, personName);
             const indicator = make('span', 'org-department-toggle', '+');
             indicator.setAttribute('aria-hidden', 'true');
             summary.append(names, indicator);
-            panel.append(summary, rowEditor(r, updateSummary));
-            departmentPanels.set(r, panel);
+            panel.append(summary);
+            members.forEach(r => {
+              const editor = rowEditor(r, updateSummary);
+              departmentPanels.set(r, panel);
+              departmentEditors.set(r, editor);
+              panel.append(editor);
+            });
+            const addPerson = make('button', 'admin-button admin-button-outline org-department-add', '＋ Tambah pengurus divisi ini');
+            addPerson.type = 'button';
+            addPerson.addEventListener('click', () => {
+              if (!(members[0].department || '').trim()) {
+                setMessage('Isi nama departemen sebelum menambah pengurus.', 'error');
+                departmentEditors.get(members[0])?.querySelector('input[aria-label="Nama departemen"]')?.focus();
+                return;
+              }
+              const maxSort = rows.reduce((m, x) => Math.max(m, x.sort_order || 0), 90);
+              const added = { section: 'departemen', jabatan: 'Wakil Ketua Departemen', department: (members[0].department || '').trim(), person_name: '', photo_path: null, sort_order: maxSort + 1 };
+              rows.push(added);
+              build(added); refreshPreview();
+              departmentEditors.get(added)?.querySelector('input[placeholder^="Nama lengkap"]')?.focus();
+            });
+            panel.append(addPerson);
             list.append(panel);
           });
           if (!mine.length) list.append(make('p', 'privacy-mini', 'Belum ada departemen.'));
@@ -798,7 +830,7 @@
             const added = { section: 'departemen', jabatan: 'Wakil Ketua Departemen', department: '', person_name: '', photo_path: null, sort_order: maxSort + 1 };
             rows.push(added);
             build(added); refreshPreview();
-            departmentPanels.get(added)?.querySelector('input[aria-label="Nama departemen"]')?.focus();
+            departmentEditors.get(added)?.querySelector('input[aria-label="Nama departemen"]')?.focus();
           });
           fs.append(add);
         } else if (key !== 'ketua') {
@@ -827,7 +859,7 @@
           if (panel) {
             panel.open = true;
             const field = !(bad.department || '').trim() ? 'Nama departemen' : 'Jabatan';
-            panel.querySelector(`input[aria-label="${field}"]`)?.focus();
+            departmentEditors.get(bad)?.querySelector(`input[aria-label="${field}"]`)?.focus();
           }
         }
         setMessage(bad.section === 'departemen' && !(bad.department || '').trim() ? 'Isi nama setiap departemen (atau hapus departemen yang kosong).' : 'Jabatan tidak boleh kosong.', 'error');
