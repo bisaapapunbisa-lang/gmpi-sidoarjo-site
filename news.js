@@ -78,17 +78,13 @@
     logo.decoding = 'async';
     const brand = el('div', 'news-brand-content');
     const lettering = el('div', 'news-brand-lettering');
-    let delay = 0;
-    ['GMPI', 'SIDOARJO'].forEach((word, wordIndex) => {
-      const line = el('div', `news-brand-word${wordIndex ? ' is-place' : ''}`);
-      for (const letter of word) {
-        const span = el('span', '', letter);
-        span.style.setProperty('--letter-delay', `${0.6 + delay * 0.1}s`);
-        line.append(span);
-        delay++;
-      }
-      lettering.append(line);
+    const line = el('div', 'news-brand-word');
+    [...'SIDOARJO'].forEach((letter, index) => {
+      const span = el('span', '', letter);
+      span.style.setProperty('--letter-delay', `${0.6 + index * 0.1}s`);
+      line.append(span);
     });
+    lettering.append(line, el('div', 'news-brand-motto', 'Setia Bersaudara Sampai Urat Nadi'));
     brand.append(logo, lettering, el('span', 'news-brand-rule'));
     media.append(brand);
     if (coverObserver) coverObserver.observe(media);
