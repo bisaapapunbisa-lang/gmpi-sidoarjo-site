@@ -4113,10 +4113,19 @@
   // Judul tertulis: judul DPC/Ranting otomatis ditambah nama kecamatan (persis seperti formulir kartu).
   const jabatanWritten = (j, district) => (/(DPC|Ranting)$/.test(j) && district ? `${j} ${district}` : j);
   // Isi <select> dengan daftar jabatan; judul tunggal yang sudah terisi (dan bukan miliknya sendiri) disembunyikan.
-  function fillJabatanOptions(sel, taken, district, ownValue, placeholder) {
+  function fillJabatanOptions(sel, taken, district, ownValue, placeholder, structureTitles = []) {
     const own = normJabatan(ownValue);
     let ownListed = !ownValue;
     sel.replaceChildren(new Option(placeholder, ''));
+    if (structureTitles.length) {
+      const group = document.createElement('optgroup'); group.label = 'Jabatan dan divisi pada struktur';
+      structureTitles.forEach(j => {
+        const opt = new Option(j, j);
+        if (normJabatan(j) === own) { opt.selected = true; ownListed = true; }
+        group.append(opt);
+      });
+      sel.append(group);
+    }
     JABATAN_GROUPS.forEach(([label, items]) => {
       const g = document.createElement('optgroup');
       g.label = label;
@@ -4131,7 +4140,7 @@
       });
       if (used) sel.append(g);
     });
-    if (!ownListed) sel.append(Object.assign(new Option(`Tidak baku: “${ownValue}”`, ownValue), { selected: true }));
+    if (!ownListed) sel.append(Object.assign(new Option(`Ditulis manual: “${ownValue}”`, ownValue), { selected: true }));
     return sel;
   }
   const CARD_STATUS_LABELS = { menunggu: 'Menunggu persetujuan', ditolak: 'Ditolak', aktif: 'Aktif', nonaktif: 'Nonaktif', dicabut: 'Dicabut' };
@@ -4214,6 +4223,14 @@
         .eq('cleanup_status', 'pending').order('deleted_at', { ascending: true }).limit(20);
       if (!pendingPhotos.error) pendingCardPhotoCleanup = pendingPhotos.data || [];
     }
+    const structureResult = await client.from('org_structure').select('section,jabatan,department').order('sort_order');
+    const structureTitles = [];
+    const seenTitles = new Set();
+    (structureResult.data || []).forEach(row => {
+      const title = String(row.section === 'departemen' && row.department ? row.department : row.jabatan || '').trim().replace(/\s+/g, ' ');
+      const key = normJabatan(title);
+      if (title.length >= 2 && title.length <= 60 && !seenTitles.has(key)) { seenTitles.add(key); structureTitles.push(title); }
+    });
     const me = myEmail();
     const issuer = canIssueCards();
     const approver = canApproveCards() && approvalReady;
@@ -4224,6 +4241,7 @@
       if (/Hanya Penyetuju/i.test(msg)) return 'Hanya Penyetuju Kartu atau Pemilik yang dapat menyetujui/menolak kartu.';
       if (/Ajukan ulang/i.test(msg)) return 'Kartu ini harus diajukan ulang dulu sebelum bisa diaktifkan.';
       if (/nomor khusus/i.test(msg)) return 'Nomor 0001–0100 adalah nomor khusus anggota terpilih dan hanya bisa diberikan oleh Pemilik. Gunakan nomor 0101 ke atas.';
+      if (/riwayat iuran|catatan Siaga/i.test(msg)) return msg;
       return fallback;
     }
 
@@ -4290,18 +4308,15 @@
     const memberPickField = field('Pendaftar tersimpan (opsional)', memberPick,
       'Pilih orang yang sudah terdaftar untuk mengisi nama, kecamatan, jabatan, dan memuat foto profil tersimpan. Foto KTP tidak dipakai.');
     memberPickField.hidden = !canSeeMembers();
-    const refillJabatanPick = () => fillJabatanOptions(list, jabatanTakenSet(regRows, cards), districtIn.value, jabatanIn.value, '— Pilih jabatan dari daftar —');
+    const refillJabatanPick = () => fillJabatanOptions(list, jabatanTakenSet(regRows, cards), districtIn.value, jabatanIn.value, '— Pilih jabatan dari daftar —', structureTitles);
     refillJabatanPick();
     districtIn.addEventListener('change', refillJabatanPick);
     const syncPick = () => {
-      const v = jabatanIn.value.trim();
-      const hit = JABATAN_SUGGESTIONS.filter(j => v === j || v.startsWith(j + ' ')).sort((a, b) => b.length - a.length)[0];
-      if (hit) { list.value = hit; return; }
-      // Custom department wording should not clear the generic role selector.
-      const lower = v.toLocaleLowerCase('id-ID');
-      const deptRole = lower.startsWith('wakil ketua departemen ') ? 'Wakil Ketua Departemen DPD'
-        : (lower.startsWith('pengurus departemen ') ? 'Pengurus Departemen DPD' : '');
-      if (deptRole && Array.from(list.options).some(option => option.value === deptRole)) list.value = deptRole;
+      const v = normJabatan(jabatanIn.value);
+      const match = Array.from(list.options).find(option => option.value && normJabatan(jabatanWritten(option.value, districtIn.value)) === v);
+      // A manual title must never leave an unrelated option highlighted.
+      if (match) list.value = match.value;
+      else list.selectedIndex = 0;
     };
     list.addEventListener('change', () => { if (!list.value) return; let v = list.value; if (/(DPC|Ranting)$/.test(v) && districtIn.value) v = `${v} ${districtIn.value}`; jabatanIn.value = v; jabatanIn.dispatchEvent(new Event('input')); });
     jabatanIn.addEventListener('input', syncPick);
@@ -4331,10 +4346,37 @@
       reservedPick.append(g);
     }
     reservedPick.addEventListener('change', () => { numberIn.value = reservedPick.value || suggestNumber(); numberIn.dispatchEvent(new Event('input')); });
+    const editReserved = make('select'); editReserved.id = 'card-edit-reserved';
+    editReserved.setAttribute('aria-label', 'Pilih nomor khusus untuk KTA yang dibuka');
+    editReserved.hidden = true;
+    let editNumberRequest = 0;
+    async function refreshEditReserved(card) {
+      const request = ++editNumberRequest;
+      if (!card || !isOwner()) { editReserved.hidden = true; return; }
+      editReserved.hidden = false; editReserved.disabled = true;
+      editReserved.replaceChildren(new Option('Memeriksa nomor khusus…', ''));
+      const cardYear = /^GMPI-SDA-(\\d{4})-/i.exec(card.member_number)?.[1] || year;
+      const prefix = `GMPI-SDA-${cardYear}-`;
+      const { data: usedRows, error: usedError } = await client.from('member_cards').select('member_number')
+        .gte('member_number', `${prefix}0001`).lte('member_number', `${prefix}0100`).limit(500);
+      if (request !== editNumberRequest || !editing || editing.id !== card.id) return;
+      if (usedError || !usedRows || usedRows.length >= 500) {
+        editReserved.replaceChildren(new Option('Nomor khusus gagal diperiksa; coba buka ulang', ''));
+        return;
+      }
+      const used = new Set(usedRows.map(r => r.member_number.toUpperCase()));
+      editReserved.replaceChildren(new Option('— Pilih nomor khusus yang kosong (opsional) —', ''));
+      for (let n = 1; n <= 100; n++) {
+        const value = prefix + String(n).padStart(4, '0');
+        if (!used.has(value)) editReserved.append(new Option(value, value));
+      }
+      editReserved.disabled = false;
+    }
+    editReserved.addEventListener('change', () => { if (editReserved.value) { numberIn.value = editReserved.value; numberIn.dispatchEvent(new Event('input')); } });
     const numberHint = isOwner()
-      ? 'Nomor 0001–0100 khusus anggota terpilih — pilih dari daftar di atas. Anggota biasa otomatis mulai 0101.'
+      ? 'Nomor 0001–0100 khusus anggota terpilih. Saat mengedit, pilih nomor kosong atau ketik; nomor tidak boleh ganda. Perubahan KTA aktif memerlukan persetujuan ulang dan kartu perlu dicetak ulang.'
       : 'Nomor otomatis mulai 0101. Nomor 0001–0100 khusus anggota terpilih dan hanya bisa diberikan Pemilik.';
-    const numberBox = make('div', 'card-number-box'); numberBox.append(reservedPick, numberIn);
+    const numberBox = make('div', 'card-number-box'); numberBox.append(reservedPick, editReserved, numberIn);
     const rowA = make('div', 'card-form-row'); rowA.append(field('Nomor anggota', numberBox, numberHint), field('Kecamatan', districtIn));
     const rowB = make('div', 'card-form-row'); rowB.append(field('Tanggal terbit', issuedIn), field('Berlaku sampai', validIn));
     const photoTools = make('div', 'card-photo-tools');
@@ -4397,7 +4439,7 @@
     photoField.append(photoSourceStatus);
     const formFields = [statusLine];
     if (canSeeMembers()) formFields.push(memberPickField);
-    formFields.push(field('Nama lengkap', nameIn), rowA, field('Jabatan', list, 'Pilih dari daftar sesuai AD/ART. Untuk jabatan Ranting, nama kecamatan ikut ditambahkan otomatis.'), field('Jabatan tertulis di kartu', jabatanIn, 'Ini tulisan yang dicetak pada KTA. Boleh menambahkan bidang, mis. “Wakil Ketua Departemen Pemberdayaan Ekonomi”. Pilihan kategori Jabatan di atas tetap dipertahankan.'), rowB,
+    formFields.push(field('Nama lengkap', nameIn), rowA, field('Jabatan', list, structureResult.error ? 'Struktur tidak dapat dimuat; gunakan pilihan lain atau tulis jabatan di bawah.' : 'Daftar dimulai dengan jabatan dan divisi pada struktur website; pilihan sebelumnya tetap tersedia. Memilih akan mengganti tulisan di bawah.'), field('Jabatan tertulis di kartu', jabatanIn, 'Ini tulisan yang disimpan dan dicetak pada KTA. Boleh disesuaikan secara manual (maksimal 60 karakter).'), rowB,
       photoField, photoTools, backTools, btnRow);
     formEl.append(...formFields);
 
@@ -4598,6 +4640,7 @@
       }
       numberIn.readOnly = Boolean(editing) && !isOwner();
       reservedPick.hidden = Boolean(editing) || !isOwner();
+      refreshEditReserved(editing);
       redraw();
     }
 
@@ -4803,6 +4846,12 @@
         if (cardDataChanged && editing.status === 'aktif' && !window.confirm('Data kartu ini sudah disetujui. Jika data kartu diubah, statusnya kembali MENUNGGU PERSETUJUAN dan QR sementara berstatus “belum disetujui”. Lanjutkan?')) return;
       }
       saveBtn.disabled = true;
+      if (!editing && selectedRegistrationId) {
+        const { data: existingCards, error: lookupError } = await client.from('member_cards')
+          .select('member_number,status').eq('registration_id', selectedRegistrationId).eq('is_sample', false).limit(20);
+        if (lookupError) { saveBtn.disabled = false; setMessage('KTA yang sudah tertaut tidak dapat diperiksa. Periksa koneksi sebelum membuat kartu baru.', 'error'); return; }
+        if (existingCards?.length && !window.confirm(`Pendaftar ini sudah memiliki ${existingCards.length} KTA tertaut. Sebaiknya buka dan edit kartu yang ada. Tetap buat kartu baru?`)) { saveBtn.disabled = false; return; }
+      }
       let result;
       if (editing) {
         const unchangedRejected = editing.status === 'ditolak' && payload.full_name === editing.full_name && payload.district === editing.district && payload.jabatan === editing.jabatan && payload.issued_at === editing.issued_at && payload.valid_until === editing.valid_until && !payload.member_number;
@@ -4869,7 +4918,7 @@
     const listHeading = make('div', 'workspace-heading card-list-heading');
     const listTitle = make('div');
     listTitle.append(make('h3', '', 'Daftar kartu'));
-    listTitle.append(make('p', '', 'Ubah status menjadi Nonaktif atau Dicabut bila kartu hilang, disalahgunakan, atau anggota keluar — hasil pindai QR langsung berubah.'));
+    listTitle.append(make('p', '', 'Untuk kartu ganda: buka kartu yang benar untuk mengubah nomor/jabatan. Jika kartu yang salah aktif, ubah statusnya menjadi Dicabut, lalu Pemilik dapat memilih “Hapus KTA saja” tanpa menghapus pendaftaran. QR kartu yang dihapus tidak berlaku.'));
     listHeading.append(listTitle);
     const search = input('card-search', 'search', { placeholder: 'Cari nama / nomor…' });
     search.className = 'card-search';
@@ -5003,29 +5052,30 @@
     printSelected.addEventListener('click', () => printCards(printableCards().filter(card => selectedPrintIds.has(card.id))));
     printAllActive.addEventListener('click', () => printCards(printableCards()));
 
-    function openRevokedCardPurgeDialog(card) {
-      if (!isOwner()) { setMessage('Hanya Pemilik situs yang dapat menghapus KTA dan data anggota permanen.', 'error'); return; }
+    function openRevokedCardPurgeDialog(card, cardOnly = false) {
+      if (!isOwner()) { setMessage('Hanya Pemilik situs yang dapat menghapus KTA permanen.', 'error'); return; }
       const overlay = make('div', 'member-delete-overlay');
       const dialog = make('section', 'member-delete-dialog');
       dialog.setAttribute('role', 'dialog'); dialog.setAttribute('aria-modal', 'true');
-      const title = make('h3', '', 'Hapus KTA dan data anggota permanen?');
-      const warning = make('p', 'member-delete-warning',
-        'Tindakan ini tidak dapat dibatalkan: KTA dicabut akan dihapus, begitu juga pendaftaran anggota, foto profil, dan foto KTP yang tertaut. Sistem akan menolak penghapusan bila pendaftaran masih ditautkan ke KTA lain. Gambar PNG KTA yang pernah diunduh di komputer tidak terhapus.');
+      const title = make('h3', '', cardOnly ? 'Hapus KTA ini saja?' : 'Hapus KTA dan data anggota permanen?');
+      const warning = make('p', 'member-delete-warning', cardOnly
+        ? 'Hanya KTA yang dipilih dihapus permanen. Pendaftaran, foto profil/KTP pendaftar dan KTA lain tetap disimpan. QR pada kartu ini tidak akan berlaku lagi. Foto khusus KTA ini, jika ada, akan dibersihkan. Periksa riwayat iuran/Siaga terlebih dahulu.'
+        : 'Tindakan ini tidak dapat dibatalkan: KTA dicabut akan dihapus, begitu juga pendaftaran anggota, foto profil, dan foto KTP yang tertaut. Sistem akan menolak penghapusan bila pendaftaran masih ditautkan ke KTA lain. Gambar PNG KTA yang pernah diunduh di komputer tidak terhapus.');
       const info = make('div', 'member-delete-info');
-      info.append(make('strong', '', card.full_name), make('span', '', `${card.member_number} · ${card.district} · status Dicabut`));
+      info.append(make('strong', '', card.full_name), make('span', '', `${card.member_number} · ${card.district} · status ${CARD_STATUS_LABELS[card.status] || card.status}`));
       const consent = make('label', 'member-kta-override');
       const consentBox = make('input'); consentBox.type = 'checkbox';
-      consent.append(consentBox, make('span', '', 'Saya memahami bahwa pendaftaran dan berkas privat anggota akan ikut dihapus bila tertaut dan tidak digunakan KTA lain.'));
+      consent.append(consentBox, make('span', '', cardOnly ? 'Saya telah memeriksa bahwa ini KTA yang salah dan memahami bahwa QR KTA ini tidak berlaku lagi.' : 'Saya memahami bahwa pendaftaran dan berkas privat anggota akan ikut dihapus bila tertaut dan tidak digunakan KTA lain.'));
       const nameLabel = make('label', '', 'Ketik nama anggota untuk konfirmasi');
       const nameInput = make('input'); nameInput.type = 'text'; nameInput.autocomplete = 'off'; nameInput.spellcheck = false; nameLabel.append(nameInput);
       const numberLabel = make('label', '', 'Ketik nomor KTA persis untuk konfirmasi');
       const numberInput = make('input'); numberInput.type = 'text'; numberInput.autocomplete = 'off'; numberInput.spellcheck = false; numberLabel.append(numberInput);
       const reasonLabel = make('label', '', 'Alasan penghapusan (wajib)');
-      const reasonInput = make('textarea'); reasonInput.rows = 2; reasonInput.maxLength = 300; reasonInput.value = 'KTA dicabut; penghapusan data diminta Pemilik'; reasonLabel.append(reasonInput);
+      const reasonInput = make('textarea'); reasonInput.rows = 2; reasonInput.maxLength = 300; reasonInput.value = cardOnly ? 'KTA ganda atau salah input' : 'KTA dicabut; penghapusan data diminta Pemilik'; reasonLabel.append(reasonInput);
       const feedback = make('small', 'member-delete-feedback', 'Centang persetujuan dan cocokkan nama serta nomor KTA.');
       const actions = make('div', 'member-delete-actions');
       const cancel = make('button', 'admin-button admin-button-outline', 'Batal'); cancel.type = 'button';
-      const confirm = make('button', 'admin-button admin-button-red', 'Hapus KTA + data'); confirm.type = 'button'; confirm.disabled = true;
+      const confirm = make('button', 'admin-button admin-button-red', cardOnly ? 'Hapus KTA ini saja' : 'Hapus KTA + data'); confirm.type = 'button'; confirm.disabled = true;
       actions.append(cancel, confirm);
       dialog.append(title, warning, info, consent, nameLabel, numberLabel, reasonLabel, feedback, actions);
       overlay.append(dialog); document.body.append(overlay);
@@ -5039,7 +5089,7 @@
         const valid = matches && reasonInput.value.trim().length >= 5 && consentBox.checked;
         confirm.disabled = !valid;
         feedback.textContent = valid
-          ? 'Konfirmasi cocok. Penghapusan tetap dibatalkan oleh server jika KTA lain masih memakai data pendaftaran.'
+          ? (cardOnly ? 'Konfirmasi cocok. KTA lain dan pendaftaran tidak akan dihapus; riwayat iuran/Siaga akan diperiksa.' : 'Konfirmasi cocok. Penghapusan tetap dibatalkan oleh server jika KTA lain masih memakai data pendaftaran.')
           : 'Persetujuan, nama, nomor KTA, dan alasan minimal 5 karakter wajib diisi.';
         feedback.classList.toggle('is-ready', valid);
       };
@@ -5047,9 +5097,9 @@
       consentBox.addEventListener('change', validate);
       confirm.addEventListener('click', async () => {
         confirm.disabled = true; cancel.disabled = true; confirm.textContent = 'Menghapus…';
-        const ok = await permanentlyDeleteRevokedCard(card, nameInput.value, numberInput.value, reasonInput.value);
+        const ok = await permanentlyDeleteRevokedCard(card, nameInput.value, numberInput.value, reasonInput.value, cardOnly);
         if (ok) close();
-        else { confirm.disabled = false; cancel.disabled = false; confirm.textContent = 'Hapus KTA + data'; }
+        else { confirm.disabled = false; cancel.disabled = false; confirm.textContent = cardOnly ? 'Hapus KTA ini saja' : 'Hapus KTA + data'; }
       });
       nameInput.focus();
     }
@@ -5065,9 +5115,9 @@
       return completeError ? `Berkas foto sudah dihapus, tetapi audit pembersihan belum selesai: ${completeError.message || 'coba lagi.'}` : null;
     }
 
-    async function permanentlyDeleteRevokedCard(card, typedName, typedNumber, reason) {
+    async function permanentlyDeleteRevokedCard(card, typedName, typedNumber, reason, cardOnly = false) {
       setMessage('Memeriksa keterkaitan KTA dan menghapus data secara aman…', 'warning');
-      const { data, error } = await client.rpc('owner_delete_revoked_member_card', {
+      const { data, error } = await client.rpc(cardOnly ? 'owner_delete_card_only' : 'owner_delete_revoked_member_card', {
         p_card_id: card.id,
         p_confirm_member_number: typedNumber.trim(),
         p_confirm_name: typedName.trim(),
@@ -5113,7 +5163,7 @@
       }
       setMessage(data.registration_deleted
         ? `KTA ${card.member_number}, pendaftaran, foto profil, dan foto KTP terkait berhasil dihapus permanen. Catatan audit tanpa nama/NIK tetap disimpan.`
-        : `KTA ${card.member_number} berhasil dihapus permanen. Foto privat KTA (bila ada) ikut dibersihkan; tidak ada pendaftaran atau dokumen pendaftaran yang tertaut.`);
+        : (cardOnly ? `KTA ${card.member_number} dihapus. Pendaftaran, dokumen pendaftaran, dan KTA lain tetap ada.` : `KTA ${card.member_number} berhasil dihapus permanen. Foto privat KTA (bila ada) ikut dibersihkan; tidak ada pendaftaran atau dokumen pendaftaran yang tertaut.`));
       return true;
     }
 
@@ -5210,8 +5260,15 @@
         checkLink.href = `verifikasi.html?k=${encodeURIComponent(card.card_token)}`;
         checkLink.target = '_blank'; checkLink.rel = 'noopener';
         actions.append(openBtn, checkLink);
+        if (isOwner() && ['dicabut', 'menunggu', 'ditolak'].includes(card.status)) {
+          const cardOnlyBtn = make('button', 'admin-link-button card-permanent-delete', 'Hapus KTA saja…');
+          cardOnlyBtn.type = 'button';
+          cardOnlyBtn.title = 'Hapus hanya KTA ini, tanpa menghapus pendaftaran atau dokumen pendaftar.';
+          cardOnlyBtn.addEventListener('click', () => openRevokedCardPurgeDialog(card, true));
+          actions.append(cardOnlyBtn);
+        }
         if (isOwner() && card.status === 'dicabut') {
-          const purgeBtn = make('button', 'admin-link-button card-permanent-delete', 'Hapus permanen…');
+          const purgeBtn = make('button', 'admin-link-button card-permanent-delete', 'Hapus KTA + data pendaftaran…');
           purgeBtn.type = 'button';
           purgeBtn.title = 'Hapus KTA dicabut dan data pendaftaran beserta berkas privat bila tidak dipakai KTA lain.';
           purgeBtn.addEventListener('click', () => openRevokedCardPurgeDialog(card));
