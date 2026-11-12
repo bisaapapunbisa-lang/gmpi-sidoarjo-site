@@ -4355,7 +4355,7 @@
       if (!card || !isOwner()) { editReserved.hidden = true; return; }
       editReserved.hidden = false; editReserved.disabled = true;
       editReserved.replaceChildren(new Option('Memeriksa nomor khusus…', ''));
-      const cardYear = /^GMPI-SDA-(\\d{4})-/i.exec(card.member_number)?.[1] || year;
+      const cardYear = /^GMPI-SDA-(\d{4})-/i.exec(card.member_number)?.[1] || year;
       const prefix = `GMPI-SDA-${cardYear}-`;
       const { data: usedRows, error: usedError } = await client.from('member_cards').select('member_number')
         .gte('member_number', `${prefix}0001`).lte('member_number', `${prefix}0100`).limit(500);
@@ -4843,8 +4843,9 @@
       ));
       if (editing && approvalReady && editing.status !== 'menunggu') {
         if (!cardDataChanged && !photoReplacementPending && editing.status !== 'ditolak') { setMessage('Tidak ada perubahan data kartu.'); return; }
-        if (cardDataChanged && editing.status === 'aktif' && !window.confirm('Data kartu ini sudah disetujui. Jika data kartu diubah, statusnya kembali MENUNGGU PERSETUJUAN dan QR sementara berstatus “belum disetujui”. Lanjutkan?')) return;
+        if (cardDataChanged && editing.status === 'aktif' && !window.confirm('Data kartu ini sudah disetujui. Jika diubah, statusnya kembali MENUNGGU PERSETUJUAN dan QR sementara belum disetujui. Jika nomor diubah, nomor pada kartu cetak lama tidak lagi sesuai; cetak ulang setelah disetujui. Lanjutkan?')) return;
       }
+      if (editing && payload.member_number && editing.status !== 'aktif' && !window.confirm('Nomor KTA akan berubah. Nomor pada kartu cetak lama tidak lagi sesuai; cetak ulang setelah kartu disetujui. Lanjutkan?')) return;
       saveBtn.disabled = true;
       if (!editing && selectedRegistrationId) {
         const { data: existingCards, error: lookupError } = await client.from('member_cards')
@@ -5059,7 +5060,7 @@
       dialog.setAttribute('role', 'dialog'); dialog.setAttribute('aria-modal', 'true');
       const title = make('h3', '', cardOnly ? 'Hapus KTA ini saja?' : 'Hapus KTA dan data anggota permanen?');
       const warning = make('p', 'member-delete-warning', cardOnly
-        ? 'Hanya KTA yang dipilih dihapus permanen. Pendaftaran, foto profil/KTP pendaftar dan KTA lain tetap disimpan. QR pada kartu ini tidak akan berlaku lagi. Foto khusus KTA ini, jika ada, akan dibersihkan. Periksa riwayat iuran/Siaga terlebih dahulu.'
+        ? 'Hanya KTA yang dipilih dihapus permanen. Pendaftaran, foto profil/KTP pendaftar dan KTA lain tetap disimpan. QR pada kartu ini tidak akan berlaku lagi. Penghapusan diblokir bila KTA memiliki foto khusus atau nomor memiliki riwayat iuran/Siaga.'
         : 'Tindakan ini tidak dapat dibatalkan: KTA dicabut akan dihapus, begitu juga pendaftaran anggota, foto profil, dan foto KTP yang tertaut. Sistem akan menolak penghapusan bila pendaftaran masih ditautkan ke KTA lain. Gambar PNG KTA yang pernah diunduh di komputer tidak terhapus.');
       const info = make('div', 'member-delete-info');
       info.append(make('strong', '', card.full_name), make('span', '', `${card.member_number} · ${card.district} · status ${CARD_STATUS_LABELS[card.status] || card.status}`));
@@ -5099,7 +5100,11 @@
         confirm.disabled = true; cancel.disabled = true; confirm.textContent = 'Menghapus…';
         const ok = await permanentlyDeleteRevokedCard(card, nameInput.value, numberInput.value, reasonInput.value, cardOnly);
         if (ok) close();
-        else { confirm.disabled = false; cancel.disabled = false; confirm.textContent = cardOnly ? 'Hapus KTA ini saja' : 'Hapus KTA + data'; }
+        else {
+          feedback.textContent = globalMessage.textContent || 'Penghapusan tidak dapat dilakukan. Periksa data dan coba lagi.';
+          feedback.classList.remove('is-ready');
+          confirm.disabled = false; cancel.disabled = false; confirm.textContent = cardOnly ? 'Hapus KTA ini saja' : 'Hapus KTA + data';
+        }
       });
       nameInput.focus();
     }
