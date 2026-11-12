@@ -310,3 +310,26 @@
 @media(max-width:640px){.org-department-summary{padding:12px}.org-department-panel>.org-admin-row{margin:0 12px 12px}}
 .org-department-panel .org-department-add{margin:0 15px 15px}
 @media(max-width:640px){.org-department-panel .org-department-add{margin:0 12px 12px}}
+
+/* Pengumuman WhatsApp manual: data tetap di panel terbatas. */
+.announcement-panel,.announcement-picker,.announcement-send{padding:20px;margin:16px 0;border:1px solid #e1d9c9;background:#faf8f2}
+.announcement-panel{display:grid;gap:12px}
+.announcement-panel .admin-button{justify-self:start}
+.announcement-panel .privacy-mini,.announcement-picker .privacy-mini,.announcement-send .privacy-mini{margin:0;line-height:1.6}
+.announcement-panel textarea{min-height:160px}
+.announcement-picker h4,.announcement-send h4{font-size:15px;margin:0 0 8px}
+.announcement-search-label{display:block;margin:14px 0 6px}
+.announcement-count{font-size:11px;font-weight:bold;color:#625b50}
+.announcement-member-list{display:grid;gap:2px;max-height:330px;overflow:auto;border:1px solid #e4ddcf;background:#fff}
+.admin-card .announcement-member,.admin-card .announcement-consent{display:flex;align-items:flex-start;gap:11px;margin:0;padding:12px;font-size:12px;line-height:1.5;cursor:pointer}
+.announcement-member+.announcement-member{border-top:1px solid #eee9df}
+.admin-card .announcement-member input,.admin-card .announcement-consent input{flex:none;width:18px;height:18px;margin:0;accent-color:#a91d23}
+.announcement-member b,.announcement-member small,.announcement-recipient b,.announcement-recipient small{display:block}
+.announcement-member small,.announcement-recipient small{font-size:11px;color:#706b62;font-weight:normal;overflow-wrap:anywhere}
+.admin-card .announcement-consent{margin:12px 0;padding:12px;background:#f5ecd5;border-left:3px solid #c69b3b}
+.announcement-recipient-list{display:grid;gap:8px;margin-top:14px}
+.announcement-recipient{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#fff;border:1px solid #e4ddcf;padding:12px}
+.announcement-recipient .announcement-duplicate{color:#a32929;margin-top:4px}
+.announcement-wa{flex:none;min-height:40px;padding:8px 12px;border:0;background:#176e48;color:white;font-size:11px;font-weight:800;cursor:pointer}
+.announcement-wa:hover{background:#0f5636}.announcement-wa:focus-visible{outline:3px solid #c69b3b;outline-offset:2px}
+@media(max-width:560px){.announcement-panel,.announcement-picker,.announcement-send{padding:14px}.announcement-recipient{align-items:flex-start;flex-direction:column}.announcement-wa{width:100%}}

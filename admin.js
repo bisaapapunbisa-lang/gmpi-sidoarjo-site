@@ -175,6 +175,7 @@
     if (canSeeRsvp()) tabs.push(['rsvp', 'Kehadiran']);
     if (canSeeDues()) tabs.push(['dues', 'Iuran']);
     if (canManageNews()) tabs.push(['news', 'Berita']);
+    if (canSeeMembers()) tabs.push(['announcements', 'Kirim pengumuman']);
     if (canSeeReports()) tabs.push(['reports', 'Aduan LBH']);
     if (canSeeMembers()) tabs.push(['members', 'Pendaftaran anggota']);
     if (canManageCards()) tabs.push(['cards', 'Kartu anggota']);
@@ -206,11 +207,128 @@
     if (key === 'rsvp' && canSeeRsvp()) return renderRsvp();
     if (key === 'dues' && canSeeDues()) return renderDues();
     if (key === 'news' && canManageNews()) return renderNews();
+    if (key === 'announcements' && canSeeMembers()) return renderAnnouncements();
     if (key === 'reports' && canSeeReports()) return renderReports();
     if (key === 'members' && canSeeMembers()) return renderMembers();
     if (key === 'cards' && canManageCards()) return renderCards();
     if (key === 'access' && isOwner()) return renderAccessManager();
     workspace.replaceChildren(make('div', 'table-empty', 'Akses tidak diizinkan.'));
+  }
+
+  // Pengumuman manual: gunakan izin pendaftaran yang sudah ada, tanpa layanan pengirim massal.
+  async function renderAnnouncements() {
+    const loadingMarker = workspace.firstChild;
+    async function fetchPages(buildQuery) {
+      const rows = [];
+      const pageSize = 500;
+      for (let start = 0; ; start += pageSize) {
+        const { data, error } = await buildQuery().range(start, start + pageSize - 1);
+        if (error) throw error;
+        rows.push(...(data || []));
+        if (!data || data.length < pageSize) return rows;
+      }
+    }
+    let members, posts;
+    try {
+      [members, posts] = await Promise.all([
+        fetchPages(() => client.from('member_registrations').select('id,full_name,phone,district').eq('status', 'diterima').order('full_name').order('id')),
+        fetchPages(() => client.from('news_posts').select('id,title,summary,partner_id,media_partners(is_active)').eq('status', 'published').order('published_at', { ascending: false }).order('id'))
+      ]);
+    } catch (_) {
+      if (workspace.firstChild === loadingMarker && !dashboardPanel.hidden) showWorkspaceError('Daftar anggota atau berita tidak dapat dimuat. Periksa koneksi dan hak akses, lalu coba lagi.');
+      return;
+    }
+    if (workspace.firstChild !== loadingMarker || dashboardPanel.hidden || !canSeeMembers()) return;
+    posts = posts.filter(post => !post.partner_id || post.media_partners?.is_active === true);
+    const selected = new Set();
+    const heading = make('div', 'workspace-heading');
+    const title = make('div');
+    title.append(make('h3', '', 'Kirim pengumuman'), make('p', '', 'Pilih berita dan anggota, lalu buka WhatsApp satu per satu. Periksa pesan dan tekan Kirim sendiri di WhatsApp. Website tidak mengirim pesan otomatis.'));
+    heading.append(title);
+    const notice = make('div', 'admin-message is-warning', 'Hanya untuk anggota yang telah diizinkan menerima informasi organisasi. Website belum mencatat persetujuan pengumuman; pastikan persetujuan masing-masing anggota terlebih dahulu. Nomor WA dan keberhasilan pengiriman tidak dapat dipastikan oleh website.');
+    const panel = make('div', 'announcement-panel');
+    const newsSelect = make('select'); newsSelect.id = 'announcement-news';
+    const placeholder = make('option', '', posts.length ? 'Pilih berita yang sudah tayang' : 'Belum ada berita yang tayang'); placeholder.value = '';
+    newsSelect.append(placeholder);
+    posts.forEach(post => { const option = make('option', '', post.title); option.value = post.id; newsSelect.append(option); });
+    const compose = make('button', 'admin-button admin-button-outline', 'Siapkan teks berita'); compose.type = 'button';
+    const message = make('textarea'); message.id = 'announcement-message'; message.rows = 8;
+    message.placeholder = 'Pilih berita dan tekan “Siapkan teks berita”, atau tulis pesan Anda sendiri.';
+    const composeHint = make('p', 'privacy-mini', 'Tombol ini mengganti isi pesan. Periksa isi dan waktu acara sebelum mengirim.');
+    compose.addEventListener('click', () => {
+      const post = posts.find(p => p.id === newsSelect.value);
+      if (!post) { setMessage('Pilih berita yang sudah tayang terlebih dahulu.', 'warning'); return; }
+      if (message.value.trim() && !window.confirm('Ganti teks pesan yang sedang disunting dengan teks berita ini?')) return;
+      const link = `https://www.gmpisidoarjo.com/berita.html#berita/${post.id}`;
+      message.value = `Assalamu’alaikum / salam sejahtera.\n\nInformasi untuk keluarga besar GMPI DPD Sidoarjo:\n\n${post.title}${post.summary ? `\n\n${post.summary}` : ''}\n\nSelengkapnya: ${link}\n\nTerima kasih.\nSetia Bersaudara Sampai Urat Nadi.`;
+      setMessage('Teks disiapkan. Periksa dan sesuaikan sebelum membuka WhatsApp.');
+    });
+    panel.append(field('1. Pilih berita', newsSelect), compose, composeHint, field('2. Periksa atau ubah pesan', message));
+    const picker = make('section', 'announcement-picker');
+    picker.append(make('h4', '', '3. Pilih anggota'), make('p', 'privacy-mini', 'Hanya pendaftaran berstatus Diizinkan yang ditampilkan. Pilih satu per satu; data belum otomatis berarti anggota setuju dihubungi.'));
+    const search = input('announcement-search', 'search', { placeholder: 'Cari nama atau kecamatan', autocomplete: 'off' });
+    const searchLabel = make('label', 'announcement-search-label', 'Cari anggota'); searchLabel.htmlFor = search.id;
+    const count = make('p', 'announcement-count'); count.setAttribute('aria-live', 'polite');
+    const memberList = make('div', 'announcement-member-list');
+    picker.append(searchLabel, search, count, memberList);
+    const confirmation = make('label', 'announcement-consent');
+    const consent = input('announcement-consent', 'checkbox');
+    confirmation.append(consent, make('span', '', 'Saya sudah memastikan anggota yang dipilih bersedia menerima pengumuman organisasi.'));
+    const sendSection = make('section', 'announcement-send');
+    sendSection.append(make('h4', '', '4. Buka WhatsApp satu per satu'), confirmation,
+      make('p', 'privacy-mini', 'Setiap tombol membuka chat dari akun WhatsApp yang sedang digunakan pada perangkat ini. Tekan Kirim di WhatsApp; website tidak dapat memastikan pesan terkirim atau dibaca.'));
+    const output = make('div', 'announcement-recipient-list');
+    sendSection.append(output);
+    const waNumber = phone => {
+      const raw = String(phone || '').trim();
+      if (!/^[+\d\s().-]+$/.test(raw)) return '';
+      let n = raw.replace(/\D/g, '');
+      if (n.startsWith('0')) n = '62' + n.slice(1);
+      else if (n.startsWith('8')) n = '62' + n;
+      return /^62[0-9]{8,13}$/.test(n) ? n : '';
+    };
+    function drawSelected() {
+      const chosen = members.filter(m => selected.has(m.id));
+      output.replaceChildren();
+      if (!chosen.length) { output.append(make('p', 'table-empty', 'Belum ada anggota yang dipilih.')); return; }
+      const numbers = new Map();
+      chosen.forEach(m => { const n = waNumber(m.phone); if (n) numbers.set(n, (numbers.get(n) || 0) + 1); });
+      chosen.forEach(member => {
+        const row = make('div', 'announcement-recipient');
+        const info = make('div');
+        const n = waNumber(member.phone);
+        info.append(make('b', '', member.full_name || 'Tanpa nama'), make('small', '', `${member.district || 'Kecamatan tidak tercatat'} · ${member.phone || 'Nomor tidak tersedia'}`));
+        if (n && numbers.get(n) > 1) info.append(make('small', 'announcement-duplicate', 'Nomor sama dipilih lebih dari sekali — periksa agar tidak mengirim ganda.'));
+        if (!n) info.append(make('small', 'announcement-duplicate', 'Format nomor tidak valid; periksa data pendaftaran.'));
+        const button = make('button', 'announcement-wa', 'Buka WhatsApp ↗');
+        button.type = 'button';
+        button.addEventListener('click', () => {
+          if (!n || !message.value.trim() || !consent.checked) {
+            setMessage(!n ? 'Nomor anggota tidak valid.' : !message.value.trim() ? 'Siapkan atau tulis pesan terlebih dahulu.' : 'Pastikan persetujuan setiap anggota yang dipilih, lalu centang pernyataan.', 'warning');
+            return;
+          }
+          window.open(`https://wa.me/${n}?text=${encodeURIComponent(message.value.trim())}`, '_blank', 'noopener,noreferrer');
+        });
+        row.append(info, button); output.append(row);
+      });
+    }
+    function drawMembers() {
+      const term = search.value.trim().toLocaleLowerCase('id-ID');
+      const visible = members.filter(m => `${m.full_name || ''} ${m.district || ''}`.toLocaleLowerCase('id-ID').includes(term));
+      count.textContent = `${visible.length} anggota terlihat · ${selected.size} dipilih`;
+      memberList.replaceChildren();
+      if (!visible.length) { memberList.append(make('p', 'table-empty', members.length ? 'Tidak ada anggota yang sesuai pencarian.' : 'Belum ada pendaftaran berstatus Diizinkan.')); return; }
+      visible.forEach(member => {
+        const label = make('label', 'announcement-member');
+        const check = input('', 'checkbox'); check.checked = selected.has(member.id);
+        check.addEventListener('change', () => { if (check.checked) selected.add(member.id); else selected.delete(member.id); consent.checked = false; count.textContent = `${visible.length} anggota terlihat · ${selected.size} dipilih`; drawSelected(); });
+        const info = make('span'); info.append(make('b', '', member.full_name || 'Tanpa nama'), make('small', '', `${member.district || 'Kecamatan tidak tercatat'} · ${member.phone || 'Nomor tidak tersedia'}`));
+        label.append(check, info); memberList.append(label);
+      });
+    }
+    search.addEventListener('input', drawMembers);
+    drawMembers(); drawSelected();
+    workspace.replaceChildren(heading, notice, panel, picker, sendSection);
   }
 
   async function renderContentEditor() {
