@@ -331,13 +331,32 @@
   const posterLink = document.querySelector('.leadership-poster-preview');
   const posterImage = posterLink?.querySelector('img');
   const leadershipVideo = document.querySelector('.leadership-video');
+  const soundButton = document.querySelector('.leadership-sound');
   if (leadershipVideo) {
     if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       leadershipVideo.autoplay = false;
       leadershipVideo.pause();
     }
+    if (soundButton) {
+      const syncSoundButton = () => {
+        const soundOn = !leadershipVideo.muted && leadershipVideo.volume > 0;
+        soundButton.textContent = soundOn ? '🔇 Matikan suara' : '🔊 Nyalakan suara';
+        soundButton.setAttribute('aria-pressed', String(soundOn));
+      };
+      soundButton.hidden = false;
+      syncSoundButton();
+      soundButton.addEventListener('click', () => {
+        const enableSound = leadershipVideo.muted || leadershipVideo.volume === 0;
+        if (enableSound && leadershipVideo.volume === 0) leadershipVideo.volume = 1;
+        leadershipVideo.muted = !enableSound;
+        if (enableSound && leadershipVideo.paused) leadershipVideo.play().catch(() => {});
+        syncSoundButton();
+      });
+      leadershipVideo.addEventListener('volumechange', syncSoundButton);
+    }
     leadershipVideo.addEventListener('error', () => {
       leadershipVideo.hidden = true;
+      if (soundButton) soundButton.hidden = true;
       if (posterLink) posterLink.hidden = false;
     });
   }
@@ -359,6 +378,7 @@
           posterLink.href = url;
           posterLink.hidden = false;
           if (leadershipVideo) { leadershipVideo.pause(); leadershipVideo.hidden = true; }
+          if (soundButton) soundButton.hidden = true;
         };
         probe.src = url;
       }).catch(() => {});
