@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="id"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Poster Hari Pahlawan GMPI Sidoarjo</title>
+<style>body{margin:0;background:#151116;color:#f8f5ee;font:16px system-ui,sans-serif}main{max-width:900px;margin:auto;padding:20px}h1{font-size:1.5rem}p{line-height:1.55}canvas{display:block;max-width:100%;height:auto;border-radius:8px;background:#231c1c;box-shadow:0 12px 40px #0008}button{background:#bc222a;color:white;border:0;border-radius:8px;padding:12px 18px;font-weight:bold;cursor:pointer}button:disabled{opacity:.5;cursor:wait}.note{color:#e5c9aa;font-size:.92rem}</style></head>
+<body><main><h1>Poster Hari Pahlawan · GMPI Sidoarjo</h1><p>Foto pengurus yang tersedia di struktur website disusun berjajar di depan ilustrasi Hotel Oranje. Bendera merah putih hadir di latar; pose setiap orang tidak direkayasa.</p><p id="status" role="status">Menyiapkan poster dari foto publik di website…</p><p><button id="download" disabled>Unduh poster PNG</button> <button id="retry" hidden>Coba muat ulang</button></p><canvas id="poster" width="1800" height="2250" aria-label="Poster Hari Pahlawan dengan foto pengurus GMPI Sidoarjo"></canvas><p class="note">Periksa poster sebelum dibagikan. Pengurus yang belum memiliki foto tidak ditampilkan. Foto ganda orang yang sama ditampilkan satu kali. Latar hotel merupakan ilustrasi, bukan dokumentasi peristiwa.</p></main>
+<script>
+(async()=>{
+ const root='https://iapwzhlcwprzojeruymm.supabase.co';
+ const key='sb_publishable_R8Ua9s93ZK88kcFpTY7Tng_pQyapURb';
+ const canvas=document.querySelector('#poster'),ctx=canvas.getContext('2d'),status=document.querySelector('#status'),button=document.querySelector('#download'),retry=document.querySelector('#retry');
+ const load=(src,cross=false)=>new Promise((resolve,reject)=>{const i=new Image();if(cross)i.crossOrigin='anonymous';i.onload=()=>resolve(i);i.onerror=()=>reject(new Error('Gambar tidak dapat dimuat'));i.src=src});
+ const round=(x,y,w,h,r)=>{ctx.beginPath();ctx.roundRect(x,y,w,h,r)};
+ function cover(img,x,y,w,h,focus=.35){let scale=Math.max(w/img.width,h/img.height),sw=w/scale,sh=h/scale,sx=(img.width-sw)/2,sy=Math.max(0,Math.min(img.height-sh,(img.height-sh)*focus));ctx.drawImage(img,sx,sy,sw,sh,x,y,w,h)}
+ function nameKey(n){return n.split(',')[0].replace(/[^a-z0-9]/gi,'').toLowerCase()}
+ function label(n){return n.split(',')[0].trim().replace(/\s+/g,' ')}
+ function fitText(text,x,y,max){let size=24;ctx.font=`700 ${size}px Arial`;while(ctx.measureText(text).width>max&&size>14)ctx.font=`700 ${--size}px Arial`;ctx.fillText(text,x,y,max)}
+ async function render(){
+  button.disabled=true;retry.hidden=true;status.textContent='Menyiapkan poster dari foto publik di website…';
+  try {
+   const [background,logo,response]=await Promise.all([load('latar.png'),load('logo.webp'),fetch(root+'/rest/v1/org_structure?select=person_name,photo_path,sort_order&order=sort_order.asc',{headers:{apikey:key,Authorization:'Bearer '+key}})]);
+   if(!response.ok)throw Error('Struktur organisasi belum dapat diakses.');
+   let data=await response.json();let seen=new Set();const people=data.filter(p=>{if(!p.person_name?.trim()||!p.photo_path)return false;const k=nameKey(p.person_name);if(seen.has(k))return false;seen.add(k);return true});
+   if(!people.length)throw Error('Foto pengurus belum tersedia pada struktur organisasi.');
+   const photos=await Promise.all(people.map(async p=>{try{const path=p.photo_path.split('/').map(encodeURIComponent).join('/');return await load(root+'/storage/v1/object/public/site-assets/'+path,true)}catch(e){return null}}));
+   const failed=photos.filter(x=>!x).length;
+   if(failed)throw Error(`${failed} foto tidak dapat dimuat. Poster tidak diunduh agar tidak ada foto yang diam-diam terlewat.`);
+   cover(background,0,0,1800,2250,.45);
+   const shade=ctx.createLinearGradient(0,0,0,2250);shade.addColorStop(0,'rgba(24,8,12,.86)');shade.addColorStop(.28,'rgba(35,10,12,.12)');shade.addColorStop(.47,'rgba(32,8,11,.72)');shade.addColorStop(1,'rgba(12,8,12,.96)');ctx.fillStyle=shade;ctx.fillRect(0,0,1800,2250);
+   ctx.textAlign='center';ctx.fillStyle='#f7e8c9';ctx.font='bold 32px Arial';ctx.fillText('DPD GMPI SIDOARJO',900,92);ctx.fillStyle='#fff';ctx.font='bold 92px Arial';ctx.fillText('SELAMAT HARI',900,190);ctx.fillStyle='#f4c777';ctx.font='bold 142px Arial';ctx.fillText('PAHLAWAN',900,324);ctx.fillStyle='#fff';ctx.font='bold 39px Arial';ctx.fillText('10 NOVEMBER',900,386);
+   ctx.save();round(70,60,130,130,65);ctx.clip();cover(logo,70,60,130,130,.5);ctx.restore();
+   ctx.fillStyle='#fff';ctx.font='italic 30px Georgia';ctx.fillText('Teladani perjuangannya, lanjutkan pengabdiannya.',900,450);
+   const cols=6,rows=Math.ceil(people.length/cols),gapX=16,gapY=14, left=86, width=(1800-left*2-gapX*(cols-1))/cols, top=690, available=1470, h=Math.min(226,(available-gapY*(rows-1))/rows);
+   if(h<75)throw Error('Terlalu banyak foto untuk satu poster.');
+   people.forEach((p,i)=>{let x=left+(i%cols)*(width+gapX),y=top+Math.floor(i/cols)*(h+gapY),im=photos[i];ctx.save();round(x,y,width,h,13);ctx.fillStyle='#241c1b';ctx.fill();ctx.clip();cover(im,x,y,width,h-38,.28);ctx.fillStyle='rgba(27,15,16,.94)';ctx.fillRect(x,y+h-38,width,38);ctx.fillStyle='#fff';ctx.textAlign='center';fitText(label(p.person_name),x+width/2,y+h-12,width-12);ctx.restore();ctx.strokeStyle='rgba(239,204,150,.68)';ctx.lineWidth=2;round(x,y,width,h,13);ctx.stroke()});
+   ctx.fillStyle='#d9b98c';ctx.textAlign='center';ctx.font='bold 24px Arial';ctx.fillText('SETIA BERSAUDARA SAMPAI URAT NADI',900,2210);
+   // Detect a tainted canvas before offering a download.
+   canvas.toDataURL('image/png');button.disabled=false;status.textContent=`Selesai: ${people.length} orang dengan foto tersedia ditampilkan. Silakan periksa lalu unduh PNG.`;
+  }catch(err){status.textContent='Poster belum dapat disiapkan: '+err.message;retry.hidden=false}
+ }
+ button.addEventListener('click',()=>{canvas.toBlob(blob=>{if(!blob){status.textContent='Gagal membuat PNG. Coba lagi.';return}const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='poster-hari-pahlawan-gmpi-sidoarjo.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),30000)},'image/png')});retry.addEventListener('click',render);render();
+})();
+</script></body></html>
