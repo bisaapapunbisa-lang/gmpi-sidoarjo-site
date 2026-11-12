@@ -38,6 +38,16 @@
         <button class="admin-button admin-button-red" type="submit">Masuk <span>↗</span></button>
       </form>
       <p class="login-help">Belum punya akun? Minta pemilik Admin mengundang email Anda. Akun yang belum diberi peran tidak dapat melihat data.</p>
+      <details class="login-help">
+        <summary>Belum membuat atau lupa kata sandi?</summary>
+        <p>Masukkan email yang diundang untuk meminta tautan pengaturan kata sandi. Jika belum diundang, hubungi pemilik Admin terlebih dahulu.</p>
+        <form id="password-reset-form">
+          <label for="password-reset-email">Email yang diundang</label>
+          <input id="password-reset-email" name="email" type="email" autocomplete="email" required placeholder="nama@organisasi.id">
+          <button class="admin-button admin-button-outline" type="submit">Kirim tautan kata sandi</button>
+        </form>
+        <p id="password-reset-message" role="status" aria-live="polite"></p>
+      </details>
       <p class="login-privacy">Jangan gunakan perangkat umum. Keluar setelah selesai, terutama jika membuka data anggota.</p>
     </section>
 
@@ -64,6 +74,6 @@
   <script src="member-card.js"></script>
   <script src="sebaran.js"></script>
   <script src="struktur.js"></script>
-  <script src="admin.js?v=20261112-bidang"></script>
+  <script src="admin.js?v=20261112-aktivasi"></script>
 </body>
 </html>
