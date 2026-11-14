@@ -27,3 +27,18 @@
 .event-contact{justify-self:start;color:#e0b855;font-size:12px;font-weight:700;line-height:1.6;text-decoration:underline;text-underline-offset:3px}
 .event-contact:focus-visible{outline:3px solid #fff;outline-offset:4px}
 .event-button-wa svg,.event-button-map svg{display:block;width:25px;height:25px;flex:none}
+
+/* Informasi acara dikelompokkan agar alamat dan peta tetap berdekatan. */
+.event-details{grid-template-columns:minmax(120px,150px) minmax(0,1fr);gap:clamp(20px,3vw,36px);margin-top:28px;padding:20px 22px;border:1px solid rgba(224,184,85,.22);background:rgba(0,0,0,.24)}
+.event-details>div{gap:7px;min-width:0}
+.event-details small{font-size:10px}
+.event-details strong{font-size:14px}
+.event-place{max-width:500px}
+.event-address-row{align-items:center;justify-content:flex-start;gap:12px}
+.event-address-row span{flex:0 1 38ch;line-height:1.65}
+.event-contact{margin-top:1px;color:#e7c778;text-decoration:none}
+.event-contact:hover{text-decoration:underline}
+.event-actions{margin-top:20px;gap:12px}
+.event-actions .event-button-gold{min-height:50px}
+@media(max-width:760px){.event-details{grid-template-columns:1fr;gap:18px;padding:18px}.event-place{max-width:none}}
+@media(max-width:400px){.event-details{padding:15px}.event-address-row{gap:8px}.event-contact{font-size:11px;letter-spacing:-.1px}.event-actions{gap:10px}}
