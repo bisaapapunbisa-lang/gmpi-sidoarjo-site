@@ -14,7 +14,11 @@
 .event-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:25px}.event-button{display:inline-flex;justify-content:center;align-items:center;gap:14px;min-height:45px;padding:12px 17px;font-size:10px;font-weight:900;letter-spacing:.4px}.event-button-gold{background:#e0b855;color:#16120c}.event-button-gold:hover{background:#f2d287}.event-button-outline{border:1px solid rgba(255,255,255,.7);color:#fff;background:rgba(0,0,0,.25)}.event-button-outline:hover{background:#fff;color:#16120c}
 .event-signature{position:absolute;right:24px;bottom:20px;text-align:right;color:rgba(255,255,255,.48);font-size:8px;line-height:1.55;font-weight:800;letter-spacing:1.5px}
 @media(max-width:760px){.hero-event-link{justify-content:center;margin-top:19px;font-size:9px}.event-section{padding:35px 5%}.event-card{grid-template-columns:1fr;gap:22px;padding:27px 22px 60px;background-position:65% center}.event-date{display:flex;justify-self:start;align-items:center;gap:12px;padding:10px 14px}.event-date strong{font-size:48px}.event-date span{font-size:9px}.event-content h2{font-size:40px}.event-intro{font-size:12px}.event-details{grid-template-columns:1fr;gap:16px}.event-signature{bottom:16px;right:18px;font-size:7px}}
-@media(max-width:400px){.event-content h2{font-size:34px}.event-actions{display:grid}.event-button{width:100%}}
-.event-actions .event-button-wa{width:50px;height:50px;min-height:50px;padding:0;border-radius:50%;background:#087b3e;color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.28)}
+@media(max-width:400px){.event-content h2{font-size:34px}.event-actions .event-button-gold{width:100%}}
+.event-logo{width:42px;height:42px;object-fit:contain;flex:none}
+.event-actions .event-button-wa,.event-actions .event-button-map{width:50px;height:50px;min-height:50px;padding:0;border-radius:50%;box-shadow:0 4px 14px rgba(0,0,0,.28)}
+.event-actions .event-button-wa{background:#087b3e;color:#fff}
 .event-actions .event-button-wa:hover{background:#096630}
-.event-button-wa svg{display:block;width:25px;height:25px;flex:none}
+.event-actions .event-button-map{background:rgba(0,0,0,.25);border:1px solid #d8af59;color:#f4d27d}
+.event-actions .event-button-map:hover{background:#e0b855;color:#16120c}
+.event-button-wa svg,.event-button-map svg{display:block;width:25px;height:25px;flex:none}
