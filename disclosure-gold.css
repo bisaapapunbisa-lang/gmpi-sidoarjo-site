@@ -1,0 +1,28 @@
+/* Bingkai emas serasi untuk tombol buka-tutup di beranda. */
+.section-disclosure > summary {
+  border: 1px solid #ae8438;
+  border-left: 3px solid #9b6a1b;
+  border-radius: 10px;
+  background: linear-gradient(112deg, #d2ac59 0%, #f6e7b7 35%, #e5c579 69%, #c69943 100%);
+  color: #251b0b;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .65), 0 8px 22px rgba(66, 43, 10, .16);
+}
+.section-disclosure > summary strong { color: #251b0b; }
+.section-disclosure > summary small { color: #4a3516; }
+.section-disclosure > summary .disclosure-icon {
+  border-color: rgba(85, 56, 13, .48);
+  background: rgba(255, 250, 225, .35);
+  color: #2d200d;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, .6);
+}
+.section-disclosure > summary:hover,
+.section-disclosure[open] > summary {
+  border-color: #9a6c21;
+  background: linear-gradient(112deg, #dbb766 0%, #fff0c2 35%, #edcf87 69%, #d2a653 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .75), 0 9px 24px rgba(66, 43, 10, .2);
+}
+.section-disclosure > summary:focus-visible {
+  outline: 3px solid #9a6411;
+  outline-offset: 4px;
+}
+.structure-disclosure > summary:focus-visible { outline-color: #ffe5a0; }
