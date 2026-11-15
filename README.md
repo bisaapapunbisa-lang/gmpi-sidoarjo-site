@@ -1,11 +1,9 @@
-# Sembunyikan tombol Admin dari footer
+# Perbaikan keterbacaan nama pada pratinjau Struktur di Admin
 
-Paket ini hanya menghapus tautan/tombol **Admin ↗** pada footer halaman utama. Berkas `index.html` disusun dari versi terbaru `main` yang dibaca saat paket dibuat, lalu hanya elemen tautan footer Admin yang dihapus.
+Pada tangkapan layar, nama pengurus tampil putih pucat di atas latar pratinjau yang terang. Ini terjadi karena gaya tema gelap bagan publik ikut diterapkan ke pratinjau Admin.
 
-## Akses admin tetap tersedia
+Paket ini hanya menambahkan aturan CSS yang dibatasi ke `.org-admin-preview`: nama menjadi gelap dan mudah dibaca, jabatan/judul mendapat kontras lebih kuat, serta kartu pratinjau kembali berlatar putih. Gaya bagan publik tidak diubah; data Supabase, nama, foto, dan logo juga tidak disentuh.
 
-Menyembunyikan tombol tidak menonaktifkan panel dan bukan pengamanan akses. Pengurus/admin yang berhak tetap dapat membuka langsung `https://gmpisidoarjo.com/admin` (atau `admin.html`) dan masuk dengan akun yang diundang serta sudah diberi peran. Pemilik Admin dapat mengundang email masing-masing dan memberi peran yang diperlukan. Akun yang belum diberi peran tetap tidak dapat melihat data.
+## Penerapan
 
-## Cara menerapkan
-
-Unggah `index.html` ke folder root repositori GitHub dan ganti berkas `index.html` yang ada. Paket ini **tidak mengubah** `admin.html`, sistem login, data Supabase, atau peran pengguna. Periksa hasil setelah situs selesai di-deploy.
+Unggah `struktur.css` dari paket ini ke folder root repositori GitHub, ganti berkas `struktur.css` yang ada, lalu commit/deploy. Setelah deploy, muat ulang halaman `/admin` dengan refresh penuh (Ctrl+F5) agar CSS baru dimuat.
