@@ -1,1 +1,1 @@
-Tempatkan lima foto dokumentasi resmi sesuai nama file yang tercantum di `../README.md`. Jangan gunakan foto tanpa izin publikasi atau menampilkan identitas warga/pelapor tanpa persetujuan.
+Berisi lima foto dokumentasi resmi peresmian kantor GMPI DPD Sidoarjo, Graha Bougenville, Senin 16 November 2026 (peresmian-sambutan, peresmian-silaturahmi, peresmian-tamu, peresmian-foto-bersama, peresmian-barisan). Untuk foto berikutnya: gunakan dokumentasi asli dengan izin publikasi dan keterangan lokasi yang akurat. Jangan tampilkan identitas warga/pelapor tanpa persetujuan.
