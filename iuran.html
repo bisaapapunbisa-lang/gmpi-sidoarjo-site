@@ -247,6 +247,34 @@
         </form>
         <div class="dues-check-result" id="dues-check-result" hidden></div>
       </section>
+
+      <!-- Laporan resmi -- ringkasan terbuka untuk publik, rincian hanya untuk anggota terverifikasi -->
+      <section class="dues-card is-dark" id="laporan" aria-labelledby="dues-report-title" style="grid-column:1/-1" hidden>
+        <div class="dues-card-kicker">LAPORAN RESMI</div>
+        <h2 id="dues-report-title" style="font:900 19px Arial,Helvetica,sans-serif;letter-spacing:.2px;margin:9px 0 4px;color:#fffdf7">Laporan iuran</h2>
+        <p class="dues-help" id="dues-report-meta">Diterbitkan oleh Bendahara DPD. Siapa pun boleh melihat ringkasan; rincian per anggota hanya terbuka setelah identitas kartu anggota cocok di server.</p>
+        <div class="dues-report-stats" id="dues-report-stats"></div>
+        <p class="dues-help" id="dues-report-note" hidden></p>
+
+        <form class="dues-form" id="dues-report-form" novalidate style="margin-top:14px">
+          <p class="dues-help"><b>Rincian untuk anggota terverifikasi.</b> Masukkan nomor anggota dan nama persis seperti di kartu anggota. Pemeriksaan dilakukan di server — rincian tidak sekadar disembunyikan di halaman.</p>
+          <div class="dues-form-row">
+            <div>
+              <label for="r-nomor">Nomor anggota</label>
+              <input id="r-nomor" name="nomor" type="text" maxlength="40" placeholder="GMPI-SDA-2026-0001" autocomplete="off" required>
+            </div>
+            <div>
+              <label for="r-nama">Nama lengkap</label>
+              <input id="r-nama" name="nama" type="text" maxlength="120" autocomplete="name" placeholder="Nama sesuai kartu" required>
+            </div>
+          </div>
+          <p class="dues-status-msg" id="dues-report-msg" role="status" aria-live="polite" hidden></p>
+          <div class="dues-btn-row" style="margin-top:4px">
+            <button class="dues-btn is-outline" type="submit" id="dues-report-submit">Buka rincian laporan</button>
+          </div>
+        </form>
+        <div class="dues-check-result" id="dues-report-result" hidden></div>
+      </section>
     </div>
 
     <div class="dues-foot">
