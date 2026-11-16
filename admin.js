@@ -2202,7 +2202,7 @@
 
     workspace.replaceChildren(heading, make('div', 'table-empty', 'Memuat data iuran…'));
 
-    const [settingsRes, paymentsRes, invoicesRes] = await Promise.all([
+    const [settingsRes, paymentsRes, invoicesRes, reportsRes] = await Promise.all([
       client.from('site_content').select('key,value').in('key', DUES_FIELDS.map(field => field.key)),
       client.from('dues_payments')
         .select('id,created_at,member_name,member_number,district,phone,method,amount,period,months,paid_at,note,status,verified_at,verified_by,reject_reason,source,invoice_id')
@@ -2211,7 +2211,11 @@
       client.from('dues_invoices')
         .select('id,title,period,months,nominal,due_date,note,status,publish_at,launched_at,closed_at,created_by,created_at')
         .order('created_at', { ascending: false })
-        .limit(200)
+        .limit(200),
+      client.from('dues_reports')
+        .select('id,invoice_id,title,period,months,nominal,due_date,note,status,published_at,published_by,withdrawn_at,withdrawn_by,created_at')
+        .order('created_at', { ascending: false })
+        .limit(100)
     ]);
 
     if (settingsRes.error || paymentsRes.error) {
@@ -2599,6 +2603,128 @@
         'Hanya satu tagihan yang berjalan pada satu waktu. Peluncuran otomatis menutup tagihan lain agar tidak ada dobel bayar. ' +
         'Cek status & rekap pembayaran tetap memakai daftar di bawah.');
       invoiceSection.append(invoiceNote);
+    }
+
+    // ---------- laporan resmi (ringkasan publik / rincian anggota terverifikasi) ----------
+    // Keputusan DPD: ringkasan boleh dilihat publik; rincian hanya untuk anggota yang
+    // nomor kartu + namanya cocok di server; Pemilik & Bendahara menerbitkan langsung.
+    const reportFeature = !reportsRes.error;
+    const reportByInvoice = new Map((reportsRes.data || []).map(row => [row.invoice_id, row]));
+    const mayPublishReports = roles.includes('owner') || roles.includes('bendahara');
+
+    const reportSection = make('section');
+    reportSection.style.cssText = 'border:1px solid #ded9ce;background:#fffdf7;padding:16px;margin:0 0 18px';
+    const reportHead = make('div', 'workspace-heading');
+    reportHead.style.cssText = 'margin:0 0 10px';
+    const reportHeadText = make('div');
+    reportHeadText.append(make('h3', '', 'Laporan iuran resmi'));
+    reportHeadText.append(make('p', '', 'Terbitkan laporan dari tagihan yang sudah diluncurkan. Di halaman /iuran ringkasan (angka gabungan, tanpa nama) terlihat publik; rincian per anggota hanya terbuka setelah nomor kartu + nama cocok di server. Penerbitan tanpa antre persetujuan — Pemilik & Bendahara langsung bisa.'));
+    reportHead.append(reportHeadText);
+    reportSection.append(reportHead);
+
+    if (!reportFeature) {
+      reportSection.append(make('div', 'table-empty',
+        'Fitur laporan berjenjang belum aktif. Minta Pemilik menjalankan migrasi 20261116180000_laporan_iuran_berjenjang.sql di Supabase, lalu muat ulang halaman ini.'));
+    } else if (!invoiceFeature) {
+      reportSection.append(make('div', 'table-empty', 'Laporan diterbitkan dari tagihan; aktifkan dulu migrasi tagihan iuran.'));
+    } else {
+      const publishable = invoiceList.filter(inv => inv.status === 'dibuka' || inv.status === 'ditutup');
+      const publishedRows = [...reportByInvoice.values()].filter(row => row.status === 'diterbitkan');
+
+      if (publishedRows.length) {
+        const strip = make('div', 'role-list');
+        strip.style.margin = '0 0 12px';
+        publishedRows.forEach(row => {
+          const pill = make('span', 'role-chip', `TAYANG: ${row.title} · ${rupiahAdmin((row.nominal || 0) * (row.months || 1))}`);
+          pill.style.cssText = 'background:#dff0d8;color:#2f5d2a';
+          strip.append(pill);
+        });
+        reportSection.append(strip);
+      }
+
+      if (!publishable.length) {
+        reportSection.append(make('div', 'table-empty', 'Belum ada tagihan yang diluncurkan/ditutup. Luncurkan tagihan di bagian atas dulu, lalu laporannya bisa diterbitkan di sini.'));
+      } else {
+        const { wrap, body } = makeTable(['Tagihan', 'Status laporan', 'Aksi']);
+        publishable.forEach(inv => {
+          const report = reportByInvoice.get(inv.id);
+          const tr = make('tr');
+          const infoCell = make('td');
+          infoCell.append(make('strong', '', `${inv.title} · ${invoiceRange(inv)} · ${rupiahAdmin((inv.nominal || 0) * (inv.months || 1))}`));
+          infoCell.append(make('div', 'privacy-mini', `Tagihan ${invoiceStatusView(inv).label.toLowerCase()}${inv.due_date ? ` · jatuh tempo ${inv.due_date}` : ''}`));
+          tr.append(infoCell);
+
+          const stateCell = make('td');
+          if (report && report.status === 'diterbitkan') {
+            const pill = make('span', 'status-pill', 'LAPORAN TAYANG');
+            pill.style.cssText = 'background:#dff0d8;color:#2f5d2a';
+            stateCell.append(pill);
+            stateCell.append(make('div', 'privacy-mini', `Diterbitkan ${invoiceWhen(report.published_at)}${report.published_by ? ` · ${report.published_by}` : ''}`));
+          } else if (report) {
+            const pill = make('span', 'status-pill', 'DITARIK');
+            pill.style.cssText = 'background:#f7e0e0;color:#8a1f1f';
+            stateCell.append(pill);
+            if (report.withdrawn_at) stateCell.append(make('div', 'privacy-mini', `Ditarik ${invoiceWhen(report.withdrawn_at)}`));
+          } else {
+            const emptySpan = make('span', 'privacy-mini', 'Belum diterbitkan');
+            stateCell.append(emptySpan);
+          }
+          tr.append(stateCell);
+
+          const actionCell = make('td');
+          if (mayPublishReports) {
+            const actions = make('div', 'card-buttons');
+            const publishBtn = make('button', 'admin-button admin-button-gold', report && report.status === 'diterbitkan' ? 'Perbarui laporan' : 'Terbitkan laporan');
+            publishBtn.type = 'button';
+            publishBtn.addEventListener('click', async () => {
+              const ok = window.confirm(
+                `Terbitkan laporan "${inv.title}"?\n\n` +
+                '• Ringkasan (total terkumpul, jumlah pembayar terverifikasi) tampil untuk PUBLIK di halaman /iuran.\n' +
+                '• Rincian per anggota hanya dibuka anggota yang identitas kartunya cocok di server.\n' +
+                '• Penerbitan tercatat atas nama akun Anda dan langsung berlaku.'
+              );
+              if (!ok) return;
+              publishBtn.disabled = true;
+              const { error } = await client.rpc('dues_publish_report', { p_invoice_id: inv.id, p_note: null });
+              publishBtn.disabled = false;
+              if (error) {
+                setMessage(`Laporan gagal diterbitkan: ${error.message}`, 'error');
+              } else {
+                setMessage('Laporan diterbitkan. Ringkasan kini tampil di halaman /iuran.', 'ok');
+              }
+              renderDues();
+            });
+            actions.append(publishBtn);
+            if (report && report.status === 'diterbitkan') {
+              const withdrawBtn = make('button', 'admin-button admin-button-outline', 'Tarik dari publik');
+              withdrawBtn.type = 'button';
+              withdrawBtn.addEventListener('click', async () => {
+                const ok = window.confirm(`Tarik laporan "${inv.title}" dari publik? Ringkasan dan rincian berhenti tampil di halaman /iuran sampai diterbitkan ulang.`);
+                if (!ok) return;
+                withdrawBtn.disabled = true;
+                const { error } = await client.rpc('dues_withdraw_report', { p_report_id: report.id });
+                withdrawBtn.disabled = false;
+                if (error) {
+                  setMessage(`Laporan gagal ditarik: ${error.message}`, 'error');
+                } else {
+                  setMessage('Laporan ditarik dari publik.', 'ok');
+                }
+                renderDues();
+              });
+              actions.append(withdrawBtn);
+            }
+            actionCell.append(actions);
+          } else {
+            actionCell.append(make('span', 'privacy-mini', 'Hanya Pemilik/Bendahara'));
+          }
+          tr.append(actionCell);
+          body.append(tr);
+        });
+        reportSection.append(wrap);
+      }
+
+      reportSection.append(make('p', 'privacy-mini',
+        'Ringkasan publik tidak memuat nama. Rincian (nama, kecamatan, bulan, jumlah) hanya keluar dari server setelah nomor anggota + nama cocok dengan kartu anggota aktif/nonaktif — bukan sekadar disembunyikan di tampilan. Perhitungan hanya memakai pembayaran terverifikasi yang terkait tagihan ini.'));
     }
 
     // ---------- pengaturan ----------
@@ -3309,6 +3435,7 @@
       heading,
       chips,
       invoiceSection,
+      reportSection,
       settingsCard,
       listTitle,
       listHelp,

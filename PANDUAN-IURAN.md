@@ -11,8 +11,9 @@ Anggota cukup membuka **`/iuran`** dan mengikuti 3 langkah di halaman itu.
 | --- | --- |
 | Halaman **`/iuran`** | Tagihan (nominal, periode, jatuh tempo), **pilihan bulan yang dibayar (boleh satu bulan saja)**, QRIS otomatis, e-wallet, transfer bank, tunai, formulir konfirmasi, dan cek status. |
 | Bagian **Iuran Anggota** di beranda | Ringkasan nominal + QRIS yang bisa langsung dipindai. Otomatis disembunyikan bila pengurus belum mengisi pengaturan. |
-| Tab **Iuran** di Admin | **Tagihan** (draf → luncurkan → jadwalkan → tutup), pengaturan kanal pembayaran, verifikasi pembayaran, daftar anggota belum lunas, **rekap bulanan & kedisiplinan anggota**, rekap CSV, dan pembuat teks pengumuman WhatsApp. |
-| Peran baru **Bendahara** | Bisa mengurus iuran **tanpa** akses NIK/KTP. |
+| Tab **Iuran** di Admin | **Tagihan** (draf → luncurkan → jadwalkan → tutup), pengaturan kanal pembayaran, verifikasi pembayaran, daftar anggota belum lunas, **rekap bulanan & kedisiplinan anggota**, rekap CSV, pembuat teks pengumuman WhatsApp, dan **laporan resmi berjenjang**. |
+| Peran baru **Bendahara** | Bisa mengurus iuran **tanpa** akses NIK/KTP — termasuk **menerbitkan laporan langsung**. |
+| **Laporan iuran berjenjang** | Ringkasan (angka gabungan, tanpa nama) tampil untuk **publik** di `/iuran`; **rincian** per anggota hanya terbuka untuk **anggota terverifikasi** (nomor kartu + nama cocok di server). |
 
 Cara bayar yang didukung (semua tanpa biaya tambahan, tanpa payment gateway):
 
@@ -187,6 +188,41 @@ Bila nama yang sama sudah lunas, sistem menolak verifikasi baris kedua.
 
 ---
 
+## 6b. Laporan resmi berjenjang (ringkasan publik / rincian anggota)
+
+Laporan meringkas hasil sebuah tagihan: **ringkasan boleh dilihat publik**,
+sedangkan **rincian per anggota hanya untuk anggota terverifikasi**.
+
+**Menerbitkan (Pemilik & Bendahara, langsung tanpa persetujuan):**
+
+1. Admin → tab Iuran → kartu **“Laporan iuran resmi”**.
+2. Pada tagihan yang statusnya **DIBUKA** atau **DITUTUP**, klik **Terbitkan laporan**.
+3. Saat itu juga ringkasan tampil di `/iuran` bagian **LAPORAN RESMI**:
+   total terkumpul (terverifikasi), jumlah anggota yang sudah membayar, jumlah
+   pembayaran tercatat, dan cakupan anggota — **tanpa nama siapa pun**.
+4. **Perbarui laporan** menyegarkan stempel terbit (mis. setelah verifikasi tambahan);
+   **Tarik dari publik** menyembunyikan seluruh laporan sampai diterbitkan ulang.
+   Keduanya tercatat atas nama akun yang menekannya.
+
+**Membuka rincian (anggota, tanpa akun):**
+
+- Di `/iuran`, bagian **Rincian untuk anggota terverifikasi**: isi **nomor anggota +
+  nama persis seperti di kartu anggota**.
+- Server mencocokkan dengan kartu berstatus **aktif/nonaktif** (kartu sampel dan
+  **dicabut ditolak** dengan pesan yang sama seperti salah ketik, agar tidak
+  membocorkan kolom mana yang keliru). **Verifikasi ini terjadi di server — bukan
+  sekadar tampilan yang disembunyikan**, jadi mengutak-atik halaman tidak membuka data.
+- Rincian menampilkan pembayaran **terverifikasi** saja: nama, kecamatan, bulan yang
+  dibayar, jumlah, dan tanggal — **tanpa nomor WhatsApp dan catatan internal**.
+- Ingatkan anggota untuk tidak meneruskan rincian ke luar keanggotaan.
+
+Prasyarat teknis: migrasi `20261116180000_laporan_iuran_berjenjang.sql`
+(sudah terpasang di Supabase). Publik tidak pernah bisa membaca tabel laporan
+maupun pembayaran secara langsung; semua data keluar lewat fungsi berpagar
+peran/verifikasi di server.
+
+---
+
 ## 7. Yang dilihat anggota (tanpa login)
 
 - Nominal, periode, dan jatuh tempo (dengan hitung mundur).
@@ -206,6 +242,8 @@ Bila nama yang sama sudah lunas, sistem menolak verifikasi baris kedua.
 - Anggota (publik) **tidak bisa membaca** tabel `dues_payments`. Data hanya masuk lewat
   fungsi `submit_dues_payment` dan hanya bisa dibaca akun berperan Pemilik/Registrasi/Bendahara.
 - Cek status hanya membalas bila **nomor anggota + nama** cocok dengan kartu anggota.
+- Rincian laporan memakai gerbang yang sama dan **ditolak untuk kartu dicabut**;
+  ringkasan laporan bersifat agregat sehingga tidak memuat identitas.
 - Tidak ada NIK, foto KTP, atau data kartu pembayaran yang disimpan di modul ini.
 - Hanya **Pemilik** yang dapat menghapus catatan pembayaran.
 - Jangan mengekspor CSV berisi nomor WhatsApp ke luar kepengurusan.
