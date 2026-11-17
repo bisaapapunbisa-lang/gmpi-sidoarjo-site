@@ -1330,9 +1330,13 @@
       make('p', '', editor
         ? 'Kelola semua berita dari media mitra. Berita berstatus “Menunggu persetujuan” perlu Anda terbitkan. Pengurus dapat menyembunyikan berita apa pun.'
         : 'Tulis dan kelola berita media Anda. Berita yang diterbitkan tampil di kolom “Berita” website GMPI Sidoarjo.'));
+    const guideLink = make('a', 'admin-link-button', 'Panduan lengkap ↗');
+    guideLink.href = '/panduan-media-mitra';
+    guideLink.target = '_blank';
+    guideLink.rel = 'noopener';
     const newBtn = make('button', 'admin-button admin-button-gold', '+ Tulis berita');
     newBtn.type = 'button';
-    heading.append(hb, newBtn);
+    heading.append(hb, guideLink, newBtn);
 
     const filterBar = make('div', 'news-admin-filters');
     let statusFilter = '';
