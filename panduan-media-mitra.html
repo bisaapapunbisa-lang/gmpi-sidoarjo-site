@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex,follow">
+  <meta name="theme-color" content="#111110">
+  <title>Panduan Berita Media Mitra — GMPI DPD Sidoarjo</title>
+  <style>
+    :root{color-scheme:light;--ink:#191817;--muted:#68645c;--paper:#f4f1e9;--white:#fffefa;--gold:#c49a3a;--red:#bd2631;--line:#e5dfd2}
+    *{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.7 system-ui,-apple-system,"Segoe UI",sans-serif}
+    header{background:#111;color:#fff;padding:18px max(22px,calc((100vw - 880px)/2));display:flex;align-items:center;justify-content:space-between;gap:16px}header a{color:#e2c16e;text-decoration:none;font-weight:700}.brand{font-weight:900;letter-spacing:.08em}.brand small{display:block;font-size:10px;letter-spacing:.24em;color:#c8c0ad}
+    main{max-width:880px;margin:38px auto;padding:0 20px 48px}.intro,.card{background:var(--white);border:1px solid var(--line);border-radius:12px;padding:clamp(20px,4vw,38px);margin-bottom:20px;box-shadow:0 8px 28px #211b0c0b}
+    .eyebrow{text-transform:uppercase;letter-spacing:.14em;font-size:12px;font-weight:800;color:var(--red)}h1{font-size:clamp(30px,5vw,46px);line-height:1.1;margin:10px 0}h2{font-size:24px;margin:0 0 14px}h3{font-size:18px;margin:22px 0 6px}p{margin:8px 0 14px}.muted{color:var(--muted)}ol,ul{padding-left:24px}li{padding-left:4px;margin:8px 0}.pill{display:inline-block;background:#f1e7ce;border-radius:99px;padding:2px 10px;font-size:13px;font-weight:700}.notice{border-left:4px solid var(--gold);background:#fbf5e6;padding:12px 16px;margin:14px 0}.button{display:inline-block;background:var(--red);color:#fff;padding:11px 18px;border-radius:7px;text-decoration:none;font-weight:800}.small{font-size:14px;color:var(--muted)}footer{padding:25px;text-align:center;color:var(--muted)}@media(max-width:600px){header{padding:14px 18px}main{margin:18px auto;padding:0 12px 32px}.card,.intro{padding:20px}}
+  </style>
+</head>
+<body>
+  <header><a class="brand" href="/">GMPI<small>DPD SIDOARJO</small></a><a href="/admin">← Kembali ke Admin</a></header>
+  <main>
+    <section class="intro">
+      <div class="eyebrow">Panduan redaksi</div>
+      <h1>Berita Media Mitra</h1>
+      <p>Panduan menyiapkan akun, menulis berita, mengunggah foto sampul, serta mengirim berita untuk tayang di website GMPI DPD Sidoarjo.</p>
+      <a class="button" href="/admin">Buka Admin ↗</a>
+    </section>
+    <section class="card">
+      <h2>1. Pengurus menyiapkan akses media</h2>
+      <p class="muted">Langkah ini dilakukan oleh akun Pemilik / akses penuh.</p>
+      <ol>
+        <li>Buka <a href="/admin">gmpisidoarjo.com/admin</a>, masuk sebagai Pemilik, lalu pilih tab <b>Berita</b>.</li>
+        <li>Di bagian <b>Media mitra &amp; akun redaksi</b>, isi <b>Nama media</b> dan, bila ada, <b>Situs web</b>. Klik <b>+ Tambah media</b>.</li>
+        <li>Undang redaksi di Supabase: <b>Authentication → Users → Invite user</b>. Gunakan email yang akan dipakai untuk masuk Admin dan kirim undangan. Redaksi mengikuti petunjuk email untuk menyiapkan akun/kata sandi.</li>
+        <li>Kembali ke kartu media di Admin. Masukkan email yang sama di bagian akun redaksi lalu klik <b>Hubungkan</b>. Pastikan email benar.</li>
+        <li>Pastikan pilihan <b>Aktif (berita tampil di website)</b> dicentang. Logo dapat diunggah, tetapi tidak wajib.</li>
+        <li>Tentukan moderasi. Jika <b>Berita perlu persetujuan pengurus</b> dicentang, setiap kiriman menunggu pengurus. Jika tidak, redaksi bisa menerbitkan langsung.</li>
+      </ol>
+      <div class="notice">Jika satu email terhubung ke beberapa media, redaksi harus memilih media yang benar saat membuat berita. Jangan membagikan kata sandi; cabut akses bila redaksi sudah tidak bertugas.</div>
+    </section>
+    <section class="card">
+      <h2>2. Redaksi masuk dan mulai menulis</h2>
+      <ol>
+        <li>Buka <a href="/admin">gmpisidoarjo.com/admin</a> dan masuk memakai email undangan beserta kata sandi akun Supabase.</li>
+        <li>Pilih tab <b>Berita</b>. Jika terhubung ke lebih dari satu media, klik <b>+ Tulis berita</b> lalu pilih media penulis yang tepat.</li>
+        <li>Isi <b>Judul</b> (wajib, 5–160 karakter), <b>Ringkasan</b> (maksimal 400 karakter; satu atau dua kalimat), dan <b>Isi berita</b> (maksimal 20.000 karakter). Pisahkan paragraf dengan satu baris kosong.</li>
+        <li>Periksa kebenaran nama, jabatan, waktu, lokasi, kutipan, dan izin penggunaan foto sebelum mengirim.</li>
+      </ol>
+    </section>
+    <section class="card">
+      <h2>3. Foto sampul dan tautan sumber</h2>
+      <ol>
+        <li>Foto sampul opsional. Klik <b>Pilih foto sampul</b>, lalu pilih JPG/JPEG, PNG, atau WebP. Ukuran file asal maksimal 15 MB.</li>
+        <li>Foto mendatar (sekitar 16:9) disarankan. Sistem akan mengecilkan foto dan mengunggahnya sebagai JPEG. Tunggu sampai muncul pesan <span class="pill">Foto terunggah</span>; setelah itu simpan berita.</li>
+        <li>Kolom <b>Tautan berita asli</b> opsional. Jika artikel juga ada di situs media, tempel URL lengkap seperti <code>https://contohmedia.id/berita/...</code>. Pembaca dapat membuka artikel sumber.</li>
+      </ol>
+    </section>
+    <section class="card">
+      <h2>4. Simpan, terbitkan, dan tindak lanjut</h2>
+      <ul>
+        <li><b>Simpan draf</b> menyimpan tanpa menampilkan berita ke pengunjung.</li>
+        <li><b>Terbitkan</b> menayangkan berita langsung bila media tidak memakai persetujuan pengurus.</li>
+        <li><b>Kirim untuk ditinjau</b> mengirim berita ke pengurus bila moderasi diwajibkan. Status menjadi <b>Menunggu persetujuan</b>; pengurus meninjau lalu menekan <b>Terbitkan</b>.</li>
+      </ul>
+      <p>Untuk menerbitkan, judul harus valid dan harus ada isi berita atau tautan sumber. Ringkasan dan foto tidak wajib, tetapi disarankan. Periksa status pada daftar Berita: <b>Draf</b>, <b>Menunggu persetujuan</b>, atau <b>Tayang</b>.</p>
+      <p>Untuk memperbaiki berita milik media, klik <b>Ubah</b>. Berita yang sudah tayang tetap tayang setelah disimpan, kecuali media wajib persetujuan—perubahan akan kembali ditinjau. Berita yang disembunyikan pengurus terkunci untuk akun media. Penghapusan berita sendiri melalui <b>Ubah → Hapus</b> bersifat permanen.</p>
+    </section>
+    <section class="card">
+      <h2>5. Jika tidak bisa masuk atau mengunggah</h2>
+      <ul>
+        <li><b>Tab Berita tidak muncul:</b> pastikan masuk dengan email yang diundang dan minta Pemilik menghubungkan email itu ke kartu media.</li>
+        <li><b>Akun belum dihubungkan / media nonaktif:</b> minta Pemilik memeriksa hubungan email-redaksi serta centang <b>Aktif</b>.</li>
+        <li><b>Foto gagal diunggah:</b> cek koneksi, format JPG/PNG/WebP, dan ukuran maksimum 15 MB. Tunggu unggahan selesai sebelum menyimpan.</li>
+        <li><b>Berita belum terlihat:</b> periksa statusnya. Draf belum tayang; kiriman yang menunggu persetujuan harus diterbitkan pengurus.</li>
+        <li><b>Kolom berita atau daftar berita gagal dimuat:</b> hubungi Pemilik Admin. Jangan mengubah pengaturan atau SQL Supabase sendiri.</li>
+      </ul>
+      <p class="small">Akun media hanya dapat mengelola berita dari media yang ditautkan. Akun ini tidak memperoleh akses ke aduan warga, data pendaftaran/KTP, kartu anggota, atau pengaturan situs.</p>
+    </section>
+  </main>
+  <footer>GMPI DPD Sidoarjo · Panduan penggunaan panel berita media mitra</footer>
+</body>
+</html>
