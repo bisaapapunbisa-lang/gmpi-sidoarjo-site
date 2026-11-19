@@ -744,7 +744,7 @@
     ctx.fillText(issuedLong ? `Sidoarjo, ${issuedLong}` : 'Sidoarjo, ....................', cx, sy + 18);
     ctx.fillStyle = C.white;
     ctx.font = `800 10.5px ${F.body}`;
-    spaced(ctx, String(data.signerTitle || 'KETUA UMUM GMPI').toUpperCase(), cx, sy + 38, 1.4, 'center');
+    spaced(ctx, String(data.signerTitle || 'KETUA DPD').toUpperCase(), cx, sy + 38, 1.4, 'center');
     const sigImage = data.signature || defaultSig || null; // tanda tangan lokal (per perangkat) menang; bila kosong pakai bawaan pusat
     if (sigImage) {
       ctx.save();
@@ -757,12 +757,12 @@
     }
     ctx.strokeStyle = 'rgba(251,248,241,.55)'; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(cx - 120, sy + 146); ctx.lineTo(cx + 120, sy + 146); ctx.stroke();
-    const signer = String(data.signerName || '').trim();
+    const signer = String(data.signerName || '').trim() || 'HASMIN MARJAN';
     ctx.fillStyle = signer ? C.white : C.muted;
     ctx.font = signer ? `800 14px ${F.body}` : `600 12px ${F.body}`;
     let fs = 14;
     if (signer) { while (fs > 10 && ctx.measureText(signer.toUpperCase()).width > 250) { fs -= 0.5; ctx.font = `800 ${fs}px ${F.body}`; } }
-    ctx.fillText(signer ? signer.toUpperCase() : '( nama Ketua Umum )', cx, sy + 168);
+    ctx.fillText(signer ? signer.toUpperCase() : 'HASMIN MARJAN', cx, sy + 168);
 
     // ---------- Verifikasi ----------
     ctx.fillStyle = C.gold;
