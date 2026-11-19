@@ -67,7 +67,7 @@
   function defaultSignatureUrl() {
     const cfg = window.GMPI_SUPABASE_CONFIG || {};
     const root = (cfg.url || '').replace(/\/$/, '');
-    return root ? `${root}/storage/v1/object/public/site-assets/kartu/ttd-ketua.png` : '';
+    return root ? `${root}/storage/v1/object/public/site-assets/kartu/ttd-ketua-dpd-emas.png` : '';
   }
   function defaultSignatureReady() {
     if (!defaultSigPromise) {
@@ -75,6 +75,10 @@
         defaultSig = null;
         const url = defaultSignatureUrl();
         if (url) defaultSig = await loadImage(`${url}?v=${Math.floor(Date.now() / 60000)}`, true);
+        if (!defaultSig) {
+          const bundled = scriptSrc ? new URL('assets/kartu/ttd-hasmin-emas.png', scriptSrc).href : 'assets/kartu/ttd-hasmin-emas.png';
+          defaultSig = await loadImage(bundled, true);
+        }
         return defaultSig;
       })();
     }
@@ -744,15 +748,15 @@
     ctx.fillText(issuedLong ? `Sidoarjo, ${issuedLong}` : 'Sidoarjo, ....................', cx, sy + 18);
     ctx.fillStyle = C.white;
     ctx.font = `800 10.5px ${F.body}`;
-    spaced(ctx, String(data.signerTitle || 'KETUA DPD').toUpperCase(), cx, sy + 38, 1.4, 'center');
+    spaced(ctx, String(data.signerTitle || 'KETUA DPD GMPI').toUpperCase(), cx, sy + 38, 1.4, 'center');
     const sigImage = data.signature || defaultSig || null; // tanda tangan lokal (per perangkat) menang; bila kosong pakai bawaan pusat
     if (sigImage) {
       ctx.save();
-      const sw = 200, sh = 80;
+      const sw = 200, sh = 94;
       const iw = sigImage.naturalWidth || sigImage.width;
       const ih = sigImage.naturalHeight || sigImage.height;
       const k = Math.min(sw / iw, sh / ih);
-      ctx.drawImage(sigImage, cx - iw * k / 2, sy + 52 + (sh - ih * k) / 2, iw * k, ih * k);
+      ctx.drawImage(sigImage, cx - iw * k / 2, sy + 48 + (sh - ih * k) / 2, iw * k, ih * k);
       ctx.restore();
     }
     ctx.strokeStyle = 'rgba(251,248,241,.55)'; ctx.lineWidth = 1;

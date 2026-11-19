@@ -4458,11 +4458,11 @@
     const zoomIn = input('card-zoom', 'range', { min: 100, max: 250, value: 100 });
     const xIn = input('card-x', 'range', { min: -100, max: 100, value: 0 });
     const yIn = input('card-y', 'range', { min: -100, max: 100, value: 0 });
-    const SIGNER_KEY = 'gmpi-card-signer-dpd-v2';
+    const SIGNER_KEY = 'gmpi-card-signer-dpd-gmpi-v3';
     const savedSigner = (() => { try { return JSON.parse(localStorage.getItem(SIGNER_KEY) || '{}'); } catch (e) { return {}; } })();
     ['name', 'title'].forEach(k => { if (typeof savedSigner[k] === 'string') savedSigner[k] = savedSigner[k].replace(/\bDPC\b/g, 'DPD'); });
     const signerNameIn = input('card-signer-name', 'text', { maxLength: 80, placeholder: 'Nama Ketua DPD', value: savedSigner.name || 'HASMIN MARJAN' });
-    const signerTitleIn = input('card-signer-title', 'text', { maxLength: 60, value: savedSigner.title || 'KETUA DPD' });
+    const signerTitleIn = input('card-signer-title', 'text', { maxLength: 60, value: savedSigner.title || 'KETUA DPD GMPI' });
     const signatureIn = input('card-signature', 'file', { accept: 'image/png,image/webp' });
 
     const reservedPick = make('select'); reservedPick.id = 'card-number-kind'; reservedPick.className = 'card-number-kind';
@@ -4532,7 +4532,7 @@
         if (!f) { setMessage('Pilih dulu file tanda tangan (PNG/WebP latar transparan).', 'error'); return; }
         if (f.size > 2 * 1024 * 1024) { setMessage('File tanda tangan maksimal 2 MB.', 'error'); return; }
         centralBtn.disabled = true;
-        const { error: upErr } = await client.storage.from('site-assets').upload('kartu/ttd-ketua.png', f, { upsert: true, contentType: f.type || 'image/png', cacheControl: '60' });
+        const { error: upErr } = await client.storage.from('site-assets').upload('kartu/ttd-ketua-dpd-emas.png', f, { upsert: true, contentType: f.type || 'image/png', cacheControl: '60' });
         centralBtn.disabled = false;
         if (upErr) { setMessage('Tanda tangan gagal diunggah: ' + (upErr.message || 'coba lagi.'), 'error'); return; }
         window.GMPICard.clearDefaultSignature();
@@ -4779,7 +4779,7 @@
       editing = null;
       formEl.reset();
       signerNameIn.value = savedSigner.name || signerNameIn.defaultValue || 'HASMIN MARJAN';
-      signerTitleIn.value = savedSigner.title || 'KETUA DPD';
+      signerTitleIn.value = savedSigner.title || 'KETUA DPD GMPI';
       try { const s2 = JSON.parse(localStorage.getItem(SIGNER_KEY) || '{}'); if (s2.name) signerNameIn.value = s2.name; if (s2.title) signerTitleIn.value = s2.title; } catch (e) { /* abaikan */ }
       fillReservedPick(); reservedPick.value = '';
       numberIn.value = suggestNumber();
