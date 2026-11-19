@@ -209,7 +209,7 @@
           ph.append(wrap);
         } else {
           const logo = el('img');
-          logo.src = 'assets/logo-gmpi-sidoarjo-crop.webp'; logo.alt = '';
+          logo.src = 'assets/logo-gmpi-sidoarjo.webp'; logo.alt = '';
           ph.append(logo);
         }
         ph.append(el('span', '', 'FOTO MENYUSUL'));

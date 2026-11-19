@@ -202,7 +202,7 @@ body.dues-page {
 }
 .dues-page .dues-topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; max-width: 1080px; margin: 0 auto; padding: 18px 20px 0; }
 .dues-page .dues-brand { display: flex; align-items: center; gap: 11px; color: #fff; text-decoration: none; }
-.dues-page .dues-brand img { width: 44px; height: auto; border-radius: 50%; border: 2px solid #e51c24; }
+.dues-page .dues-brand img { width: 44px; height: 44px; object-fit: contain; }
 .dues-page .dues-brand b { display: block; font: 18px Impact, 'Arial Narrow', sans-serif; letter-spacing: 2px; }
 .dues-page .dues-brand small { display: block; font-size: 9px; letter-spacing: 2.6px; color: #e0b855; margin-top: 3px; }
 .dues-page .dues-back { font-size: 10px; font-weight: 900; letter-spacing: 1.4px; text-transform: uppercase; color: #cfc4a6; text-decoration: none; border: 1px solid rgba(224, 184, 85, .4); padding: 10px 13px; }

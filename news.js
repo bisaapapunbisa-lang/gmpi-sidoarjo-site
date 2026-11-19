@@ -261,7 +261,8 @@
     if (!root || !config.publishableKey) return;
     try {
       const rows = await api('site_content?select=value&key=eq.site_logo');
-      const path = rows[0]?.value?.text || '';
+      const LOGO_REVISION = '2026-10-31-gmpi-sidoarjo';
+      const path = rows[0]?.value?.revision === LOGO_REVISION ? (rows[0].value.text || '') : '';
       if (/^logos\/[A-Za-z0-9][A-Za-z0-9._-]{0,119}$/.test(path)) {
         const url = `${root}/storage/v1/object/public/site-assets/${path}`;
         document.querySelectorAll('img[data-site-logo]').forEach(img => { img.src = url; });

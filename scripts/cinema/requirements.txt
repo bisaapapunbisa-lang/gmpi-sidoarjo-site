@@ -1,0 +1,6 @@
+pillow>=11
+numpy>=2
+opencv-python-headless>=4.10
+scipy>=1.14
+rembg[cpu]>=2.0.86
+imageio-ffmpeg>=0.7

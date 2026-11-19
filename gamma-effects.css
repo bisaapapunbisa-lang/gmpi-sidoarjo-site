@@ -1,5 +1,5 @@
 /* Gerak latar dan aksen melingkar pada emblem */
-.brand img{object-fit:contain;background:#10100f;border-radius:8px;border:1px solid rgba(255,255,255,.35);box-shadow:none}
+.brand img{object-fit:contain;background:transparent;border-radius:0;border:0;box-shadow:none}
 .hero-emblem{position:relative;isolation:isolate;overflow:visible;filter:none;animation:none}
 .hero-emblem:before{content:none!important;display:none!important}
 .hero-emblem:after{content:'';position:absolute;inset:-23px;z-index:0;display:block;pointer-events:none;border-radius:50%;background:conic-gradient(from 0deg,transparent 0deg 17%,#64f4ff 19% 24%,transparent 26% 47%,#ff565d 50% 54%,transparent 57% 76%,#ffd67c 79% 83%,transparent 86% 100%),conic-gradient(rgba(79,225,255,.22) 0deg 360deg);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 1px));mask:radial-gradient(farthest-side,transparent calc(100% - 2px),#000 calc(100% - 1px));filter:drop-shadow(0 0 5px rgba(83,234,255,.6));animation:gamma-orbit 9s linear infinite}

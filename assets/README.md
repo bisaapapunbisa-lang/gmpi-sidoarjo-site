@@ -1,6 +1,6 @@
 # Aset media GMPI DPD Sidoarjo
 
-Situs menggunakan aset lokal agar halaman tetap dapat dipratinjau tanpa CDN. Logo terbaru dari pengguna dipasang dalam versi terpotong di `assets/logo-gmpi-sidoarjo-crop.webp` dan digunakan di header, hero, serta footer. Sumber asli tetap disimpan sebagai `assets/logo-gmpi-sidoarjo.jpg`.
+Situs menggunakan aset lokal agar halaman tetap dapat dipratinjau tanpa CDN. Logo resmi transparan dari DPD GMPI Sidoarjo disimpan utuh di `assets/logo-gmpi-sidoarjo.webp` (889×1091, RGBA) dan dipakai di header, hero, footer, halaman pendukung, favicon, Open Graph, kartu anggota, serta film sinematik. Lambang tidak dipotong menjadi lingkaran. Varian turunan dibuat dengan `.venv/bin/python scripts/branding/prepare-logo.py`; `assets/logo-gmpi-sidoarjo.jpg` adalah fallback gelap tanpa alpha.
 
 ## Video hero
 
