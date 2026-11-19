@@ -67,3 +67,11 @@ $$;
 revoke all on function public.surat_audit_change() from public;
 create trigger surat_audit after insert or update of status on public.surat_documents
 for each row execute function public.surat_audit_change();
+
+-- Hardening also included in the dashboard installation shared with the operator.
+revoke all on public.surat_signers, public.surat_documents, public.surat_events from public, anon, authenticated;
+grant select on public.surat_signers, public.surat_documents to authenticated;
+revoke all on sequence public.surat_events_id_seq from public, anon, authenticated;
+create policy "surat storage server only" on storage.objects as restrictive
+for all to anon, authenticated
+using (bucket_id <> 'surat-private') with check (bucket_id <> 'surat-private');
