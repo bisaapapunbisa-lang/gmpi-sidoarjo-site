@@ -73,9 +73,24 @@
     const deptRows = by('departemen');
     const grid = el('div', 'org-dept-grid');
     if (deptRows.length) {
+      // Nama divisi yang sama dikelompokkan tanpa mengubah baris pengurus di database.
+      // Ikuti aturan panel Admin: abaikan beda kapital dan spasi, bukan beda ejaan.
+      const groups = new Map();
       deptRows.forEach(r => {
+        const name = (r.department || '').trim().replace(/\s+/g, ' ');
+        const key = name ? name.normalize('NFKC').toLocaleLowerCase('id-ID') : r;
+        if (!groups.has(key)) groups.set(key, { name, members: [] });
+        groups.get(key).members.push(r);
+      });
+      const collator = new Intl.Collator('id', { sensitivity: 'base', numeric: true });
+      const sortedGroups = [...groups.values()].sort((a, b) => {
+        if (!a.name) return b.name ? 1 : 0;
+        if (!b.name) return -1;
+        return collator.compare(a.name, b.name);
+      });
+      sortedGroups.forEach(group => {
         const d = el('div', 'org-dept');
-        d.append(el('span', 'org-dept-name', r.department || 'Departemen'), person(r, photoUrl, 'sm'));
+        d.append(el('h5', 'org-dept-name', group.name || 'Departemen'), people(group.members, photoUrl, 'sm'));
         grid.append(d);
       });
     } else {

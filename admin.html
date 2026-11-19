@@ -6,7 +6,7 @@
   <meta name="theme-color" content="#111110">
   <meta name="robots" content="noindex,nofollow">
   <title>Admin GMPI DPD Sidoarjo</title>
-  <link rel="stylesheet" href="admin.css">
+  <link rel="stylesheet" href="admin.css?v=pengumuman-1">
   <link rel="stylesheet" href="sebaran.css">
   <link rel="stylesheet" href="struktur.css">
   <link rel="icon" type="image/png" href="/assets/favicon.png?v=20261031">
@@ -38,6 +38,16 @@
         <button class="admin-button admin-button-red" type="submit">Masuk <span>↗</span></button>
       </form>
       <p class="login-help">Belum punya akun? Minta pemilik Admin mengundang email Anda. Akun yang belum diberi peran tidak dapat melihat data.</p>
+      <details class="login-help">
+        <summary>Belum membuat atau lupa kata sandi?</summary>
+        <p>Masukkan email yang diundang untuk meminta tautan pengaturan kata sandi. Jika belum diundang, hubungi pemilik Admin terlebih dahulu.</p>
+        <form id="password-reset-form">
+          <label for="password-reset-email">Email yang diundang</label>
+          <input id="password-reset-email" name="email" type="email" autocomplete="email" required placeholder="nama@organisasi.id">
+          <button class="admin-button admin-button-outline" type="submit">Kirim tautan kata sandi</button>
+        </form>
+        <p id="password-reset-message" role="status" aria-live="polite"></p>
+      </details>
       <p class="login-privacy">Jangan gunakan perangkat umum. Keluar setelah selesai, terutama jika membuka data anggota.</p>
     </section>
 
@@ -54,7 +64,7 @@
 
     <section class="admin-footnote">
       <b>STATUS PENERIMAAN FORMULIR</b>
-      <p><b>Pendaftaran anggota: AKTIF</b> — jawaban masuk di tab “Pendaftaran anggota” berstatus “menunggu_verifikasi” lengkap dengan foto KTP/pas foto privat. Formulir Aduan (Posko Digital): AKTIF—laporan terkirim sebagai draf email ke gmpisda@gmail.com (subjek [ADUAN]; alamat bisa diganti di script.js). <b>Iuran keanggotaan: modul tersedia</b> — atur nominal &amp; kanal pembayaran di tab “Iuran”, lalu verifikasi pembayaran yang masuk dari halaman <a href="iuran.html" style="color:#9a2928">/iuran</a>.</p>
+      <p><b>Pendaftaran anggota: AKTIF</b> — jawaban masuk di tab “Pendaftaran anggota” berstatus “menunggu_verifikasi” lengkap dengan foto KTP/pas foto privat. Aduan dari Posko Digital masuk ke tab <b>Aduan LBH</b>. <b>Iuran keanggotaan: modul tersedia</b> — atur nominal &amp; kanal pembayaran di tab “Iuran”, lalu verifikasi pembayaran yang masuk dari halaman <a href="iuran.html" style="color:#9a2928">/iuran</a>.</p>
     </section>
   </main>
 
@@ -65,6 +75,6 @@
   <script src="member-card.js"></script>
   <script src="sebaran.js"></script>
   <script src="struktur.js"></script>
-  <script src="admin.js"></script>
+  <script src="admin.js?v=kta-duplikat-2"></script>
 </body>
 </html>

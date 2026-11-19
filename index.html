@@ -19,11 +19,12 @@
   <link rel="stylesheet" href="kta.css">
   <link rel="stylesheet" href="starfield.css">
   <link rel="stylesheet" href="store.css">
-  <link rel="stylesheet" href="news.css">
+  <link rel="stylesheet" href="news.css?v=202611-kabut-bintang">
   <link rel="stylesheet" href="sos.css">
   <link rel="stylesheet" href="sebaran.css">
   <link rel="stylesheet" href="struktur.css">
-  <link rel="stylesheet" href="iuran.css">
+  <link rel="stylesheet" href="disclosure-gold.css?v=emas-1">
+  <link rel="stylesheet" href="/screen-protection.css">
 </head>
 <body>
   <canvas id="starfield" aria-hidden="true"></canvas>
@@ -38,10 +39,9 @@
       <a href="#beranda" class="nav-link active">Beranda</a>
       <a href="#pilar" class="nav-link">Pilar Pergerakan</a>
       <a href="#posko" class="nav-link">Posko Digital</a>
-      <a href="#lensa" class="nav-link" hidden>Lensa Kegiatan</a>
+      <a href="#lensa" class="nav-link">Lensa Kegiatan</a>
       <a href="#berita" class="nav-link">Berita</a>
       <a href="#perlengkapan" class="nav-link">Perlengkapan</a>
-      <a href="iuran.html" class="nav-link">Iuran</a>
       <a href="#gabung" class="nav-join">Gabung Barisan <span>↗</span></a>
     </nav>
   </header>
@@ -78,12 +78,14 @@
           <div class="eyebrow"><span class="eyebrow-line"></span> PIMPINAN GMPI</div>
           <h2 id="pimpinan-title">Pimpinan <em>GMPI.</em></h2>
         </div>
-        <p class="section-intro">Poster pimpinan GMPI dan DPD Sidoarjo. Lihat susunan pengurus lengkap organisasi.</p>
+        <p class="section-intro">Pimpinan GMPI dan DPD Sidoarjo. Lihat susunan pengurus lengkap organisasi.</p>
       </div>
       <div class="leadership-poster-layout">
         <div class="poster-stage">
-          <a class="leadership-poster-preview" href="assets/posters/poster-dpd-gmpi-sidoarjo.webp" target="_blank" rel="noopener" aria-label="Buka poster pimpinan GMPI dalam resolusi penuh">
-            <img src="assets/posters/poster-dpd-gmpi-sidoarjo-preview.webp" alt="Poster DPD GMPI futuristik menampilkan H.M. Sayegi Dewasena, Ketua Umum GMPI, dan Hasmin Marjan SPD, Ketua DPD GMPI Sidoarjo, dengan semboyan Setia Bersaudara Sampai Urat Nadi dan Kami Lahir Berjuang untuk Masyarakat." width="2400" height="2000" loading="lazy" decoding="async">
+          <video class="leadership-video" id="leadership-video" src="assets/videos/pimpinan-gmpi-suara.mp4" poster="assets/videos/pimpinan-gmpi.jpg" autoplay muted loop playsinline controls preload="metadata" aria-label="Video pimpinan GMPI DPD Sidoarjo"></video>
+          <button type="button" class="leadership-sound" aria-controls="leadership-video" aria-pressed="false" hidden>🔊 Nyalakan suara</button>
+          <a class="leadership-poster-preview" href="assets/posters/poster-dpd-gmpi-sidoarjo.webp" target="_blank" rel="noopener" aria-label="Buka poster pimpinan GMPI dalam resolusi penuh" hidden>
+            <img src="assets/posters/poster-dpd-gmpi-sidoarjo-preview.webp" alt="Poster DPD GMPI menampilkan H.M. Sayegi Dewasena, Ketua Umum GMPI, dan Hasmin Marjan SPD, Ketua DPD GMPI Sidoarjo." width="2400" height="2000" loading="lazy" decoding="async">
             <span>Ketuk poster untuk melihat versi resolusi penuh ↗</span>
           </a>
         </div>
@@ -100,21 +102,18 @@
     <section class="section pillars-section" id="pilar">
       <div class="section-head">
         <div><div class="eyebrow"><span class="eyebrow-line"></span> ETALASE KOMANDO</div><h2>Enam pilar.<br><em>Satu pengabdian.</em></h2></div>
-        <p class="section-intro">Daftar enam badan dan satuan gerak GMPI Sidoarjo tersedia saat dibuka.</p>
+        <p class="section-intro">Kenali badan dan satuan gerak yang mendekatkan GMPI dengan kebutuhan warga, pekerja, perempuan, dan lingkungan di Sidoarjo.</p>
       </div>
       <details class="section-disclosure pillars-disclosure">
-        <summary>
-          <span><strong>Jelajahi enam pilar</strong><small>Ketuk untuk melihat badan dan satuan gerak</small></span>
-          <span class="disclosure-icon" aria-hidden="true"></span>
-        </summary>
+        <summary><span><strong>Jelajahi enam pilar</strong><small>Ketuk untuk melihat badan dan satuan gerak</small></span><span class="disclosure-icon" aria-hidden="true"></span></summary>
         <div class="disclosure-panel">
       <div class="pillar-grid">
-        <article class="pillar-card pillar-lbh"><div class="pillar-top"><span>01 / LAYANAN HUKUM</span><span class="pillar-symbol">§</span></div><div class="pillar-icon pillar-emblem"><img src="assets/divisi/lbh.webp" alt="Logo LBH GMPI" width="150" height="150" loading="lazy" decoding="async"></div><h3>LBH GMPI<br><em>DPD Sidoarjo</em></h3><p>Pendampingan hukum gratis bagi masyarakat yang membutuhkan, dengan perhatian pada warga yang rentan dan kurang mampu.</p><a href="#posko" class="pillar-link">Sampaikan persoalan <span>↗</span></a></article>
-        <article class="pillar-card pillar-mpi"><div class="pillar-top"><span>02 / PEMBERDAYAAN</span><span class="pillar-symbol">✳</span></div><div class="pillar-icon pillar-emblem"><img src="assets/divisi/mpi.webp" alt="Logo Militansi Perempuan Indonesia (MPI)" width="150" height="150" loading="lazy" decoding="async"></div><h3>Militansi Perempuan<br><em>Indonesia · MPI</em></h3><p>Ruang pergerakan sosial, solidaritas, dan pemberdayaan perempuan di tengah masyarakat Sidoarjo.</p><a href="#gabung" class="pillar-link">Kenali gerakan <span>↗</span></a></article>
-        <article class="pillar-card pillar-buruh"><div class="pillar-top"><span>03 / HAK PEKERJA</span><span class="pillar-symbol">✦</span></div><div class="pillar-icon pillar-emblem"><img src="assets/divisi/buruh.webp" alt="Logo Serikat Buruh GMPI" width="150" height="150" loading="lazy" decoding="async"></div><h3>Serikat Buruh<br><em>SB GMPI</em></h3><p>Mengawal aspirasi dan hak buruh, petani, dan nelayan—dari kawasan industri hingga sawah dan tambak Sidoarjo.</p><a href="#posko" class="pillar-link">Sampaikan aspirasi <span>↗</span></a></article>
-        <article class="pillar-card pillar-brigade"><div class="pillar-top"><span>04 / PENGAMANAN &amp; SOLIDARITAS</span><span class="pillar-symbol">★</span></div><div class="pillar-icon pillar-emblem"><img src="assets/divisi/squad.webp" alt="Logo Squad Militansi GMPI" width="150" height="150" loading="lazy" decoding="async"></div><h3>Squad<br><em>Militansi</em></h3><p>Garda pengamanan internal kegiatan dan solidaritas antaranggota, siap turun dalam aksi kemanusiaan dan tanggap bencana.</p><a href="#lensa" class="pillar-link" hidden>Lihat kegiatan <span>↗</span></a></article>
-        <article class="pillar-card pillar-tagana"><div class="pillar-top"><span>05 / KESIAPSIAGAAN BENCANA</span><span class="pillar-symbol">✚</span></div><div class="pillar-icon pillar-emblem"><img src="assets/divisi/tagana.webp" alt="Logo Tagana GMPI Sidoarjo" width="150" height="150" loading="lazy" decoding="async"></div><h3>Tagana<br><em>Tanggap Bencana</em></h3><p>Badan kesiapsiagaan bencana DPD: evakuasi, dapur umum dan logistik, serta pemulihan pasca bencana untuk warga Sidoarjo.</p><a href="#posko" class="pillar-link">Sampaikan kedaruratan <span>↗</span></a></article>
-        <article class="pillar-card pillar-ekonomi"><div class="pillar-top"><span>06 / EKONOMI &amp; SOSIAL DESA</span><span class="pillar-symbol">✿</span></div><div class="pillar-icon pillar-emblem"><img src="assets/divisi/ekonomi.webp" alt="Logo Pemberdayaan Ekonomi &amp; Sosial GMPI Sidoarjo" width="150" height="150" loading="lazy" decoding="async"></div><h3>Pemberdayaan Ekonomi<br><em>&amp; Sosial Masyarakat Desa</em></h3><p>Penguatan ekonomi rakyat: usaha mikro, koperasi, dan pendampingan sosial desa-desa di Sidoarjo.</p><a href="#gabung" class="pillar-link">Kenali gerakan <span>↗</span></a></article>
+        <article class="pillar-card pillar-lbh"><div class="pillar-top"><span>01 / LAYANAN HUKUM</span><span class="pillar-symbol">§</span></div><div class="pillar-icon pillar-emblem"><img src="assets/divisi/lbh.webp" alt="Logo LBH GMPI" width="150" height="150" loading="lazy" decoding="async"></div><h3>LBH GMPI<br><em>DPD Sidoarjo</em></h3><p>Pendampingan hukum gratis bagi masyarakat yang membutuhkan, dengan perhatian pada warga yang rentan dan kurang mampu.</p><a href="?topik=hukum#posko" class="pillar-link">Ajukan pengaduan hukum <span>↗</span></a></article>
+        <article class="pillar-card pillar-mpi"><div class="pillar-top"><span>02 / PEMBERDAYAAN</span><span class="pillar-symbol">✳</span></div><div class="pillar-icon pillar-emblem"><img src="assets/divisi/mpi.webp" alt="Logo Militansi Perempuan Indonesia (MPI)" width="150" height="150" loading="lazy" decoding="async"></div><h3>Militansi Perempuan<br><em>Indonesia · MPI</em></h3><p>Ruang pergerakan sosial, solidaritas, dan pemberdayaan perempuan di tengah masyarakat Sidoarjo.</p><a href="?bidang=mpi#gabung" class="pillar-link">Gabung MPI <span>↗</span></a></article>
+        <article class="pillar-card pillar-buruh"><div class="pillar-top"><span>03 / HAK PEKERJA</span><span class="pillar-symbol">✦</span></div><div class="pillar-icon pillar-emblem"><img src="assets/divisi/buruh.webp" alt="Logo Serikat Buruh GMPI" width="150" height="150" loading="lazy" decoding="async"></div><h3>Serikat Buruh<br><em>SB GMPI</em></h3><p>Mengawal aspirasi dan hak buruh, petani, dan nelayan—dari kawasan industri hingga sawah dan tambak Sidoarjo.</p><a href="?topik=pekerja#posko" class="pillar-link">Laporkan hak pekerja <span>↗</span></a></article>
+        <article class="pillar-card pillar-brigade"><div class="pillar-top"><span>04 / PENGAMANAN &amp; SOLIDARITAS</span><span class="pillar-symbol">★</span></div><div class="pillar-icon pillar-emblem"><img src="assets/divisi/squad.webp" alt="Logo Squad Militansi GMPI" width="150" height="150" loading="lazy" decoding="async"></div><h3>Squad<br><em>Militansi</em></h3><p>Garda pengamanan internal kegiatan dan solidaritas antaranggota, siap turun dalam aksi kemanusiaan dan tanggap bencana.</p><a href="?bidang=squad#gabung" class="pillar-link">Gabung Squad <span>↗</span></a></article>
+        <article class="pillar-card pillar-tagana"><div class="pillar-top"><span>05 / KESIAPSIAGAAN BENCANA</span><span class="pillar-symbol">✚</span></div><div class="pillar-icon pillar-emblem"><img src="assets/divisi/tagana.webp" alt="Logo Tagana GMPI Sidoarjo" width="150" height="150" loading="lazy" decoding="async"></div><h3>Tagana<br><em>Tanggap Bencana</em></h3><p>Badan kesiapsiagaan bencana DPD: evakuasi, dapur umum dan logistik, serta pemulihan pasca bencana untuk warga Sidoarjo. Untuk keadaan darurat segera, gunakan tombol SOS.</p><a href="?topik=tagana#posko" class="pillar-link">Laporkan kebutuhan bencana <span>↗</span></a></article>
+        <article class="pillar-card pillar-ekonomi"><div class="pillar-top"><span>06 / EKONOMI &amp; SOSIAL DESA</span><span class="pillar-symbol">✿</span></div><div class="pillar-icon pillar-emblem"><img src="assets/divisi/ekonomi.webp" alt="Logo Pemberdayaan Ekonomi &amp; Sosial GMPI Sidoarjo" width="150" height="150" loading="lazy" decoding="async"></div><h3>Pemberdayaan Ekonomi<br><em>&amp; Sosial Masyarakat Desa</em></h3><p>Penguatan ekonomi rakyat: usaha mikro, koperasi, dan pendampingan sosial desa-desa di Sidoarjo.</p><a href="?bidang=ekonomi#gabung" class="pillar-link">Gabung program ekonomi <span>↗</span></a></article>
       </div>
       <div class="local-strip"><span class="strip-star">✳</span><b>AKAR RUMPUT, SELURUH SIDOARJO</b><span>18 KECAMATAN</span><i></i><span>1 SEMANGAT PENGABDIAN</span></div>
         </div>
@@ -133,37 +132,38 @@
       <div class="voice-form-card">
         <div class="form-heading"><div><span class="form-kicker">LBH GMPI DPD SIDOARJO</span><h3>Formulir pengaduan</h3></div><span class="form-number">01—04</span></div>
         <form id="report-form">
-          <div class="form-row"><div><label for="report-name">Nama</label><input id="report-name" name="name" placeholder="Nama panggilan / lengkap" required></div><div><label for="report-contact">Kontak yang bisa dihubungi</label><input id="report-contact" name="contact" type="tel" placeholder="No. WhatsApp / telepon" required></div></div>
-          <div class="form-row"><div><label for="report-area">Kecamatan</label><select id="report-area" name="area" required><option value="">Pilih kecamatan</option><option>Balongbendo</option><option>Buduran</option><option>Candi</option><option>Gedangan</option><option>Jabon</option><option>Krembung</option><option>Krian</option><option>Porong</option><option>Prambon</option><option>Sedati</option><option>Sidoarjo</option><option>Sukodono</option><option>Taman</option><option>Tanggulangin</option><option>Tarik</option><option>Tulangan</option><option>Waru</option><option>Wonoayu</option></select></div><div><label for="report-type">Topik pengaduan</label><select id="report-type" name="type" required><option value="">Pilih topik</option><option>Lingkungan</option><option>Ketidakadilan sosial</option><option>Sengketa / persoalan hukum</option><option>Hak pekerja</option><option>Lainnya</option></select></div></div>
-          <label for="report-message">Ceritakan pokok persoalan</label><textarea id="report-message" name="message" rows="4" placeholder="Lokasi umum, kronologi singkat, dan bantuan yang dibutuhkan..." required></textarea>
-          <label class="consent"><input type="checkbox" required><span>Saya setuju dihubungi terkait pengaduan ini dan memahami kebijakan privasi.</span></label>
+          <p class="form-context" id="report-context" hidden></p>
+          <div class="form-row"><div><label for="report-name">Nama</label><input id="report-name" name="name" maxlength="120" placeholder="Nama panggilan / lengkap" required></div><div><label for="report-contact">Kontak yang bisa dihubungi</label><input id="report-contact" name="contact" type="tel" minlength="5" maxlength="40" placeholder="No. WhatsApp / telepon" required></div></div>
+          <div class="form-row"><div><label for="report-area">Kecamatan</label><select id="report-area" name="area" required><option value="">Pilih kecamatan</option><option>Balongbendo</option><option>Buduran</option><option>Candi</option><option>Gedangan</option><option>Jabon</option><option>Krembung</option><option>Krian</option><option>Porong</option><option>Prambon</option><option>Sedati</option><option>Sidoarjo</option><option>Sukodono</option><option>Taman</option><option>Tanggulangin</option><option>Tarik</option><option>Tulangan</option><option>Waru</option><option>Wonoayu</option></select></div><div><label for="report-type">Topik pengaduan</label><select id="report-type" name="type" required><option value="">Pilih topik</option><option>Lingkungan</option><option>Ketidakadilan sosial</option><option>Sengketa / persoalan hukum</option><option>Hak pekerja</option><option>Kebencanaan / Tagana</option><option>Lainnya</option></select></div></div>
+          <label for="report-message">Ceritakan pokok persoalan</label><textarea id="report-message" name="message" rows="4" minlength="5" maxlength="5000" placeholder="Lokasi umum, kronologi singkat, dan bantuan yang dibutuhkan..." required></textarea>
+          <label class="consent"><input type="checkbox" name="consent" required><span>Saya telah membaca <a href="privasi-aduan.html" target="_blank" rel="noopener noreferrer">pemberitahuan privasi aduan</a> dan setuju dihubungi terkait pengaduan ini.</span></label>
           <button class="button button-red button-wide" type="submit">Kirim pengaduan ke LBH <span>↗</span></button>
           <p class="form-status" id="report-status" role="status" aria-live="polite"></p>
         </form>
-        <p class="form-footnote">Selesai mengisi, aplikasi email di perangkat Anda akan terbuka—tinjau lalu tekan Kirim. Laporan masuk ke <b>gmpisda@gmail.com</b> dengan subjek [ADUAN].</p>
+        <p class="form-footnote">Aduan dikirim langsung ke panel LBH dan dapat dibaca oleh Pemilik dan Petugas LBH. Aduan dijadwalkan dihapus dari database aktif setelah satu bulan, termasuk jika belum selesai ditangani. Baca <a href="privasi-aduan.html" target="_blank" rel="noopener noreferrer">pemberitahuan privasi</a>.</p>
       </div>
     </section>
 
-    <section class="section gallery-section" id="lensa" hidden>
+    <section class="section gallery-section" id="lensa">
       <div class="section-head gallery-head">
         <div><div class="eyebrow"><span class="eyebrow-line"></span> LIPUTAN AKSI LOKAL</div><h2>Lensa <em>Kegiatan.</em></h2></div>
-        <div class="gallery-right"><p class="section-intro">Cerita lapangan dari DPC kecamatan, Ranting, dan relawan GMPI di seluruh Sidoarjo—aksi sosial, koordinasi, dan pengawalan aspirasi.</p><div class="gallery-filters" role="group" aria-label="Filter dokumentasi"><button class="filter-button selected" data-filter="semua">Semua</button><button class="filter-button" data-filter="sosial">Aksi sosial</button><button class="filter-button" data-filter="koordinasi">Koordinasi</button><button class="filter-button" data-filter="warga">Suara warga</button></div></div>
+        <div class="gallery-right"><p class="section-intro">Cerita lapangan dari DPC kecamatan, Ranting, dan relawan GMPI di seluruh Sidoarjo—aksi sosial, koordinasi, dan pengawalan aspirasi.</p><div class="gallery-filters" role="group" aria-label="Filter dokumentasi"><button class="filter-button selected" data-filter="semua">Semua</button><button class="filter-button" data-filter="sosial">Silaturahmi</button><button class="filter-button" data-filter="koordinasi">Koordinasi</button><button class="filter-button" data-filter="warga">Tamu &amp; warga</button></div></div>
       </div>
       <div class="masonry-grid">
-        <article class="gallery-tile tile-tall" data-category="sosial"><div class="photo-placeholder placeholder-red"><img class="gallery-photo" src="assets/gallery/01-bakti-sosial.jpg" alt="Dokumentasi aksi sosial GMPI DPD Sidoarjo"><span class="placeholder-mark">✳</span><span class="photo-label">DOKUMENTASI RESMI</span><span class="tile-index">01</span><b>AKSI<br>SOSIAL</b><small>Ganti dengan foto kegiatan</small></div><div class="tile-caption"><span>AKSI SOSIAL</span><b>Berbagi dan bergerak bersama warga</b><small>Tambahkan lokasi & tanggal kegiatan</small></div></article>
-        <article class="gallery-tile tile-short" data-category="koordinasi"><div class="photo-placeholder placeholder-olive"><img class="gallery-photo" src="assets/gallery/02-rapat-koordinasi.jpg" alt="Dokumentasi rapat koordinasi GMPI DPD Sidoarjo"><span class="placeholder-mark">✦</span><span class="photo-label">DOKUMENTASI RESMI</span><span class="tile-index">02</span><b>RAPAT<br>KOORDINASI</b><small>Ganti dengan foto kegiatan</small></div><div class="tile-caption"><span>KOORDINASI</span><b>Merapatkan barisan DPC kecamatan</b><small>Tambahkan lokasi & tanggal kegiatan</small></div></article>
-        <article class="gallery-tile tile-mid" data-category="warga"><div class="photo-placeholder placeholder-charcoal"><img class="gallery-photo" src="assets/gallery/03-aspirasi-warga.jpg" alt="Dokumentasi kegiatan aspirasi warga Sidoarjo"><span class="placeholder-mark">⌖</span><span class="photo-label">DOKUMENTASI RESMI</span><span class="tile-index">03</span><b>SUARA<br>WARGA</b><small>Ganti dengan foto kegiatan</small></div><div class="tile-caption"><span>ASPIRASI WARGA</span><b>Mengawal persoalan di lingkungan</b><small>Tambahkan lokasi & tanggal kegiatan</small></div></article>
-        <article class="gallery-tile tile-mid" data-category="sosial"><div class="photo-placeholder placeholder-gold"><img class="gallery-photo" src="assets/gallery/04-aksi-kemanusiaan.jpg" alt="Dokumentasi aksi kemanusiaan GMPI DPD Sidoarjo"><span class="placeholder-mark">✚</span><span class="photo-label">DOKUMENTASI RESMI</span><span class="tile-index">04</span><b>AKSI<br>KEMANUSIAAN</b><small>Ganti dengan foto kegiatan</small></div><div class="tile-caption"><span>KEMANUSIAAN</span><b>Solidaritas saat warga membutuhkan</b><small>Tambahkan lokasi & tanggal kegiatan</small></div></article>
-        <article class="gallery-tile tile-short" data-category="koordinasi"><div class="photo-placeholder placeholder-red-dark"><img class="gallery-photo" src="assets/gallery/05-pengawalan-aspirasi.jpg" alt="Dokumentasi pengawalan aspirasi warga Sidoarjo"><span class="placeholder-mark">✳</span><span class="photo-label">DOKUMENTASI RESMI</span><span class="tile-index">05</span><b>KAWAL<br>ASPIRASI</b><small>Ganti dengan foto kegiatan</small></div><div class="tile-caption"><span>PENGAWALAN</span><b>Ruang dialog untuk kebijakan daerah</b><small>Tambahkan lokasi & tanggal kegiatan</small></div></article>
+        <article class="gallery-tile tile-tall" data-category="koordinasi"><div class="photo-placeholder placeholder-red has-photo"><img class="gallery-photo" src="assets/gallery/peresmian-sambutan.jpg" alt="Pengurus GMPI DPD Sidoarjo pada sesi sambutan peresmian kantor, di depan tangga dan spanduk DPD" loading="lazy" decoding="async"><span class="placeholder-mark">✳</span><span class="photo-label">DOKUMENTASI RESMI</span><span class="tile-index">01</span><b>SAMBUTAN<br>PIMPINAN</b><small>Peresmian kantor, 16 Nov 2026</small></div><div class="tile-caption"><span>KOORDINASI</span><b>Arahan pimpinan pada peresmian kantor</b><small>Graha Bougenville, Sidoarjo · Senin, 16 November 2026</small></div></article>
+        <article class="gallery-tile tile-short" data-category="koordinasi"><div class="photo-placeholder placeholder-olive has-photo"><img class="gallery-photo" src="assets/gallery/peresmian-silaturahmi.jpg" alt="Suasana silaturahmi pengurus dan tamu di ruang utama kantor GMPI DPD Sidoarjo" loading="lazy" decoding="async"><span class="placeholder-mark">✦</span><span class="photo-label">DOKUMENTASI RESMI</span><span class="tile-index">02</span><b>SILA<br>TURAHMI</b><small>Ruang utama kantor baru</small></div><div class="tile-caption"><span>KOORDINASI</span><b>Ramah tamah pengurus, anggota, dan tamu</b><small>Diliput MediaGetar.com · 16 November 2026</small></div></article>
+        <article class="gallery-tile tile-mid" data-category="warga"><div class="photo-placeholder placeholder-charcoal has-photo"><img class="gallery-photo" src="assets/gallery/peresmian-tamu.jpg" alt="Tamu undangan dan warga berbincang di kantor GMPI DPD Sidoarjo" loading="lazy" decoding="async"><span class="placeholder-mark">⌖</span><span class="photo-label">DOKUMENTASI RESMI</span><span class="tile-index">03</span><b>TAMU &amp;<br>WARGA</b><small>Peresmian kantor, 16 Nov 2026</small></div><div class="tile-caption"><span>TAMU UNDANGAN</span><b>Kehadiran tamu dan tokoh masyarakat</b><small>Kantor GMPI DPD Sidoarjo · 16 November 2026</small></div></article>
+        <article class="gallery-tile tile-mid" data-category="sosial"><div class="photo-placeholder placeholder-gold has-photo"><img class="gallery-photo" src="assets/gallery/peresmian-foto-bersama.jpg" alt="Foto bersama pengurus dan anggota GMPI DPD Sidoarjo di depan spanduk DPD" loading="lazy" decoding="async"><span class="placeholder-mark">✚</span><span class="photo-label">DOKUMENTASI RESMI</span><span class="tile-index">04</span><b>FOTO<br>BERSAMA</b><small>Usai acara peresmian</small></div><div class="tile-caption"><span>SILATURAHMI</span><b>Keluarga besar GMPI DPD Sidoarjo</b><small>Usai peresmian kantor · 16 November 2026</small></div></article>
+        <article class="gallery-tile tile-short" data-category="sosial"><div class="photo-placeholder placeholder-red-dark has-photo"><img class="gallery-photo" src="assets/gallery/peresmian-barisan.jpg" alt="Foto bersama pengurus dan anggota GMPI DPD Sidoarjo; seragam hitam-merah disimulasikan dengan penyuntingan AI" loading="lazy" decoding="async"><span class="placeholder-mark">✳</span><span class="photo-label">ILUSTRASI · EDIT AI</span><span class="tile-index">05</span><b>SATU<br>BARISAN</b><small>Seragam GMPI disimulasikan</small></div><div class="tile-caption"><span>SOLIDARITAS</span><b>Foto bersama dengan seragam GMPI hasil simulasi AI</b><small>Sekretariat DPD Sidoarjo · 16 November 2026</small></div></article>
       </div>
-      <div class="gallery-note"><span>↗</span><span data-cms-key="gallery_note">Galeri ini menunggu foto aksi resmi dari DPD/DPC. Gunakan dokumentasi asli dengan izin publikasi dan keterangan lokasi yang akurat.</span></div>
+      <div class="gallery-note"><span>↗</span><span data-cms-key="gallery_note">Seluruh foto dokumentasi resmi kegiatan GMPI DPD Sidoarjo. Seri perdana: peresmian kantor Graha Bougenville, Senin 16 November 2026. Dokumentasi aksi DPC kecamatan berikutnya akan menyusul.</span></div>
       <div class="district-line"><span>MENJANGKAU</span><b>Balongbendo · Buduran · Candi · Gedangan · Jabon · Krembung · Krian · Porong · Prambon · Sedati · Sidoarjo · Sukodono · Taman · Tanggulangin · Tarik · Tulangan · Waru · Wonoayu</b></div>
     </section>
 
     <section class="section news-section" id="berita" aria-labelledby="news-title" data-news-mode="home">
       <div class="section-head">
-        <div><div class="eyebrow"><span class="eyebrow-line"></span> KABAR MEDIA MITRA</div><h2 id="news-title">Berita <em>terkini.</em></h2></div>
-        <p class="section-intro">Liputan kegiatan dan kabar GMPI Sidoarjo dari media yang bekerja sama dengan kami. Setiap berita ditulis dan dikelola langsung oleh redaksi media mitra.</p>
+        <div><div class="eyebrow"><span class="eyebrow-line"></span> KABAR &amp; KEGIATAN</div><h2 id="news-title">Berita <em>terkini.</em></h2></div>
+        <p class="section-intro">Kabar kegiatan dan pengumuman GMPI DPD Sidoarjo, serta liputan dari media mitra.</p>
       </div>
       <div class="news-filters" id="news-filters" role="group" aria-label="Pilih media" hidden></div>
       <div class="news-grid" id="news-grid" aria-live="polite"><div class="news-empty">Memuat berita…</div></div>
@@ -174,13 +174,10 @@
     <section class="section struktur-section" id="struktur" aria-labelledby="struktur-title">
       <div class="section-head">
         <div><div class="eyebrow"><span class="eyebrow-line"></span> SUSUNAN PENGURUS</div><h2 id="struktur-title">Struktur <em>organisasi.</em></h2></div>
-        <p class="section-intro">Bagan kepengurusan mengikuti data struktur organisasi yang dikelola DPD. Ketuk untuk melihat susunannya.</p>
+        <p class="section-intro">Dewan Penasihat, Dewan Pembina, dan Dewan Pengurus GMPI DPD Sidoarjo sesuai AD/ART GMPI 2021 Pasal 9.</p>
       </div>
       <details class="section-disclosure structure-disclosure">
-        <summary>
-          <span><strong>Lihat bagan organisasi</strong><small>Bagan diperbarui dari data pengurus DPD</small></span>
-          <span class="disclosure-icon" aria-hidden="true"></span>
-        </summary>
+        <summary><span><strong>Lihat bagan organisasi</strong><small>Bagan diperbarui dari data pengurus DPD</small></span><span class="disclosure-icon" aria-hidden="true"></span></summary>
         <div class="disclosure-panel">
           <div id="struktur-chart"></div>
           <p class="struktur-note">Susunan pengurus DPD ditetapkan dan disahkan sesuai AD/ART GMPI. Garis putus-putus: fungsi nasihat dan pembinaan.</p>
@@ -218,15 +215,11 @@
         <div class="eyebrow eyebrow-light"><span class="eyebrow-line"></span> KORPS REGISTRASI</div>
         <h2>Pendaftaran<br><em>Anggota Baru.</em></h2>
         <p>Lengkapi data untuk proses verifikasi dan penempatan di DPC kecamatan serta Ranting desa Anda.</p>
-        <div class="join-share-actions">
-          <a class="join-share-open" href="#pendaftaran">Buka formulir pendaftaran langsung <span>↘</span></a>
-          <button class="join-share-copy" id="join-copy-link" type="button">Salin tautan untuk dibagikan</button>
-          <small id="join-copy-status" role="status" aria-live="polite"></small>
-        </div>
       </div>
-      <div class="join-form-wrap registration-wrap" id="pendaftaran">
+      <div class="join-form-wrap registration-wrap">
         <div class="registration-heading"><span>FORMULIR ANGGOTA GMPI DPD SIDOARJO</span><b>01 / REGISTRASI</b></div>
         <form id="join-form" class="registration-form">
+          <p class="form-context" id="join-context" hidden></p>
           <div class="pledge-box">
             <label><input id="join-pledge" name="pledge" type="checkbox" required><span><b>PERNYATAAN SIKAP &amp; KESETIAAN</b><br>Dengan kesadaran penuh, saya menyatakan setia kepada NKRI, Pancasila, UUD 1945, serta siap mematuhi AD/ART, Kode Etik, ketentuan organisasi, dan komando perjuangan GMPI Sidoarjo dengan semangat <em>“Setia Bersaudara Sampai Urat Nadi”.</em></span></label>
           </div>
@@ -242,12 +235,38 @@
           </div>
           <div id="domisili-luar" hidden><label for="join-kota-luar">Kota / kabupaten domisili</label><input id="join-kota-luar" name="kota_luar" maxlength="80" placeholder="cth: Kab. Malang / Kota Surabaya"></div>
           <label for="join-address">Nama jalan / gang / blok / nomor rumah <span class="label-detail">(nama desa &amp; kecamatan tak perlu ditulis lagi)</span></label><textarea id="join-address" name="address" rows="2" autocomplete="street-address" placeholder="cth: Perum Graha Bougenville Kav. 22–23" required></textarea>
+          <label for="join-division">Bidang pergerakan yang diminati</label><select id="join-division" name="division" required>
+            <option value="">Pilih bidang</option>
+            <optgroup label="Badan dan satuan pergerakan">
+              <option>Lembaga Bantuan Hukum / Advokasi Hukum Rakyat</option>
+              <option>Squad Militansi — Pengamanan &amp; Solidaritas</option>
+              <option>Militansi Perempuan Indonesia (MPI Sidoarjo)</option>
+              <option>Serikat Buruh, Tani &amp; Nelayan (SB GMPI)</option>
+              <option>Tagana — Tanggap Bencana</option>
+              <option>Pemberdayaan Ekonomi &amp; Sosial Masyarakat Desa</option>
+            </optgroup>
+            <optgroup label="Divisi dan departemen DPD">
+              <option>Divisi Agama</option>
+              <option>Divisi Ekonomi</option>
+              <option>Divisi Hukum dan Hak Asasi Manusia (HAM)</option>
+              <option>Divisi Pariwisata</option>
+              <option>Divisi Pemberdayaan Perempuan</option>
+              <option>Divisi Pertahanan &amp; Keamanan Anggota</option>
+              <option>Divisi Politik</option>
+              <option>Divisi Sosial</option>
+              <option>Divisi Tenaga Kerja</option>
+              <option>Litbang</option>
+              <option>Organ Keanggotaan &amp; Kaderisasi</option>
+              <option>Publikasi/Media</option>
+            </optgroup>
+          </select>
           <div class="registration-subhead"><span>02</span> VERIFIKASI DOKUMEN <small>JPG / PNG</small></div>
           <div class="upload-grid">
             <div class="upload-card"><label for="join-ktp">Foto KTP asli <b>*</b></label><input id="join-ktp" name="ktp" type="file" accept="image/jpeg,image/png" required><small>JPG/PNG · maks. 5 MB</small><span class="file-status" id="ktp-status">Belum ada file dipilih</span></div>
             <div class="upload-card"><label for="join-profile">Pas foto 4×6 <b>*</b></label><input id="join-profile" name="profile" type="file" accept="image/jpeg,image/png" required><small>JPG/PNG · maks. 5 MB · latar biru (sesuai ART Pasal 2)</small><span class="file-status" id="profile-status">Belum ada file dipilih</span></div>
           </div>
-          <label class="consent consent-light registration-consent"><input type="checkbox" required><span>Saya setuju data saya disimpan DPD GMPI Sidoarjo untuk keperluan keanggotaan, hanya dilihat petugas registrasi yang berwenang, dan dilindungi sesuai undang-undang perlindungan data pribadi.</span></label>
+          <div class="registration-disclosure"><b>DATA PRIBADI &amp; AKSES TERBATAS</b><p>Formulir ini meminta NIK dan dokumen identitas untuk verifikasi keanggotaan. Data pendaftaran dan dokumen hanya dapat diakses Pemilik Admin serta Petugas Registrasi yang diberi wewenang—bukan untuk akses publik. <a href="/privasi-pendaftaran" target="_blank" rel="noopener">Baca Pemberitahuan Privasi Pendaftaran ↗</a></p></div>
+          <label class="consent consent-light registration-consent"><input type="checkbox" required><span>Saya memahami dan menyetujui penggunaan data untuk proses keanggotaan sebagaimana dijelaskan dalam <a href="/privasi-pendaftaran" target="_blank" rel="noopener">Pemberitahuan Privasi Pendaftaran</a>. Akses data dibatasi untuk Pemilik Admin dan Petugas Registrasi yang berwenang.</span></label>
           <button class="button button-gold button-wide" type="submit">Kirim pendaftaran <span>↗</span></button>
           <p class="form-status join-status" id="join-status" role="status" aria-live="polite"></p>
         </form>
@@ -277,52 +296,13 @@
       </figure>
     </section>
 
-    <section class="dues-section" id="iuran" aria-labelledby="dues-home-title" data-dues-teaser>
-      <div class="dues-inner">
-        <div class="dues-head">
-          <div>
-            <div class="dues-eyebrow"><i></i>IURAN ANGGOTA</div>
-            <h2 id="dues-home-title">Bayar iuran,<br><em>semudah pindai.</em></h2>
-          </div>
-          <p class="dues-lead">Iuran anggota menjaga kas organisasi tetap hidup: advokasi warga, kegiatan sosial, dan operasional sekretariat DPD. <b>Pilih QRIS</b> — nominal otomatis terisi, tinggal pindai dan konfirmasi. Bisa juga lewat e-wallet, transfer bank, atau tunai ke bendahara.</p>
-        </div>
-        <div class="dues-grid">
-          <div class="dues-card">
-            <div class="dues-card-kicker">TAGIHAN<span data-dues-field="status">MEMUAT…</span></div>
-            <p class="dues-amount"><span data-dues-field="nominal">Rp—</span></p>
-            <ul class="dues-meta">
-              <li>Periode <b data-dues-field="period">—</b></li>
-              <li>Jatuh tempo <b data-dues-field="due">—</b></li>
-            </ul>
-            <p class="dues-note" data-dues-field="note">Memuat pengaturan iuran…</p>
-            <div class="dues-btn-row">
-              <a class="dues-btn is-gold" href="iuran.html" data-dues-cta>Bayar iuran sekarang</a>
-              <a class="dues-btn is-outline" href="iuran.html#cek">Cek status iuran</a>
-            </div>
-            <p class="dues-status-msg is-error" data-dues-teaser-warning hidden>Pengaturan iuran belum bisa dimuat dari server. Nominal di atas mungkin belum sesuai ketetapan pengurus — buka halaman iuran untuk rincian terbaru.</p>
-            <p class="dues-note" style="margin-top:14px">Pembayaran hanya ke kanal atas nama <b>GMPI DPD SIDOARJO</b>. Jangan mengirim uang ke rekening pribadi.</p>
-          </div>
-          <div class="dues-card is-dark dues-teaser-qr">
-            <div class="dues-card-kicker" style="margin-bottom:12px">PINDAI QRIS IURAN</div>
-            <canvas data-dues-qr width="300" height="300" role="img" aria-label="QRIS pembayaran iuran anggota GMPI DPD Sidoarjo"></canvas>
-            <img data-dues-qr-fallback src="assets/payment/qris-gmpi-dpd-sidoarjo.jpg" alt="QRIS resmi GMPI DPD SIDOARJO" style="width:min(180px,44vw);margin:0 auto;display:block" hidden>
-            <small data-dues-qr-note>Nominal terisi otomatis · semua e-wallet &amp; m-banking</small>
-            <p class="dues-note" style="margin-top:12px">Belum bisa memindai? Buka <a href="iuran.html" style="color:#e0b855;text-decoration:underline">halaman iuran</a> untuk nominal, e-wallet, transfer bank, dan konfirmasi pembayaran.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <section class="section shop-section" id="perlengkapan" aria-labelledby="shop-title">
       <div class="section-head">
         <div><div class="eyebrow"><span class="eyebrow-line"></span> PERLENGKAPAN ORGANISASI</div><h2 id="shop-title">Lengkapi <em>atributmu.</em></h2></div>
-        <p class="section-intro">Seragam, kaos, dan atribut resmi GMPI Sidoarjo. Katalog diperbarui otomatis dari barang aktif yang dikelola pengurus; pilih produk, ikuti langkah pemesanan, lalu bayar hanya melalui kanal resmi. Sesuai ART Pasal 23, keuntungan penjualan dibagihasilkan untuk kas organisasi.</p>
+        <p class="section-intro">Seragam, kaos, topi, logo, emblem, dan atribut resmi GMPI Sidoarjo untuk anggota baru maupun lama. Pilih barang, bayar dengan QRIS resmi organisasi, lalu kirim bukti bayar ke WhatsApp pengurus. Sesuai ART Pasal 23, keuntungan penjualan atribut menjadi iuran bagi hasil untuk kas organisasi.</p>
       </div>
       <details class="section-disclosure shop-disclosure">
-        <summary>
-          <span><strong>Buka katalog atribut</strong><small>Lihat produk, pilih ukuran, dan buat pesanan</small></span>
-          <span class="disclosure-icon" aria-hidden="true"></span>
-        </summary>
+        <summary><span><strong>Buka katalog atribut</strong><small>Lihat produk, pilih ukuran, dan buat pesanan</small></span><span class="disclosure-icon" aria-hidden="true"></span></summary>
         <div class="disclosure-panel shop-disclosure-panel">
       <ol class="shop-how" aria-label="Cara memesan">
         <li><b>1</b><span><strong>Pilih barang</strong>ukuran &amp; jumlah</span></li>
@@ -376,19 +356,10 @@
   </main>
 
   <footer class="site-footer">
-    <div class="footer-identity">
-      <a class="brand footer-brand" href="#top"><img data-site-logo src="assets/logo-gmpi-sidoarjo.webp" alt=""><span class="brand-text"><strong>GMPI</strong><small>DPD SIDOARJO</small></span></a>
-      <p>Gerakan Militansi Pejuang Indonesia<br><span data-cms-key="footer_slogan">Setia Bersaudara Sampai Urat Nadi</span></p>
-    </div>
-    <address class="footer-contact" aria-label="Kontak resmi GMPI DPD Sidoarjo">
-      <div class="footer-contact-row"><strong>Alamat</strong><span>Perum, Jl. Graha Bougenville Kav. Depag No.31, Kemiri, Kec. Sidoarjo, Kab. Sidoarjo 61234</span></div>
-      <div class="footer-contact-row"><strong>Telp/WA</strong><a href="tel:+6281235911689">+62 812-3591-1689</a></div>
-      <div class="footer-contact-row"><strong>Email</strong><a href="mailto:gmpisda@gmail.com">gmpisda@gmail.com</a></div>
-      <div class="footer-contact-row"><strong>Website</strong><a href="https://www.gmpisidoarjo.com">www.gmpisidoarjo.com ↗</a></div>
-    </address>
-    <nav class="footer-links" aria-label="Tautan footer">
-      <a href="#pilar">Pilar Pergerakan</a><a href="#posko">Posko Digital</a><a href="#lensa" hidden>Lensa Kegiatan</a><a href="berita.html">Berita</a><a href="#perlengkapan">Perlengkapan</a><a href="iuran.html">Iuran Anggota</a><a href="#struktur">Struktur Organisasi</a><a href="#legalitas">Legalitas</a><a href="verifikasi.html">Verifikasi Kartu</a><a href="darurat.html">Darurat / SOS</a><a class="footer-admin" href="admin.html" aria-label="Masuk ke panel Admin GMPI">Admin ↗</a>
-    </nav>
+    <a class="brand footer-brand" href="#top"><img data-site-logo src="assets/logo-gmpi-sidoarjo.webp" alt=""><span class="brand-text"><strong>GMPI</strong><small>DPD SIDOARJO</small></span></a>
+    <p>Gerakan Militansi Pejuang Indonesia<br><span data-cms-key="footer_slogan">Setia Bersaudara Sampai Urat Nadi</span></p>
+    <p><span><a class="footer-map-link" href="https://www.google.com/maps/search/?api=1&amp;query=KANTOR%20DPD%20GMPI%20SIDOARJO%2C%20HP7J%2B448%2C%20Jl.%20Graha%20Bougenville%2C%20Kemiri%2C%20Kec.%20Sidoarjo%2C%20Kabupaten%20Sidoarjo%2C%20Jawa%20Timur%2061234" target="_blank" rel="noopener noreferrer" aria-label="Buka pencarian alamat sekretariat di Google Maps (tab baru)">Jl. Graha Bougenville Kav. Depag No. 22–23, Kemiri, Sidoarjo 61234 <span class="footer-map-label">Buka di Google Maps ↗</span></a><br>Telp/WA +62 812-3591-1689 &middot; <a href="mailto:gmpisda@gmail.com">gmpisda@gmail.com</a></span></p>
+    <div class="footer-links"><a href="#pilar">Pilar Pergerakan</a><a href="#posko">Posko Digital</a><a href="#lensa">Lensa Kegiatan</a><a href="berita.html">Berita</a><a href="#perlengkapan">Perlengkapan</a><a href="#struktur">Struktur Organisasi</a><a href="#legalitas">Legalitas</a><a href="verifikasi.html">Verifikasi Kartu</a><a href="darurat.html">Darurat / SOS</a></div>
     <small class="copyright">© <span id="year"></span> GMPI DPD Sidoarjo<br>Berbadan hukum · AHU-0010942.AH.01.07.TAHUN 2021</small>
   </footer>
 
@@ -465,12 +436,12 @@
   <script src="assets/wilayah-sidoarjo.js"></script>
   <script src="vendor/qrcode-generator.js"></script>
   <script src="member-card.js"></script>
-  <script src="script.js"></script>
+  <script src="script.js?v=aduan-langsung-1"></script>
   <script src="starfield.js"></script>
   <script src="store.js"></script>
-  <script src="iuran.js"></script>
-  <script src="news.js"></script>
+  <script src="news.js?v=202611-kabut-bintang"></script>
   <script src="sebaran.js"></script>
   <script src="struktur.js"></script>
+  <script src="/screen-protection.js" defer></script>
 </body>
 </html>

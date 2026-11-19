@@ -1,10 +1,4 @@
 (() => {
-  // Set these to the verified organizational inboxes before publishing.
-  // Mailto opens the visitor's email app; it does not submit silently.
-  const SITE_CONFIG = {
-    lbhEmail: 'gmpisda@gmail.com' // GANTI EMAIL TUJUAN ADUAN DI SINI (satu baris ini saja)
-  };
-
   const menuButton = document.querySelector('.menu-toggle');
   const nav = document.querySelector('.main-nav');
   const navLinks = [...document.querySelectorAll('.nav-link')];
@@ -18,19 +12,6 @@
     menuButton.setAttribute('aria-expanded', 'false');
     nav.classList.remove('open');
   }));
-
-  const copyJoinLink = document.querySelector('#join-copy-link');
-  const joinLinkStatus = document.querySelector('#join-copy-status');
-  copyJoinLink?.addEventListener('click', async () => {
-    const url = 'https://www.gmpisidoarjo.com/#pendaftaran';
-    try {
-      await navigator.clipboard.writeText(url);
-      joinLinkStatus.textContent = 'Tautan pendaftaran tersalin. Silakan bagikan.';
-    } catch (error) {
-      window.prompt('Salin tautan pendaftaran ini:', url);
-      joinLinkStatus.textContent = 'Salin tautan di atas untuk dibagikan.';
-    }
-  });
 
   const sections = [...document.querySelectorAll('main section[id]')];
   if ('IntersectionObserver' in window) {
@@ -72,30 +53,76 @@
     });
   });
 
-  const buildMailto = (address, subject, lines) => {
-    const body = lines.map(([label, value]) => `${label}: ${value}`).join('\n');
-    return `mailto:${address}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-  };
-
   const reportForm = document.querySelector('#report-form');
   const reportStatus = document.querySelector('#report-status');
-  reportForm.addEventListener('submit', event => {
+  const actionParams = new URLSearchParams(window.location.search);
+  const reportPresets = {
+    hukum: { value: 'Sengketa / persoalan hukum', context: 'Pengaduan LBH GMPI dipilih. Topik hukum sudah terisi; lengkapi data lalu kirim.' },
+    pekerja: { value: 'Hak pekerja', context: 'Aduan Serikat Buruh dipilih. Topik hak pekerja sudah terisi; lengkapi data lalu kirim.' },
+    tagana: { value: 'Kebencanaan / Tagana', context: 'Laporan kebencanaan dipilih. Untuk keadaan darurat segera, gunakan tombol SOS Darurat.' }
+  };
+  const reportPreset = reportPresets[actionParams.get('topik')];
+  if (reportPreset) {
+    document.querySelector('#report-type').value = reportPreset.value;
+    const context = document.querySelector('#report-context');
+    context.textContent = reportPreset.context;
+    context.hidden = false;
+  }
+  reportForm.addEventListener('submit', async event => {
     event.preventDefault();
-    if (!SITE_CONFIG.lbhEmail) {
-      reportStatus.textContent = 'Alamat surel resmi LBH belum dikonfigurasi. Data tidak dikirim; lengkapi lbhEmail di script.js sebelum formulir dipublikasikan.';
+    const cfg = window.GMPI_SUPABASE_CONFIG || {};
+    if (!cfg.url || !cfg.publishableKey) {
+      reportStatus.textContent = 'Aduan belum dapat dikirim. Silakan hubungi gmpisda@gmail.com.';
       return;
     }
     const data = new FormData(reportForm);
-    const mail = buildMailto(SITE_CONFIG.lbhEmail, `[ADUAN] ${data.get('type')} — ${data.get('area')}`, [
-      ['Nama', data.get('name')], ['Kontak', data.get('contact')], ['Kecamatan', data.get('area')],
-      ['Topik', data.get('type')], ['Ringkasan', data.get('message')]
-    ]);
-    reportStatus.textContent = 'Aplikasi email akan dibuka. Tinjau isi pesan, lalu tekan Kirim untuk meneruskan laporan.';
-    window.location.href = mail;
+    const button = reportForm.querySelector('button[type="submit"]');
+    if (button.disabled) return;
+    button.disabled = true;
+    reportStatus.textContent = 'Mengirim aduan…';
+    try {
+      const res = await fetch(`${cfg.url.replace(/\/$/, '')}/rest/v1/rpc/submit_citizen_report`, {
+        method: 'POST',
+        headers: { apikey: cfg.publishableKey, Authorization: `Bearer ${cfg.publishableKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          p_name: String(data.get('name') || '').trim(),
+          p_contact: String(data.get('contact') || '').trim(),
+          p_district: data.get('area'), p_topic: data.get('type'),
+          p_summary: String(data.get('message') || '').trim(),
+          p_contact_consent: data.get('consent') === 'on'
+        })
+      });
+      if (!res.ok) {
+        let details;
+        try { details = await res.json(); } catch (_) { /* jangan tampilkan error mentah */ }
+        throw new Error(details?.code === 'P0001' ? 'Terlalu banyak permintaan. Silakan coba lagi nanti.' : 'Aduan belum dapat dikirim. Periksa isian dan koneksi, lalu coba lagi.');
+      }
+      reportForm.reset();
+      reportStatus.textContent = 'Aduan berhasil dikirim ke panel LBH. Terima kasih; tim akan meninjau sesuai kapasitas.';
+    } catch (error) {
+      reportStatus.textContent = error instanceof TypeError
+        ? 'Tidak dapat memastikan aduan terkirim. Periksa koneksi atau hubungi gmpisda@gmail.com untuk memastikan sebelum mengirim ulang.'
+        : (error?.message || 'Aduan belum dapat dikirim. Periksa koneksi atau hubungi gmpisda@gmail.com.');
+    } finally {
+      button.disabled = false;
+    }
   });
 
   const joinForm = document.querySelector('#join-form');
   const joinStatus = document.querySelector('#join-status');
+  const joinDivision = document.querySelector('#join-division');
+  const joinPresets = {
+    mpi: 'Militansi Perempuan Indonesia (MPI Sidoarjo)',
+    squad: 'Squad Militansi — Pengamanan & Solidaritas',
+    ekonomi: 'Pemberdayaan Ekonomi & Sosial Masyarakat Desa'
+  };
+  const joinPreset = joinPresets[actionParams.get('bidang')];
+  if (joinPreset && joinDivision) {
+    joinDivision.value = joinPreset;
+    const context = document.querySelector('#join-context');
+    context.textContent = `Bidang ${joinPreset} sudah dipilih. Lengkapi formulir untuk mendaftar.`;
+    context.hidden = false;
+  }
   const nikInput = document.querySelector('#join-nik');
   nikInput.addEventListener('input', () => {
     nikInput.value = nikInput.value.replace(/\D/g, '').slice(0, 16);
@@ -247,6 +274,7 @@
         p_rw: luar ? null : val('rw'),
         p_kode_pos: luar ? null : val('kode_pos'),
         p_kota_luar: luar ? val('kota_luar') : null,
+        p_division: val('division'),
         p_jabatan: val('jabatan') || null,
         p_ktp_key: ktpKey, p_profile_key: profilKey
       };
@@ -312,6 +340,63 @@
       .catch(() => resolveLogo(DEFAULT_LOGO));
   } else {
     resolveLogo(DEFAULT_LOGO);
+  }
+
+  // Video bawaan ditampilkan sampai ada poster pengganti dari Admin.
+  const posterLink = document.querySelector('.leadership-poster-preview');
+  const posterImage = posterLink?.querySelector('img');
+  const leadershipVideo = document.querySelector('.leadership-video');
+  const soundButton = document.querySelector('.leadership-sound');
+  if (leadershipVideo) {
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      leadershipVideo.autoplay = false;
+      leadershipVideo.pause();
+    }
+    if (soundButton) {
+      const syncSoundButton = () => {
+        const soundOn = !leadershipVideo.muted && leadershipVideo.volume > 0;
+        soundButton.textContent = soundOn ? '🔇 Matikan suara' : '🔊 Nyalakan suara';
+        soundButton.setAttribute('aria-pressed', String(soundOn));
+      };
+      soundButton.hidden = false;
+      syncSoundButton();
+      soundButton.addEventListener('click', () => {
+        const enableSound = leadershipVideo.muted || leadershipVideo.volume === 0;
+        if (enableSound && leadershipVideo.volume === 0) leadershipVideo.volume = 1;
+        leadershipVideo.muted = !enableSound;
+        if (enableSound && leadershipVideo.paused) leadershipVideo.play().catch(() => {});
+        syncSoundButton();
+      });
+      leadershipVideo.addEventListener('volumechange', syncSoundButton);
+    }
+    leadershipVideo.addEventListener('error', () => {
+      leadershipVideo.hidden = true;
+      if (soundButton) soundButton.hidden = true;
+      if (posterLink) posterLink.hidden = false;
+    });
+  }
+  if (posterLink && posterImage && supabaseConfig.url && supabaseConfig.publishableKey) {
+    const root = supabaseConfig.url.replace(/\/$/, '');
+    fetch(`${root}/rest/v1/leadership_poster?select=image_path&id=eq.true`, {
+      headers: { apikey: supabaseConfig.publishableKey, Authorization: `Bearer ${supabaseConfig.publishableKey}` }
+    }).then(response => response.ok ? response.json() : [])
+      .then(rows => {
+        const path = Array.isArray(rows) && rows[0]?.image_path;
+        if (!path || !/^leadership\/[A-Za-z0-9][A-Za-z0-9._-]{0,119}$/.test(path)) return;
+        const url = `${root}/storage/v1/object/public/site-assets/${path}`;
+        const probe = new Image();
+        probe.onload = () => {
+          posterImage.width = probe.naturalWidth;
+          posterImage.height = probe.naturalHeight;
+          posterImage.alt = 'Poster pimpinan GMPI';
+          posterImage.src = url;
+          posterLink.href = url;
+          posterLink.hidden = false;
+          if (leadershipVideo) { leadershipVideo.pause(); leadershipVideo.hidden = true; }
+          if (soundButton) soundButton.hidden = true;
+        };
+        probe.src = url;
+      }).catch(() => {});
   }
 
   // Contoh Kartu Tanda Anggota (data fiktif, ditandai CONTOH). QR mengarah ke kode CONTOH.

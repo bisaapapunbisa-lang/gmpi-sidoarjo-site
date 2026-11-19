@@ -281,3 +281,18 @@ body.dues-page {
 
 /* Elemen yang disembunyikan lewat atribut hidden (mis. saat belum ada tagihan) */
 .dues-card [hidden], .dues-section [hidden] { display: none !important; }
+
+/* Laporan resmi — ringkasan publik */
+.dues-report-stats {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px;
+  margin: 14px 0 2px;
+}
+.dues-report-stat {
+  border: 1px solid rgba(224, 184, 85, .28); background: #14100b;
+  padding: 12px 12px 10px; text-align: center;
+}
+.dues-report-stat b { display: block; font: 900 17px Arial, Helvetica, sans-serif; color: #f0d489; letter-spacing: .2px; }
+.dues-report-stat span { display: block; margin-top: 4px; font-size: 8.5px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; color: #9d947d; }
+@media (max-width: 720px) {
+  .dues-report-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

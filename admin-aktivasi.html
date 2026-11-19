@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111110">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="referrer" content="no-referrer">
+  <title>Atur Kata Sandi Admin — GMPI DPD Sidoarjo</title>
+  <link rel="stylesheet" href="admin.css">
+  <link rel="icon" type="image/png" href="/assets/favicon.png">
+</head>
+<body class="admin-body">
+  <header class="admin-header">
+    <a class="admin-back" href="/">← Kembali ke situs</a>
+    <a class="admin-brand" href="/"><span>GMPI</span><small>DPD SIDOARJO</small></a>
+    <span class="admin-lock">AKSES TERBATAS</span>
+  </header>
+  <main class="admin-main">
+    <section class="admin-intro">
+      <div class="admin-kicker">AKTIVASI AKUN</div>
+      <h1>Atur <em>kata sandi.</em></h1>
+      <p>Buka halaman ini melalui tautan undangan atau pemulihan yang dikirim ke email Anda. Jangan bagikan tautan tersebut kepada orang lain.</p>
+    </section>
+    <section class="admin-card login-card">
+      <div class="card-heading"><div><span>AKUN RESMI</span><h2>Kata sandi Admin</h2></div><span class="card-mark">01</span></div>
+      <div id="activation-message" class="admin-message is-warning" role="status" aria-live="polite">Memeriksa tautan…</div>
+      <form id="activation-form" hidden>
+        <p id="activation-email" class="login-help"></p>
+        <label for="new-password">Kata sandi baru</label>
+        <input id="new-password" type="password" autocomplete="new-password" minlength="8" required>
+        <label for="confirm-password">Ulangi kata sandi baru</label>
+        <input id="confirm-password" type="password" autocomplete="new-password" minlength="8" required>
+        <button id="save-password" class="admin-button admin-button-red" type="submit">Simpan kata sandi</button>
+      </form>
+      <p class="login-help">Gunakan sedikitnya 8 karakter dan pilih kata sandi yang unik, bukan kata sandi email Anda.</p>
+      <p class="login-privacy">Tautan hanya untuk penerima email. Jika sudah kedaluwarsa atau pernah digunakan, minta tautan baru melalui halaman masuk Admin.</p>
+      <p class="login-help"><a href="/admin">Ke halaman masuk Admin →</a></p>
+    </section>
+  </main>
+  <footer class="admin-footer"><span>GMPI DPD SIDOARJO</span><a href="/">Kembali ke beranda</a></footer>
+  <script src="supabase-config.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="admin-aktivasi.js"></script>
+</body>
+</html>

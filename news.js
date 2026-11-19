@@ -59,6 +59,39 @@
     return wrap;
   }
 
+  // Sampul identitas hanya digunakan jika berita belum mempunyai gambar sendiri.
+  const coverObserver = 'IntersectionObserver' in window ? new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('is-playing');
+        coverObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.2 }) : null;
+
+  function brandedCover(media) {
+    media.classList.add('is-empty', 'news-brand-cover');
+    media.setAttribute('aria-hidden', 'true');
+    const logo = el('img', 'news-brand-logo');
+    logo.src = 'assets/logo-gmpi-sampul-transparan.webp';
+    logo.alt = '';
+    logo.decoding = 'async';
+    const brand = el('div', 'news-brand-content');
+    const lettering = el('div', 'news-brand-lettering');
+    const line = el('div', 'news-brand-word');
+    [...'SIDOARJO'].forEach((letter, index) => {
+      const span = el('span', '', letter);
+      span.style.setProperty('--letter-delay', `${0.6 + index * 0.1}s`);
+      line.append(span);
+    });
+    lettering.append(line, el('div', 'news-brand-motto', 'Setia Bersaudara Sampai Urat Nadi'));
+    brand.append(logo, lettering, el('span', 'news-brand-rule'));
+    // Lapisan dekoratif berada di belakang logo dan tidak mengubah foto berita asli.
+    media.append(el('span', 'news-brand-smoke'), el('span', 'news-brand-stars'), brand);
+    if (coverObserver) coverObserver.observe(media);
+    else media.classList.add('is-playing');
+  }
+
   function card(post, featured) {
     const a = el('a', `news-card${featured ? ' is-featured' : ''}`);
     a.href = `#berita/${post.id}`;
@@ -66,7 +99,7 @@
     const media = el('div', 'news-cover');
     const cover = assetUrl(post.cover_path);
     if (cover) { const img = el('img'); img.src = cover; img.alt = ''; img.loading = 'lazy'; img.decoding = 'async'; media.append(img); }
-    else { media.classList.add('is-empty'); const logo = el('img'); logo.src = 'assets/logo-gmpi-sidoarjo.webp'; logo.alt = ''; media.append(logo); }
+    else brandedCover(media);
     const body = el('div', 'news-body');
     const meta = el('div', 'news-meta');
     meta.append(sourceBadge(post, true), el('time', '', fmtDate(post.published_at)));

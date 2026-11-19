@@ -122,6 +122,32 @@
     await loadAuthorizedUser(data.user);
   });
 
+  const passwordResetForm = document.querySelector('#password-reset-form');
+  passwordResetForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    const feedback = document.querySelector('#password-reset-message');
+    if (!client) {
+      feedback.textContent = 'Layanan akun belum tersedia. Hubungi pemilik Admin.';
+      return;
+    }
+    const button = passwordResetForm.querySelector('button[type="submit"]');
+    button.disabled = true;
+    feedback.textContent = 'Mengirim permintaan…';
+    try {
+      const email = String(new FormData(passwordResetForm).get('email') || '').trim().toLowerCase();
+      const { error } = await client.auth.resetPasswordForEmail(email, {
+        redirectTo: 'https://www.gmpisidoarjo.com/admin-aktivasi'
+      });
+      feedback.textContent = error
+        ? 'Permintaan belum dapat diproses. Coba lagi nanti atau hubungi pemilik Admin.'
+        : 'Jika akun dapat menerima email, tautan akan dikirim. Periksa kotak masuk dan spam. Bila tidak diterima, hubungi pemilik Admin.';
+    } catch (_) {
+      feedback.textContent = 'Permintaan belum dapat diproses. Periksa koneksi dan coba lagi.';
+    } finally {
+      button.disabled = false;
+    }
+  });
+
   async function restoreSession() {
     if (!client) return;
     const { data, error } = await client.auth.getSession();
@@ -149,6 +175,7 @@
     if (canSeeRsvp()) tabs.push(['rsvp', 'Kehadiran']);
     if (canSeeDues()) tabs.push(['dues', 'Iuran']);
     if (canManageNews()) tabs.push(['news', 'Berita']);
+    if (canSeeMembers()) tabs.push(['announcements', 'Kirim pengumuman']);
     if (canSeeReports()) tabs.push(['reports', 'Aduan LBH']);
     if (canSeeMembers()) tabs.push(['members', 'Pendaftaran anggota']);
     if (canManageCards()) tabs.push(['cards', 'Kartu anggota']);
@@ -180,11 +207,128 @@
     if (key === 'rsvp' && canSeeRsvp()) return renderRsvp();
     if (key === 'dues' && canSeeDues()) return renderDues();
     if (key === 'news' && canManageNews()) return renderNews();
+    if (key === 'announcements' && canSeeMembers()) return renderAnnouncements();
     if (key === 'reports' && canSeeReports()) return renderReports();
     if (key === 'members' && canSeeMembers()) return renderMembers();
     if (key === 'cards' && canManageCards()) return renderCards();
     if (key === 'access' && isOwner()) return renderAccessManager();
     workspace.replaceChildren(make('div', 'table-empty', 'Akses tidak diizinkan.'));
+  }
+
+  // Pengumuman manual: gunakan izin pendaftaran yang sudah ada, tanpa layanan pengirim massal.
+  async function renderAnnouncements() {
+    const loadingMarker = workspace.firstChild;
+    async function fetchPages(buildQuery) {
+      const rows = [];
+      const pageSize = 500;
+      for (let start = 0; ; start += pageSize) {
+        const { data, error } = await buildQuery().range(start, start + pageSize - 1);
+        if (error) throw error;
+        rows.push(...(data || []));
+        if (!data || data.length < pageSize) return rows;
+      }
+    }
+    let members, posts;
+    try {
+      [members, posts] = await Promise.all([
+        fetchPages(() => client.from('member_registrations').select('id,full_name,phone,district').eq('status', 'diterima').order('full_name').order('id')),
+        fetchPages(() => client.from('news_posts').select('id,title,summary,partner_id,media_partners(is_active)').eq('status', 'published').order('published_at', { ascending: false }).order('id'))
+      ]);
+    } catch (_) {
+      if (workspace.firstChild === loadingMarker && !dashboardPanel.hidden) showWorkspaceError('Daftar anggota atau berita tidak dapat dimuat. Periksa koneksi dan hak akses, lalu coba lagi.');
+      return;
+    }
+    if (workspace.firstChild !== loadingMarker || dashboardPanel.hidden || !canSeeMembers()) return;
+    posts = posts.filter(post => !post.partner_id || post.media_partners?.is_active === true);
+    const selected = new Set();
+    const heading = make('div', 'workspace-heading');
+    const title = make('div');
+    title.append(make('h3', '', 'Kirim pengumuman'), make('p', '', 'Pilih berita dan anggota, lalu buka WhatsApp satu per satu. Periksa pesan dan tekan Kirim sendiri di WhatsApp. Website tidak mengirim pesan otomatis.'));
+    heading.append(title);
+    const notice = make('div', 'admin-message is-warning', 'Hanya untuk anggota yang telah diizinkan menerima informasi organisasi. Website belum mencatat persetujuan pengumuman; pastikan persetujuan masing-masing anggota terlebih dahulu. Nomor WA dan keberhasilan pengiriman tidak dapat dipastikan oleh website.');
+    const panel = make('div', 'announcement-panel');
+    const newsSelect = make('select'); newsSelect.id = 'announcement-news';
+    const placeholder = make('option', '', posts.length ? 'Pilih berita yang sudah tayang' : 'Belum ada berita yang tayang'); placeholder.value = '';
+    newsSelect.append(placeholder);
+    posts.forEach(post => { const option = make('option', '', post.title); option.value = post.id; newsSelect.append(option); });
+    const compose = make('button', 'admin-button admin-button-outline', 'Siapkan teks berita'); compose.type = 'button';
+    const message = make('textarea'); message.id = 'announcement-message'; message.rows = 8;
+    message.placeholder = 'Pilih berita dan tekan “Siapkan teks berita”, atau tulis pesan Anda sendiri.';
+    const composeHint = make('p', 'privacy-mini', 'Tombol ini mengganti isi pesan. Periksa isi dan waktu acara sebelum mengirim.');
+    compose.addEventListener('click', () => {
+      const post = posts.find(p => p.id === newsSelect.value);
+      if (!post) { setMessage('Pilih berita yang sudah tayang terlebih dahulu.', 'warning'); return; }
+      if (message.value.trim() && !window.confirm('Ganti teks pesan yang sedang disunting dengan teks berita ini?')) return;
+      const link = `https://www.gmpisidoarjo.com/berita.html#berita/${post.id}`;
+      message.value = `Assalamu’alaikum / salam sejahtera.\n\nInformasi untuk keluarga besar GMPI DPD Sidoarjo:\n\n${post.title}${post.summary ? `\n\n${post.summary}` : ''}\n\nSelengkapnya: ${link}\n\nTerima kasih.\nSetia Bersaudara Sampai Urat Nadi.`;
+      setMessage('Teks disiapkan. Periksa dan sesuaikan sebelum membuka WhatsApp.');
+    });
+    panel.append(field('1. Pilih berita', newsSelect), compose, composeHint, field('2. Periksa atau ubah pesan', message));
+    const picker = make('section', 'announcement-picker');
+    picker.append(make('h4', '', '3. Pilih anggota'), make('p', 'privacy-mini', 'Hanya pendaftaran berstatus Diizinkan yang ditampilkan. Pilih satu per satu; data belum otomatis berarti anggota setuju dihubungi.'));
+    const search = input('announcement-search', 'search', { placeholder: 'Cari nama atau kecamatan', autocomplete: 'off' });
+    const searchLabel = make('label', 'announcement-search-label', 'Cari anggota'); searchLabel.htmlFor = search.id;
+    const count = make('p', 'announcement-count'); count.setAttribute('aria-live', 'polite');
+    const memberList = make('div', 'announcement-member-list');
+    picker.append(searchLabel, search, count, memberList);
+    const confirmation = make('label', 'announcement-consent');
+    const consent = input('announcement-consent', 'checkbox');
+    confirmation.append(consent, make('span', '', 'Saya sudah memastikan anggota yang dipilih bersedia menerima pengumuman organisasi.'));
+    const sendSection = make('section', 'announcement-send');
+    sendSection.append(make('h4', '', '4. Buka WhatsApp satu per satu'), confirmation,
+      make('p', 'privacy-mini', 'Setiap tombol membuka chat dari akun WhatsApp yang sedang digunakan pada perangkat ini. Tekan Kirim di WhatsApp; website tidak dapat memastikan pesan terkirim atau dibaca.'));
+    const output = make('div', 'announcement-recipient-list');
+    sendSection.append(output);
+    const waNumber = phone => {
+      const raw = String(phone || '').trim();
+      if (!/^[+\d\s().-]+$/.test(raw)) return '';
+      let n = raw.replace(/\D/g, '');
+      if (n.startsWith('0')) n = '62' + n.slice(1);
+      else if (n.startsWith('8')) n = '62' + n;
+      return /^62[0-9]{8,13}$/.test(n) ? n : '';
+    };
+    function drawSelected() {
+      const chosen = members.filter(m => selected.has(m.id));
+      output.replaceChildren();
+      if (!chosen.length) { output.append(make('p', 'table-empty', 'Belum ada anggota yang dipilih.')); return; }
+      const numbers = new Map();
+      chosen.forEach(m => { const n = waNumber(m.phone); if (n) numbers.set(n, (numbers.get(n) || 0) + 1); });
+      chosen.forEach(member => {
+        const row = make('div', 'announcement-recipient');
+        const info = make('div');
+        const n = waNumber(member.phone);
+        info.append(make('b', '', member.full_name || 'Tanpa nama'), make('small', '', `${member.district || 'Kecamatan tidak tercatat'} · ${member.phone || 'Nomor tidak tersedia'}`));
+        if (n && numbers.get(n) > 1) info.append(make('small', 'announcement-duplicate', 'Nomor sama dipilih lebih dari sekali — periksa agar tidak mengirim ganda.'));
+        if (!n) info.append(make('small', 'announcement-duplicate', 'Format nomor tidak valid; periksa data pendaftaran.'));
+        const button = make('button', 'announcement-wa', 'Buka WhatsApp ↗');
+        button.type = 'button';
+        button.addEventListener('click', () => {
+          if (!n || !message.value.trim() || !consent.checked) {
+            setMessage(!n ? 'Nomor anggota tidak valid.' : !message.value.trim() ? 'Siapkan atau tulis pesan terlebih dahulu.' : 'Pastikan persetujuan setiap anggota yang dipilih, lalu centang pernyataan.', 'warning');
+            return;
+          }
+          window.open(`https://wa.me/${n}?text=${encodeURIComponent(message.value.trim())}`, '_blank', 'noopener,noreferrer');
+        });
+        row.append(info, button); output.append(row);
+      });
+    }
+    function drawMembers() {
+      const term = search.value.trim().toLocaleLowerCase('id-ID');
+      const visible = members.filter(m => `${m.full_name || ''} ${m.district || ''}`.toLocaleLowerCase('id-ID').includes(term));
+      count.textContent = `${visible.length} anggota terlihat · ${selected.size} dipilih`;
+      memberList.replaceChildren();
+      if (!visible.length) { memberList.append(make('p', 'table-empty', members.length ? 'Tidak ada anggota yang sesuai pencarian.' : 'Belum ada pendaftaran berstatus Diizinkan.')); return; }
+      visible.forEach(member => {
+        const label = make('label', 'announcement-member');
+        const check = input('', 'checkbox'); check.checked = selected.has(member.id);
+        check.addEventListener('change', () => { if (check.checked) selected.add(member.id); else selected.delete(member.id); consent.checked = false; count.textContent = `${visible.length} anggota terlihat · ${selected.size} dipilih`; drawSelected(); });
+        const info = make('span'); info.append(make('b', '', member.full_name || 'Tanpa nama'), make('small', '', `${member.district || 'Kecamatan tidak tercatat'} · ${member.phone || 'Nomor tidak tersedia'}`));
+        label.append(check, info); memberList.append(label);
+      });
+    }
+    search.addEventListener('input', drawMembers);
+    drawMembers(); drawSelected();
+    workspace.replaceChildren(heading, notice, panel, picker, sendSection);
   }
 
   async function renderContentEditor() {
@@ -226,7 +370,8 @@
       setMessage(saveError ? 'Perubahan tidak tersimpan. Pastikan migrasi dan peran Editor Situs sudah aktif.' : 'Perubahan tersimpan. Muat ulang beranda untuk melihat hasilnya.', saveError ? 'error' : 'ok');
     });
     const logoSection = await buildLogoManager();
-    workspace.replaceChildren(logoSection, heading, form);
+    const posterSection = await buildLeadershipPosterManager();
+    workspace.replaceChildren(posterSection, logoSection, heading, form);
   }
 
   // ---- Toko perlengkapan: pengaturan pembayaran/legalitas + katalog barang ----
@@ -694,7 +839,7 @@
     let timer = 0;
     const refreshPreview = () => { clearTimeout(timer); timer = setTimeout(() => window.GMPIStruktur && window.GMPIStruktur.render(previewHost, rows, photoUrl), 150); };
 
-    function rowEditor(r) {
+    function rowEditor(r, updateDepartmentSummary = () => {}) {
       const line = make('div', 'org-admin-row');
       const thumb = make('div', 'org-admin-thumb');
       const paintThumb = () => {
@@ -725,20 +870,20 @@
       if (r.section === 'departemen') {
         const dep = make('input'); dep.maxLength = 80; dep.placeholder = 'Nama departemen, mis. Hukum & Advokasi'; dep.value = r.department || '';
         dep.setAttribute('aria-label', 'Nama departemen');
-        dep.addEventListener('input', () => { r.department = dep.value; refreshPreview(); });
+        dep.addEventListener('input', () => { r.department = dep.value; updateDepartmentSummary(); refreshPreview(); });
         fields.append(dep);
       }
       const jab = make('input'); jab.maxLength = 80; jab.value = r.jabatan; jab.setAttribute('aria-label', 'Jabatan'); jab.className = 'org-admin-jabatan';
       jab.addEventListener('input', () => { r.jabatan = jab.value; refreshPreview(); });
       const nm = make('input'); nm.maxLength = 120; nm.placeholder = 'Nama lengkap (kosong = "Segera diisi")'; nm.value = r.person_name || '';
       nm.setAttribute('aria-label', `Nama ${r.jabatan}`);
-      nm.addEventListener('input', () => { r.person_name = nm.value; refreshPreview(); });
+      nm.addEventListener('input', () => { r.person_name = nm.value; updateDepartmentSummary(); refreshPreview(); });
       fields.append(jab, nm);
       line.append(thumb, fields, tools);
       if (r.section === 'departemen') {
-        const del = make('button', 'admin-link-button org-admin-del', 'Hapus departemen'); del.type = 'button';
+        const del = make('button', 'admin-link-button org-admin-del', 'Hapus pengurus ini'); del.type = 'button';
         del.addEventListener('click', () => {
-          if (!window.confirm('Hapus departemen ini dari bagan?')) return;
+          if (!window.confirm(`Hapus ${r.person_name ? 'pengurus “' + r.person_name + '”' : 'posisi pengurus ini'} dari bagan? Pengurus lain dalam divisi ini tidak dihapus.`)) return;
           if (r.id) removed.push(r.id);
           rows = rows.filter(x => x !== r); build(); refreshPreview();
         });
@@ -757,19 +902,79 @@
     }
 
     const groupsHost = make('div', 'org-admin-groups');
-    function build() {
+    const departmentPanels = new Map();
+    const departmentEditors = new Map();
+    function build(openDepartment = null) {
+      const previouslyOpen = new Set([...departmentPanels].filter(([, panel]) => panel.open).map(([row]) => row));
+      if (openDepartment) previouslyOpen.add(openDepartment);
+      departmentPanels.clear();
+      departmentEditors.clear();
       groupsHost.replaceChildren(...SECTIONS.map(([key, label]) => {
         const fs = make('fieldset', 'org-admin-group');
         fs.append(make('legend', '', label));
         const mine = rows.filter(r => r.section === key);
-        mine.forEach(r => fs.append(rowEditor(r)));
+        if (key !== 'departemen') mine.forEach(r => fs.append(rowEditor(r)));
         if (key === 'departemen') {
+          fs.append(make('p', 'privacy-mini', 'Pengurus dengan nama divisi yang sama ditampilkan bersama. Jika nama divisi diubah, kelompok diperbarui setelah disimpan.'));
+          const list = make('div', 'org-department-list');
+          const divisions = new Map();
+          mine.forEach(r => {
+            const name = (r.department || '').trim().replace(/\s+/g, ' ');
+            // Hanya samakan huruf besar-kecil dan spasi; ejaan berbeda tidak digabung otomatis.
+            const groupKey = name ? name.normalize('NFKC').toLocaleLowerCase('id-ID') : r;
+            if (!divisions.has(groupKey)) divisions.set(groupKey, []);
+            divisions.get(groupKey).push(r);
+          });
+          divisions.forEach(members => {
+            const panel = make('details', 'org-department-panel');
+            panel.open = members.some(r => previouslyOpen.has(r));
+            const summary = make('summary', 'org-department-summary');
+            const names = make('span', 'org-department-names');
+            const departmentName = make('strong');
+            const personName = make('small');
+            const updateSummary = () => {
+              departmentName.textContent = (members[0].department || '').trim() || 'Departemen baru';
+              const people = members.map(r => (r.person_name || '').trim() || 'Belum diisi');
+              personName.textContent = `${members.length} pengurus · ${people.join(' · ')}`;
+            };
+            updateSummary();
+            names.append(departmentName, personName);
+            const indicator = make('span', 'org-department-toggle', '+');
+            indicator.setAttribute('aria-hidden', 'true');
+            summary.append(names, indicator);
+            panel.append(summary);
+            members.forEach(r => {
+              const editor = rowEditor(r, updateSummary);
+              departmentPanels.set(r, panel);
+              departmentEditors.set(r, editor);
+              panel.append(editor);
+            });
+            const addPerson = make('button', 'admin-button admin-button-outline org-department-add', '＋ Tambah pengurus divisi ini');
+            addPerson.type = 'button';
+            addPerson.addEventListener('click', () => {
+              if (!(members[0].department || '').trim()) {
+                setMessage('Isi nama departemen sebelum menambah pengurus.', 'error');
+                departmentEditors.get(members[0])?.querySelector('input[aria-label="Nama departemen"]')?.focus();
+                return;
+              }
+              const maxSort = rows.reduce((m, x) => Math.max(m, x.sort_order || 0), 90);
+              const added = { section: 'departemen', jabatan: 'Wakil Ketua Departemen', department: (members[0].department || '').trim(), person_name: '', photo_path: null, sort_order: maxSort + 1 };
+              rows.push(added);
+              build(added); refreshPreview();
+              departmentEditors.get(added)?.querySelector('input[placeholder^="Nama lengkap"]')?.focus();
+            });
+            panel.append(addPerson);
+            list.append(panel);
+          });
+          if (!mine.length) list.append(make('p', 'privacy-mini', 'Belum ada departemen.'));
+          fs.append(list);
           const add = make('button', 'admin-button admin-button-outline', '＋ Tambah departemen'); add.type = 'button';
           add.addEventListener('click', () => {
             const maxSort = rows.reduce((m, x) => Math.max(m, x.sort_order || 0), 90);
-            rows.push({ section: 'departemen', jabatan: 'Wakil Ketua Departemen', department: '', person_name: '', photo_path: null, sort_order: maxSort + 1 });
-            build(); refreshPreview();
-            const last = groupsHost.querySelector('.org-admin-group:last-child .org-admin-row:last-of-type input'); if (last) last.focus();
+            const added = { section: 'departemen', jabatan: 'Wakil Ketua Departemen', department: '', person_name: '', photo_path: null, sort_order: maxSort + 1 };
+            rows.push(added);
+            build(added); refreshPreview();
+            departmentEditors.get(added)?.querySelector('input[aria-label="Nama departemen"]')?.focus();
           });
           fs.append(add);
         } else if (key !== 'ketua') {
@@ -792,7 +997,18 @@
       event.preventDefault();
       rows = rows.filter(r => SECTIONS.some(([key]) => key === r.section));
       const bad = rows.find(r => (r.jabatan || '').trim().length < 2 || (r.section === 'departemen' && !(r.department || '').trim()));
-      if (bad) { setMessage(bad.section === 'departemen' ? 'Isi nama setiap departemen (atau hapus departemen yang kosong).' : 'Jabatan tidak boleh kosong.', 'error'); return; }
+      if (bad) {
+        if (bad.section === 'departemen') {
+          const panel = departmentPanels.get(bad);
+          if (panel) {
+            panel.open = true;
+            const field = !(bad.department || '').trim() ? 'Nama departemen' : 'Jabatan';
+            departmentEditors.get(bad)?.querySelector(`input[aria-label="${field}"]`)?.focus();
+          }
+        }
+        setMessage(bad.section === 'departemen' && !(bad.department || '').trim() ? 'Isi nama setiap departemen (atau hapus departemen yang kosong).' : 'Jabatan tidak boleh kosong.', 'error');
+        return;
+      }
       const pick = r => ({ section: r.section, jabatan: r.jabatan.trim(), department: r.section === 'departemen' ? (r.department || '').trim() : null, person_name: (r.person_name || '').trim() || null, photo_path: r.photo_path || null, sort_order: r.sort_order || 0 });
       save.disabled = true;
       const existing = rows.filter(r => r.id).map(r => ({ id: r.id, ...pick(r) }));
@@ -1114,9 +1330,13 @@
       make('p', '', editor
         ? 'Kelola semua berita dari media mitra. Berita berstatus “Menunggu persetujuan” perlu Anda terbitkan. Pengurus dapat menyembunyikan berita apa pun.'
         : 'Tulis dan kelola berita media Anda. Berita yang diterbitkan tampil di kolom “Berita” website GMPI Sidoarjo.'));
+    const guideLink = make('a', 'admin-link-button', 'Panduan lengkap ↗');
+    guideLink.href = '/panduan-media-mitra';
+    guideLink.target = '_blank';
+    guideLink.rel = 'noopener';
     const newBtn = make('button', 'admin-button admin-button-gold', '+ Tulis berita');
     newBtn.type = 'button';
-    heading.append(hb, newBtn);
+    heading.append(hb, guideLink, newBtn);
 
     const filterBar = make('div', 'news-admin-filters');
     let statusFilter = '';
@@ -1430,6 +1650,115 @@
       grid.append(cardEl);
     });
     section.append(grid);
+    return section;
+  }
+
+  // Poster pimpinan terpisah dari logo situs dan logo pada KTA.
+  async function buildLeadershipPosterManager() {
+    const section = make('section', 'logo-manager poster-manager');
+    const heading = make('div', 'workspace-heading');
+    const text = make('div');
+    text.append(make('h3', '', 'Poster pimpinan beranda'));
+    text.append(make('p', '', 'Video pimpinan ditampilkan sebagai bawaan. Unggah poster lengkap untuk menggantikan video dengan gambar, tanpa mengubah logo situs atau KTA. Gunakan JPG, PNG, atau WebP maksimal 2 MB.'));
+    heading.append(text);
+    section.append(heading);
+
+    const { data, error } = await client.from('leadership_poster').select('image_path').eq('id', true).maybeSingle();
+    if (error) {
+      section.append(make('div', 'admin-message is-error', 'Pengaturan poster belum siap. Minta pengelola menjalankan migrasi poster pimpinan di Supabase.'));
+      return section;
+    }
+    let currentPath = data?.image_path || '';
+    const image = make('img', 'poster-manager-image');
+    image.alt = 'Poster pimpinan yang sedang dipakai';
+    const status = make('p', 'privacy-mini');
+    const reset = make('button', 'admin-button admin-button-outline', 'Kembalikan video bawaan');
+    reset.type = 'button';
+    function refreshCurrent() {
+      image.src = currentPath ? client.storage.from('site-assets').getPublicUrl(currentPath).data.publicUrl : 'assets/videos/pimpinan-gmpi.jpg';
+      status.textContent = currentPath ? 'Poster unggahan sedang digunakan.' : 'Video bawaan sedang digunakan (gambar di atas adalah cuplikannya).';
+      reset.disabled = !currentPath;
+    }
+    refreshCurrent();
+    section.append(image, status, reset);
+
+    const form = make('form', 'logo-upload poster-upload');
+    const label = make('label', 'file-button', 'Pilih poster baru');
+    const fileInput = make('input', 'sr-only');
+    fileInput.type = 'file';
+    fileInput.accept = 'image/jpeg,image/png,image/webp';
+    label.append(fileInput);
+    const preview = make('img', 'poster-manager-image poster-preview');
+    preview.alt = 'Pratinjau poster baru';
+    preview.hidden = true;
+    const note = make('small', 'privacy-mini', 'Belum ada file dipilih.');
+    const save = make('button', 'admin-button admin-button-gold', 'Unggah dan pakai poster');
+    save.type = 'submit';
+    save.disabled = true;
+    form.append(label, preview, note, save);
+    section.append(form);
+    let selected = null;
+    let previewUrl = '';
+    let selectionVersion = 0;
+    fileInput.addEventListener('change', async () => {
+      const version = ++selectionVersion;
+      selected = null;
+      save.disabled = true;
+      preview.hidden = true;
+      if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = ''; }
+      const file = fileInput.files?.[0];
+      if (!file) { note.textContent = 'Belum ada file dipilih.'; return; }
+      if (!LOGO_TYPES[file.type] || file.size > LOGO_MAX_BYTES || file.size === 0) {
+        note.textContent = 'Pilih gambar JPG, PNG, atau WebP yang ukurannya tidak lebih dari 2 MB.';
+        return;
+      }
+      const size = await readImageSize(file);
+      if (version !== selectionVersion) { if (size) URL.revokeObjectURL(size.url); return; }
+      if (!size) { note.textContent = 'File tidak dapat dibaca sebagai gambar.'; return; }
+      selected = file;
+      previewUrl = size.url;
+      preview.src = previewUrl;
+      preview.hidden = false;
+      note.textContent = `${size.width} × ${size.height} px · ${(file.size / 1024).toFixed(0)} KB`;
+      save.disabled = false;
+    });
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      if (!selected) return;
+      const file = selected;
+      save.disabled = true;
+      fileInput.disabled = true;
+      reset.disabled = true;
+      try {
+        const path = `leadership/${Date.now()}-${Math.random().toString(36).slice(2, 10)}.${LOGO_TYPES[file.type]}`;
+        const upload = await client.storage.from('site-assets').upload(path, file, { contentType: file.type, cacheControl: '31536000', upsert: false });
+        if (upload.error) throw upload.error;
+        const result = await client.from('leadership_poster').upsert({ id: true, image_path: path, updated_at: new Date().toISOString() }, { onConflict: 'id' });
+        if (result.error) throw result.error;
+        currentPath = path;
+        selected = null;
+        form.reset();
+        preview.hidden = true;
+        if (previewUrl) { URL.revokeObjectURL(previewUrl); previewUrl = ''; }
+        note.textContent = 'Belum ada file dipilih.';
+        setMessage('Poster baru terpasang. Muat ulang beranda untuk melihat hasilnya.');
+      } catch (e) {
+        save.disabled = false;
+        setMessage('Poster belum berhasil dipasang. Periksa koneksi dan izin Pemilik/Editor Situs, lalu coba lagi.', 'error');
+      } finally {
+        fileInput.disabled = false;
+        refreshCurrent();
+      }
+    });
+    reset.addEventListener('click', async () => {
+      if (!window.confirm('Kembalikan video bawaan? Gambar unggahan tetap tersimpan.')) return;
+      reset.disabled = true;
+      const { error: resetError } = await client.from('leadership_poster').delete().eq('id', true);
+      if (resetError) { setMessage('Video bawaan belum dapat dikembalikan.', 'error'); reset.disabled = false; return; }
+      currentPath = '';
+      refreshCurrent();
+      setMessage('Video bawaan dipakai kembali. Muat ulang beranda untuk melihat hasilnya.');
+    });
     return section;
   }
 
@@ -1878,7 +2207,7 @@
 
     workspace.replaceChildren(heading, make('div', 'table-empty', 'Memuat data iuran…'));
 
-    const [settingsRes, paymentsRes, invoicesRes] = await Promise.all([
+    const [settingsRes, paymentsRes, invoicesRes, reportsRes] = await Promise.all([
       client.from('site_content').select('key,value').in('key', DUES_FIELDS.map(field => field.key)),
       client.from('dues_payments')
         .select('id,created_at,member_name,member_number,district,phone,method,amount,period,months,paid_at,note,status,verified_at,verified_by,reject_reason,source,invoice_id')
@@ -1887,7 +2216,11 @@
       client.from('dues_invoices')
         .select('id,title,period,months,nominal,due_date,note,status,publish_at,launched_at,closed_at,created_by,created_at')
         .order('created_at', { ascending: false })
-        .limit(200)
+        .limit(200),
+      client.from('dues_reports')
+        .select('id,invoice_id,title,period,months,nominal,due_date,note,status,published_at,published_by,withdrawn_at,withdrawn_by,created_at')
+        .order('created_at', { ascending: false })
+        .limit(100)
     ]);
 
     if (settingsRes.error || paymentsRes.error) {
@@ -2275,6 +2608,128 @@
         'Hanya satu tagihan yang berjalan pada satu waktu. Peluncuran otomatis menutup tagihan lain agar tidak ada dobel bayar. ' +
         'Cek status & rekap pembayaran tetap memakai daftar di bawah.');
       invoiceSection.append(invoiceNote);
+    }
+
+    // ---------- laporan resmi (ringkasan publik / rincian anggota terverifikasi) ----------
+    // Keputusan DPD: ringkasan boleh dilihat publik; rincian hanya untuk anggota yang
+    // nomor kartu + namanya cocok di server; Pemilik & Bendahara menerbitkan langsung.
+    const reportFeature = !reportsRes.error;
+    const reportByInvoice = new Map((reportsRes.data || []).map(row => [row.invoice_id, row]));
+    const mayPublishReports = roles.includes('owner') || roles.includes('bendahara');
+
+    const reportSection = make('section');
+    reportSection.style.cssText = 'border:1px solid #ded9ce;background:#fffdf7;padding:16px;margin:0 0 18px';
+    const reportHead = make('div', 'workspace-heading');
+    reportHead.style.cssText = 'margin:0 0 10px';
+    const reportHeadText = make('div');
+    reportHeadText.append(make('h3', '', 'Laporan iuran resmi'));
+    reportHeadText.append(make('p', '', 'Terbitkan laporan dari tagihan yang sudah diluncurkan. Di halaman /iuran ringkasan (angka gabungan, tanpa nama) terlihat publik; rincian per anggota hanya terbuka setelah nomor kartu + nama cocok di server. Penerbitan tanpa antre persetujuan — Pemilik & Bendahara langsung bisa.'));
+    reportHead.append(reportHeadText);
+    reportSection.append(reportHead);
+
+    if (!reportFeature) {
+      reportSection.append(make('div', 'table-empty',
+        'Fitur laporan berjenjang belum aktif. Minta Pemilik menjalankan migrasi 20261116180000_laporan_iuran_berjenjang.sql di Supabase, lalu muat ulang halaman ini.'));
+    } else if (!invoiceFeature) {
+      reportSection.append(make('div', 'table-empty', 'Laporan diterbitkan dari tagihan; aktifkan dulu migrasi tagihan iuran.'));
+    } else {
+      const publishable = invoiceList.filter(inv => inv.status === 'dibuka' || inv.status === 'ditutup');
+      const publishedRows = [...reportByInvoice.values()].filter(row => row.status === 'diterbitkan');
+
+      if (publishedRows.length) {
+        const strip = make('div', 'role-list');
+        strip.style.margin = '0 0 12px';
+        publishedRows.forEach(row => {
+          const pill = make('span', 'role-chip', `TAYANG: ${row.title} · ${rupiahAdmin((row.nominal || 0) * (row.months || 1))}`);
+          pill.style.cssText = 'background:#dff0d8;color:#2f5d2a';
+          strip.append(pill);
+        });
+        reportSection.append(strip);
+      }
+
+      if (!publishable.length) {
+        reportSection.append(make('div', 'table-empty', 'Belum ada tagihan yang diluncurkan/ditutup. Luncurkan tagihan di bagian atas dulu, lalu laporannya bisa diterbitkan di sini.'));
+      } else {
+        const { wrap, body } = makeTable(['Tagihan', 'Status laporan', 'Aksi']);
+        publishable.forEach(inv => {
+          const report = reportByInvoice.get(inv.id);
+          const tr = make('tr');
+          const infoCell = make('td');
+          infoCell.append(make('strong', '', `${inv.title} · ${invoiceRange(inv)} · ${rupiahAdmin((inv.nominal || 0) * (inv.months || 1))}`));
+          infoCell.append(make('div', 'privacy-mini', `Tagihan ${invoiceStatusView(inv).label.toLowerCase()}${inv.due_date ? ` · jatuh tempo ${inv.due_date}` : ''}`));
+          tr.append(infoCell);
+
+          const stateCell = make('td');
+          if (report && report.status === 'diterbitkan') {
+            const pill = make('span', 'status-pill', 'LAPORAN TAYANG');
+            pill.style.cssText = 'background:#dff0d8;color:#2f5d2a';
+            stateCell.append(pill);
+            stateCell.append(make('div', 'privacy-mini', `Diterbitkan ${invoiceWhen(report.published_at)}${report.published_by ? ` · ${report.published_by}` : ''}`));
+          } else if (report) {
+            const pill = make('span', 'status-pill', 'DITARIK');
+            pill.style.cssText = 'background:#f7e0e0;color:#8a1f1f';
+            stateCell.append(pill);
+            if (report.withdrawn_at) stateCell.append(make('div', 'privacy-mini', `Ditarik ${invoiceWhen(report.withdrawn_at)}`));
+          } else {
+            const emptySpan = make('span', 'privacy-mini', 'Belum diterbitkan');
+            stateCell.append(emptySpan);
+          }
+          tr.append(stateCell);
+
+          const actionCell = make('td');
+          if (mayPublishReports) {
+            const actions = make('div', 'card-buttons');
+            const publishBtn = make('button', 'admin-button admin-button-gold', report && report.status === 'diterbitkan' ? 'Perbarui laporan' : 'Terbitkan laporan');
+            publishBtn.type = 'button';
+            publishBtn.addEventListener('click', async () => {
+              const ok = window.confirm(
+                `Terbitkan laporan "${inv.title}"?\n\n` +
+                '• Ringkasan (total terkumpul, jumlah pembayar terverifikasi) tampil untuk PUBLIK di halaman /iuran.\n' +
+                '• Rincian per anggota hanya dibuka anggota yang identitas kartunya cocok di server.\n' +
+                '• Penerbitan tercatat atas nama akun Anda dan langsung berlaku.'
+              );
+              if (!ok) return;
+              publishBtn.disabled = true;
+              const { error } = await client.rpc('dues_publish_report', { p_invoice_id: inv.id, p_note: null });
+              publishBtn.disabled = false;
+              if (error) {
+                setMessage(`Laporan gagal diterbitkan: ${error.message}`, 'error');
+              } else {
+                setMessage('Laporan diterbitkan. Ringkasan kini tampil di halaman /iuran.', 'ok');
+              }
+              renderDues();
+            });
+            actions.append(publishBtn);
+            if (report && report.status === 'diterbitkan') {
+              const withdrawBtn = make('button', 'admin-button admin-button-outline', 'Tarik dari publik');
+              withdrawBtn.type = 'button';
+              withdrawBtn.addEventListener('click', async () => {
+                const ok = window.confirm(`Tarik laporan "${inv.title}" dari publik? Ringkasan dan rincian berhenti tampil di halaman /iuran sampai diterbitkan ulang.`);
+                if (!ok) return;
+                withdrawBtn.disabled = true;
+                const { error } = await client.rpc('dues_withdraw_report', { p_report_id: report.id });
+                withdrawBtn.disabled = false;
+                if (error) {
+                  setMessage(`Laporan gagal ditarik: ${error.message}`, 'error');
+                } else {
+                  setMessage('Laporan ditarik dari publik.', 'ok');
+                }
+                renderDues();
+              });
+              actions.append(withdrawBtn);
+            }
+            actionCell.append(actions);
+          } else {
+            actionCell.append(make('span', 'privacy-mini', 'Hanya Pemilik/Bendahara'));
+          }
+          tr.append(actionCell);
+          body.append(tr);
+        });
+        reportSection.append(wrap);
+      }
+
+      reportSection.append(make('p', 'privacy-mini',
+        'Ringkasan publik tidak memuat nama. Rincian (nama, kecamatan, bulan, jumlah) hanya keluar dari server setelah nomor anggota + nama cocok dengan kartu anggota aktif/nonaktif — bukan sekadar disembunyikan di tampilan. Perhitungan hanya memakai pembayaran terverifikasi yang terkait tagihan ini.'));
     }
 
     // ---------- pengaturan ----------
@@ -2985,6 +3440,7 @@
       heading,
       chips,
       invoiceSection,
+      reportSection,
       settingsCard,
       listTitle,
       listHelp,
@@ -3001,14 +3457,18 @@
     const heading = make('div', 'workspace-heading');
     const titleBlock = make('div');
     titleBlock.append(make('h3', '', 'Aduan warga'));
-    titleBlock.append(make('p', '', 'Hanya petugas LBH dan pemilik Admin yang diberi peran ini dapat membaca laporan. Tidak ada pengaduan yang masuk sampai formulir publik diaktifkan dengan persetujuan DPD.'));
+    titleBlock.append(make('p', '', 'Aduan dari Posko Digital dapat dibaca Pemilik dan Petugas LBH. Periksa laporan secara berkala dan ubah status setelah ditindaklanjuti.'));
     heading.append(titleBlock);
-    const { data, error } = await client.from('citizen_reports').select('id,created_at,name,contact,district,topic,summary,status').order('created_at', { ascending: false }).limit(100);
-    if (error) return showWorkspaceError('Daftar aduan tidak dapat dibuka. Periksa migrasi dan peran LBH.');
-    const { wrap, body } = makeTable(['Diterima', 'Pelapor / kontak', 'Kecamatan / topik', 'Ringkasan', 'Status']);
-    (data || []).forEach(report => {
+    const { wrap, body } = makeTable(['Diterima / batas simpan', 'Pelapor / kontak', 'Kecamatan / topik', 'Ringkasan', 'Status']);
+    const more = make('button', 'admin-button admin-button-outline', 'Muat lebih banyak');
+    more.type = 'button';
+    more.hidden = true;
+    let offset = 0;
+    function addReport(report) {
       const row = make('tr');
-      row.append(make('td', '', new Date(report.created_at).toLocaleString('id-ID')));
+      const dateCell = make('td', '', new Date(report.created_at).toLocaleString('id-ID'));
+      dateCell.append(make('div', 'privacy-mini', report.retention_until ? `Tinjau batas simpan: ${report.retention_until}` : 'Batas simpan belum dicatat'));
+      row.append(dateCell);
       row.append(make('td', '', `${report.name} · ${report.contact}`));
       row.append(make('td', '', `${report.district} · ${report.topic}`));
       row.append(make('td', '', report.summary));
@@ -3029,9 +3489,26 @@
       statusCell.append(select);
       row.append(statusCell);
       body.append(row);
-    });
-    if (!data?.length) body.append(emptyRow(5, 'Belum ada aduan masuk. Formulir aduan publik sudah aktif di bagian #posko situs.'));
-    workspace.replaceChildren(heading, wrap, make('p', 'privacy-mini', 'Hindari menyalin rincian laporan ke perangkat atau kanal pribadi.'));
+    }
+    async function loadReports() {
+      more.disabled = true;
+      const { data, error } = await client.from('citizen_reports')
+        .select('id,created_at,name,contact,district,topic,summary,status,retention_until')
+        .order('created_at', { ascending: false }).order('id', { ascending: false })
+        .range(offset, offset + 99);
+      more.disabled = false;
+      if (error) {
+        if (!offset) return showWorkspaceError('Daftar aduan tidak dapat dibuka. Periksa migrasi dan peran LBH.');
+        return setMessage('Aduan berikutnya tidak dapat dimuat. Coba lagi.', 'error');
+      }
+      (data || []).forEach(addReport);
+      if (!offset && !data?.length) body.append(emptyRow(5, 'Belum ada aduan masuk.'));
+      offset += (data || []).length;
+      more.hidden = (data || []).length < 100;
+    }
+    more.addEventListener('click', loadReports);
+    workspace.replaceChildren(heading, wrap, more, make('p', 'privacy-mini', 'Jaga kerahasiaan aduan. Aduan dari formulir baru dijadwalkan terhapus otomatis dari database aktif pada tanggal batas simpan, termasuk yang belum selesai ditangani. Periksa aduan setiap hari kerja. Salinan dan cadangan perlu dikelola terpisah.'));
+    await loadReports();
   }
 
   async function renderMembers() {
@@ -3110,7 +3587,7 @@
       row.append(kontakCell);
       const bidangCell = make('td', '', member.division || '—');
       if (!member.division) bidangCell.style.cssText = 'color:#a49d90';
-      if (!member.division) bidangCell.title = 'Bidang belum diisi (pendaftar tidak lagi ditanya bidang)';
+      if (!member.division) bidangCell.title = 'Bidang belum diisi';
       row.append(bidangCell);
       const jabatanCell = make('td');
       const jabSel = make('select');
@@ -3383,10 +3860,22 @@
       ['Serikat Buruh, Tani & Nelayan (SB GMPI)', 'Serikat Buruh, Tani & Nelayan (SB GMPI)'],
       ['Tagana — Tanggap Bencana', 'Tagana — Tanggap Bencana'],
       ['Pemberdayaan Ekonomi & Sosial Masyarakat Desa', 'Pemberdayaan Ekonomi & Sosial Masyarakat Desa'],
+      ['Divisi Agama', 'Divisi Agama'],
+      ['Divisi Ekonomi', 'Divisi Ekonomi'],
+      ['Divisi Hukum dan Hak Asasi Manusia (HAM)', 'Divisi Hukum dan Hak Asasi Manusia (HAM)'],
+      ['Divisi Pariwisata', 'Divisi Pariwisata'],
+      ['Divisi Pemberdayaan Perempuan', 'Divisi Pemberdayaan Perempuan'],
+      ['Divisi Pertahanan & Keamanan Anggota', 'Divisi Pertahanan & Keamanan Anggota'],
+      ['Divisi Politik', 'Divisi Politik'],
+      ['Divisi Sosial', 'Divisi Sosial'],
+      ['Divisi Tenaga Kerja', 'Divisi Tenaga Kerja'],
+      ['Litbang', 'Litbang'],
+      ['Organ Keanggotaan & Kaderisasi', 'Organ Keanggotaan & Kaderisasi'],
+      ['Publikasi/Media', 'Publikasi/Media'],
       ['Seluruh bidang (Ketua DPD)', 'Seluruh bidang (Ketua DPD)']
     ];
     const divisionField = addSelect('division', 'Bidang', divisions);
-    divisionField.append(make('small', 'privacy-mini', 'Pendaftar tidak lagi ditanya bidang. Isi di sini hanya bila perlu untuk catatan internal; untuk Ketua DPD pilih “Seluruh bidang (Ketua DPD)”.'));
+    divisionField.append(make('small', 'privacy-mini', 'Pilih bidang sesuai pendaftaran atau sesuaikan bila diperlukan; untuk Ketua DPD pilih “Seluruh bidang (Ketua DPD)”.'));
     addField('jabatan', 'Jabatan pengurus (kosongkan untuk anggota biasa)', 'text', { maxLength: 60 });
     addSelect('status', 'Status pendaftaran', MEMBER_STATUSES.map(value => [value.replaceAll('_',' '), value]));
     form.append(grid);
@@ -3756,10 +4245,19 @@
   // Judul tertulis: judul DPC/Ranting otomatis ditambah nama kecamatan (persis seperti formulir kartu).
   const jabatanWritten = (j, district) => (/(DPC|Ranting)$/.test(j) && district ? `${j} ${district}` : j);
   // Isi <select> dengan daftar jabatan; judul tunggal yang sudah terisi (dan bukan miliknya sendiri) disembunyikan.
-  function fillJabatanOptions(sel, taken, district, ownValue, placeholder) {
+  function fillJabatanOptions(sel, taken, district, ownValue, placeholder, structureTitles = []) {
     const own = normJabatan(ownValue);
     let ownListed = !ownValue;
     sel.replaceChildren(new Option(placeholder, ''));
+    if (structureTitles.length) {
+      const group = document.createElement('optgroup'); group.label = 'Jabatan dan divisi pada struktur';
+      structureTitles.forEach(j => {
+        const opt = new Option(j, j);
+        if (normJabatan(j) === own) { opt.selected = true; ownListed = true; }
+        group.append(opt);
+      });
+      sel.append(group);
+    }
     JABATAN_GROUPS.forEach(([label, items]) => {
       const g = document.createElement('optgroup');
       g.label = label;
@@ -3774,7 +4272,7 @@
       });
       if (used) sel.append(g);
     });
-    if (!ownListed) sel.append(Object.assign(new Option(`Tidak baku: “${ownValue}”`, ownValue), { selected: true }));
+    if (!ownListed) sel.append(Object.assign(new Option(`Ditulis manual: “${ownValue}”`, ownValue), { selected: true }));
     return sel;
   }
   const CARD_STATUS_LABELS = { menunggu: 'Menunggu persetujuan', ditolak: 'Ditolak', aktif: 'Aktif', nonaktif: 'Nonaktif', dicabut: 'Dicabut' };
@@ -3857,6 +4355,14 @@
         .eq('cleanup_status', 'pending').order('deleted_at', { ascending: true }).limit(20);
       if (!pendingPhotos.error) pendingCardPhotoCleanup = pendingPhotos.data || [];
     }
+    const structureResult = await client.from('org_structure').select('section,jabatan,department').order('sort_order');
+    const structureTitles = [];
+    const seenTitles = new Set();
+    (structureResult.data || []).forEach(row => {
+      const title = String(row.section === 'departemen' && row.department ? row.department : row.jabatan || '').trim().replace(/\s+/g, ' ');
+      const key = normJabatan(title);
+      if (title.length >= 2 && title.length <= 60 && !seenTitles.has(key)) { seenTitles.add(key); structureTitles.push(title); }
+    });
     const me = myEmail();
     const issuer = canIssueCards();
     const approver = canApproveCards() && approvalReady;
@@ -3867,6 +4373,7 @@
       if (/Hanya Penyetuju/i.test(msg)) return 'Hanya Penyetuju Kartu atau Pemilik yang dapat menyetujui/menolak kartu.';
       if (/Ajukan ulang/i.test(msg)) return 'Kartu ini harus diajukan ulang dulu sebelum bisa diaktifkan.';
       if (/nomor khusus/i.test(msg)) return 'Nomor 0001–0100 adalah nomor khusus anggota terpilih dan hanya bisa diberikan oleh Pemilik. Gunakan nomor 0101 ke atas.';
+      if (/riwayat iuran|catatan Siaga/i.test(msg)) return msg;
       return fallback;
     }
 
@@ -3933,18 +4440,15 @@
     const memberPickField = field('Pendaftar tersimpan (opsional)', memberPick,
       'Pilih orang yang sudah terdaftar untuk mengisi nama, kecamatan, jabatan, dan memuat foto profil tersimpan. Foto KTP tidak dipakai.');
     memberPickField.hidden = !canSeeMembers();
-    const refillJabatanPick = () => fillJabatanOptions(list, jabatanTakenSet(regRows, cards), districtIn.value, jabatanIn.value, '— Pilih jabatan dari daftar —');
+    const refillJabatanPick = () => fillJabatanOptions(list, jabatanTakenSet(regRows, cards), districtIn.value, jabatanIn.value, '— Pilih jabatan dari daftar —', structureTitles);
     refillJabatanPick();
     districtIn.addEventListener('change', refillJabatanPick);
     const syncPick = () => {
-      const v = jabatanIn.value.trim();
-      const hit = JABATAN_SUGGESTIONS.filter(j => v === j || v.startsWith(j + ' ')).sort((a, b) => b.length - a.length)[0];
-      if (hit) { list.value = hit; return; }
-      // Custom department wording should not clear the generic role selector.
-      const lower = v.toLocaleLowerCase('id-ID');
-      const deptRole = lower.startsWith('wakil ketua departemen ') ? 'Wakil Ketua Departemen DPD'
-        : (lower.startsWith('pengurus departemen ') ? 'Pengurus Departemen DPD' : '');
-      if (deptRole && Array.from(list.options).some(option => option.value === deptRole)) list.value = deptRole;
+      const v = normJabatan(jabatanIn.value);
+      const match = Array.from(list.options).find(option => option.value && normJabatan(jabatanWritten(option.value, districtIn.value)) === v);
+      // A manual title must never leave an unrelated option highlighted.
+      if (match) list.value = match.value;
+      else list.selectedIndex = 0;
     };
     list.addEventListener('change', () => { if (!list.value) return; let v = list.value; if (/(DPC|Ranting)$/.test(v) && districtIn.value) v = `${v} ${districtIn.value}`; jabatanIn.value = v; jabatanIn.dispatchEvent(new Event('input')); });
     jabatanIn.addEventListener('input', syncPick);
@@ -3974,10 +4478,37 @@
       reservedPick.append(g);
     }
     reservedPick.addEventListener('change', () => { numberIn.value = reservedPick.value || suggestNumber(); numberIn.dispatchEvent(new Event('input')); });
+    const editReserved = make('select'); editReserved.id = 'card-edit-reserved';
+    editReserved.setAttribute('aria-label', 'Pilih nomor khusus untuk KTA yang dibuka');
+    editReserved.hidden = true;
+    let editNumberRequest = 0;
+    async function refreshEditReserved(card) {
+      const request = ++editNumberRequest;
+      if (!card || !isOwner()) { editReserved.hidden = true; return; }
+      editReserved.hidden = false; editReserved.disabled = true;
+      editReserved.replaceChildren(new Option('Memeriksa nomor khusus…', ''));
+      const cardYear = /^GMPI-SDA-(\d{4})-/i.exec(card.member_number)?.[1] || year;
+      const prefix = `GMPI-SDA-${cardYear}-`;
+      const { data: usedRows, error: usedError } = await client.from('member_cards').select('member_number')
+        .gte('member_number', `${prefix}0001`).lte('member_number', `${prefix}0100`).limit(500);
+      if (request !== editNumberRequest || !editing || editing.id !== card.id) return;
+      if (usedError || !usedRows || usedRows.length >= 500) {
+        editReserved.replaceChildren(new Option('Nomor khusus gagal diperiksa; coba buka ulang', ''));
+        return;
+      }
+      const used = new Set(usedRows.map(r => r.member_number.toUpperCase()));
+      editReserved.replaceChildren(new Option('— Pilih nomor khusus yang kosong (opsional) —', ''));
+      for (let n = 1; n <= 100; n++) {
+        const value = prefix + String(n).padStart(4, '0');
+        if (!used.has(value)) editReserved.append(new Option(value, value));
+      }
+      editReserved.disabled = false;
+    }
+    editReserved.addEventListener('change', () => { if (editReserved.value) { numberIn.value = editReserved.value; numberIn.dispatchEvent(new Event('input')); } });
     const numberHint = isOwner()
-      ? 'Nomor 0001–0100 khusus anggota terpilih — pilih dari daftar di atas. Anggota biasa otomatis mulai 0101.'
+      ? 'Nomor 0001–0100 khusus anggota terpilih. Saat mengedit, pilih nomor kosong atau ketik; nomor tidak boleh ganda. Perubahan KTA aktif memerlukan persetujuan ulang dan kartu perlu dicetak ulang.'
       : 'Nomor otomatis mulai 0101. Nomor 0001–0100 khusus anggota terpilih dan hanya bisa diberikan Pemilik.';
-    const numberBox = make('div', 'card-number-box'); numberBox.append(reservedPick, numberIn);
+    const numberBox = make('div', 'card-number-box'); numberBox.append(reservedPick, editReserved, numberIn);
     const rowA = make('div', 'card-form-row'); rowA.append(field('Nomor anggota', numberBox, numberHint), field('Kecamatan', districtIn));
     const rowB = make('div', 'card-form-row'); rowB.append(field('Tanggal terbit', issuedIn), field('Berlaku sampai', validIn));
     const photoTools = make('div', 'card-photo-tools');
@@ -4040,7 +4571,7 @@
     photoField.append(photoSourceStatus);
     const formFields = [statusLine];
     if (canSeeMembers()) formFields.push(memberPickField);
-    formFields.push(field('Nama lengkap', nameIn), rowA, field('Jabatan', list, 'Pilih dari daftar sesuai AD/ART. Untuk jabatan Ranting, nama kecamatan ikut ditambahkan otomatis.'), field('Jabatan tertulis di kartu', jabatanIn, 'Ini tulisan yang dicetak pada KTA. Boleh menambahkan bidang, mis. “Wakil Ketua Departemen Pemberdayaan Ekonomi”. Pilihan kategori Jabatan di atas tetap dipertahankan.'), rowB,
+    formFields.push(field('Nama lengkap', nameIn), rowA, field('Jabatan', list, structureResult.error ? 'Struktur tidak dapat dimuat; gunakan pilihan lain atau tulis jabatan di bawah.' : 'Daftar dimulai dengan jabatan dan divisi pada struktur website; pilihan sebelumnya tetap tersedia. Memilih akan mengganti tulisan di bawah.'), field('Jabatan tertulis di kartu', jabatanIn, 'Ini tulisan yang disimpan dan dicetak pada KTA. Boleh disesuaikan secara manual (maksimal 60 karakter).'), rowB,
       photoField, photoTools, backTools, btnRow);
     formEl.append(...formFields);
 
@@ -4241,6 +4772,7 @@
       }
       numberIn.readOnly = Boolean(editing) && !isOwner();
       reservedPick.hidden = Boolean(editing) || !isOwner();
+      refreshEditReserved(editing);
       redraw();
     }
 
@@ -4443,9 +4975,16 @@
       ));
       if (editing && approvalReady && editing.status !== 'menunggu') {
         if (!cardDataChanged && !photoReplacementPending && editing.status !== 'ditolak') { setMessage('Tidak ada perubahan data kartu.'); return; }
-        if (cardDataChanged && editing.status === 'aktif' && !window.confirm('Data kartu ini sudah disetujui. Jika data kartu diubah, statusnya kembali MENUNGGU PERSETUJUAN dan QR sementara berstatus “belum disetujui”. Lanjutkan?')) return;
+        if (cardDataChanged && editing.status === 'aktif' && !window.confirm('Data kartu ini sudah disetujui. Jika diubah, statusnya kembali MENUNGGU PERSETUJUAN dan QR sementara belum disetujui. Jika nomor diubah, nomor pada kartu cetak lama tidak lagi sesuai; cetak ulang setelah disetujui. Lanjutkan?')) return;
       }
+      if (editing && payload.member_number && editing.status !== 'aktif' && !window.confirm('Nomor KTA akan berubah. Nomor pada kartu cetak lama tidak lagi sesuai; cetak ulang setelah kartu disetujui. Lanjutkan?')) return;
       saveBtn.disabled = true;
+      if (!editing && selectedRegistrationId) {
+        const { data: existingCards, error: lookupError } = await client.from('member_cards')
+          .select('member_number,status').eq('registration_id', selectedRegistrationId).eq('is_sample', false).limit(20);
+        if (lookupError) { saveBtn.disabled = false; setMessage('KTA yang sudah tertaut tidak dapat diperiksa. Periksa koneksi sebelum membuat kartu baru.', 'error'); return; }
+        if (existingCards?.length && !window.confirm(`Pendaftar ini sudah memiliki ${existingCards.length} KTA tertaut. Sebaiknya buka dan edit kartu yang ada. Tetap buat kartu baru?`)) { saveBtn.disabled = false; return; }
+      }
       let result;
       if (editing) {
         const unchangedRejected = editing.status === 'ditolak' && payload.full_name === editing.full_name && payload.district === editing.district && payload.jabatan === editing.jabatan && payload.issued_at === editing.issued_at && payload.valid_until === editing.valid_until && !payload.member_number;
@@ -4512,7 +5051,7 @@
     const listHeading = make('div', 'workspace-heading card-list-heading');
     const listTitle = make('div');
     listTitle.append(make('h3', '', 'Daftar kartu'));
-    listTitle.append(make('p', '', 'Ubah status menjadi Nonaktif atau Dicabut bila kartu hilang, disalahgunakan, atau anggota keluar — hasil pindai QR langsung berubah.'));
+    listTitle.append(make('p', '', 'Untuk kartu ganda: buka kartu yang benar untuk mengubah nomor/jabatan. Jika kartu yang salah aktif, ubah statusnya menjadi Dicabut, lalu Pemilik dapat memilih “Hapus KTA saja” tanpa menghapus pendaftaran. QR kartu yang dihapus tidak berlaku.'));
     listHeading.append(listTitle);
     const search = input('card-search', 'search', { placeholder: 'Cari nama / nomor…' });
     search.className = 'card-search';
@@ -4646,29 +5185,30 @@
     printSelected.addEventListener('click', () => printCards(printableCards().filter(card => selectedPrintIds.has(card.id))));
     printAllActive.addEventListener('click', () => printCards(printableCards()));
 
-    function openRevokedCardPurgeDialog(card) {
-      if (!isOwner()) { setMessage('Hanya Pemilik situs yang dapat menghapus KTA dan data anggota permanen.', 'error'); return; }
+    function openRevokedCardPurgeDialog(card, cardOnly = false) {
+      if (!isOwner()) { setMessage('Hanya Pemilik situs yang dapat menghapus KTA permanen.', 'error'); return; }
       const overlay = make('div', 'member-delete-overlay');
       const dialog = make('section', 'member-delete-dialog');
       dialog.setAttribute('role', 'dialog'); dialog.setAttribute('aria-modal', 'true');
-      const title = make('h3', '', 'Hapus KTA dan data anggota permanen?');
-      const warning = make('p', 'member-delete-warning',
-        'Tindakan ini tidak dapat dibatalkan: KTA dicabut akan dihapus, begitu juga pendaftaran anggota, foto profil, dan foto KTP yang tertaut. Sistem akan menolak penghapusan bila pendaftaran masih ditautkan ke KTA lain. Gambar PNG KTA yang pernah diunduh di komputer tidak terhapus.');
+      const title = make('h3', '', cardOnly ? 'Hapus KTA ini saja?' : 'Hapus KTA dan data anggota permanen?');
+      const warning = make('p', 'member-delete-warning', cardOnly
+        ? 'Hanya KTA yang dipilih dihapus permanen. Pendaftaran, foto profil/KTP pendaftar dan KTA lain tetap disimpan. QR pada kartu ini tidak akan berlaku lagi. Penghapusan diblokir bila KTA memiliki foto khusus atau nomor memiliki riwayat iuran/Siaga.'
+        : 'Tindakan ini tidak dapat dibatalkan: KTA dicabut akan dihapus, begitu juga pendaftaran anggota, foto profil, dan foto KTP yang tertaut. Sistem akan menolak penghapusan bila pendaftaran masih ditautkan ke KTA lain. Gambar PNG KTA yang pernah diunduh di komputer tidak terhapus.');
       const info = make('div', 'member-delete-info');
-      info.append(make('strong', '', card.full_name), make('span', '', `${card.member_number} · ${card.district} · status Dicabut`));
+      info.append(make('strong', '', card.full_name), make('span', '', `${card.member_number} · ${card.district} · status ${CARD_STATUS_LABELS[card.status] || card.status}`));
       const consent = make('label', 'member-kta-override');
       const consentBox = make('input'); consentBox.type = 'checkbox';
-      consent.append(consentBox, make('span', '', 'Saya memahami bahwa pendaftaran dan berkas privat anggota akan ikut dihapus bila tertaut dan tidak digunakan KTA lain.'));
+      consent.append(consentBox, make('span', '', cardOnly ? 'Saya telah memeriksa bahwa ini KTA yang salah dan memahami bahwa QR KTA ini tidak berlaku lagi.' : 'Saya memahami bahwa pendaftaran dan berkas privat anggota akan ikut dihapus bila tertaut dan tidak digunakan KTA lain.'));
       const nameLabel = make('label', '', 'Ketik nama anggota untuk konfirmasi');
       const nameInput = make('input'); nameInput.type = 'text'; nameInput.autocomplete = 'off'; nameInput.spellcheck = false; nameLabel.append(nameInput);
       const numberLabel = make('label', '', 'Ketik nomor KTA persis untuk konfirmasi');
       const numberInput = make('input'); numberInput.type = 'text'; numberInput.autocomplete = 'off'; numberInput.spellcheck = false; numberLabel.append(numberInput);
       const reasonLabel = make('label', '', 'Alasan penghapusan (wajib)');
-      const reasonInput = make('textarea'); reasonInput.rows = 2; reasonInput.maxLength = 300; reasonInput.value = 'KTA dicabut; penghapusan data diminta Pemilik'; reasonLabel.append(reasonInput);
+      const reasonInput = make('textarea'); reasonInput.rows = 2; reasonInput.maxLength = 300; reasonInput.value = cardOnly ? 'KTA ganda atau salah input' : 'KTA dicabut; penghapusan data diminta Pemilik'; reasonLabel.append(reasonInput);
       const feedback = make('small', 'member-delete-feedback', 'Centang persetujuan dan cocokkan nama serta nomor KTA.');
       const actions = make('div', 'member-delete-actions');
       const cancel = make('button', 'admin-button admin-button-outline', 'Batal'); cancel.type = 'button';
-      const confirm = make('button', 'admin-button admin-button-red', 'Hapus KTA + data'); confirm.type = 'button'; confirm.disabled = true;
+      const confirm = make('button', 'admin-button admin-button-red', cardOnly ? 'Hapus KTA ini saja' : 'Hapus KTA + data'); confirm.type = 'button'; confirm.disabled = true;
       actions.append(cancel, confirm);
       dialog.append(title, warning, info, consent, nameLabel, numberLabel, reasonLabel, feedback, actions);
       overlay.append(dialog); document.body.append(overlay);
@@ -4682,7 +5222,7 @@
         const valid = matches && reasonInput.value.trim().length >= 5 && consentBox.checked;
         confirm.disabled = !valid;
         feedback.textContent = valid
-          ? 'Konfirmasi cocok. Penghapusan tetap dibatalkan oleh server jika KTA lain masih memakai data pendaftaran.'
+          ? (cardOnly ? 'Konfirmasi cocok. KTA lain dan pendaftaran tidak akan dihapus; riwayat iuran/Siaga akan diperiksa.' : 'Konfirmasi cocok. Penghapusan tetap dibatalkan oleh server jika KTA lain masih memakai data pendaftaran.')
           : 'Persetujuan, nama, nomor KTA, dan alasan minimal 5 karakter wajib diisi.';
         feedback.classList.toggle('is-ready', valid);
       };
@@ -4690,9 +5230,13 @@
       consentBox.addEventListener('change', validate);
       confirm.addEventListener('click', async () => {
         confirm.disabled = true; cancel.disabled = true; confirm.textContent = 'Menghapus…';
-        const ok = await permanentlyDeleteRevokedCard(card, nameInput.value, numberInput.value, reasonInput.value);
+        const ok = await permanentlyDeleteRevokedCard(card, nameInput.value, numberInput.value, reasonInput.value, cardOnly);
         if (ok) close();
-        else { confirm.disabled = false; cancel.disabled = false; confirm.textContent = 'Hapus KTA + data'; }
+        else {
+          feedback.textContent = globalMessage.textContent || 'Penghapusan tidak dapat dilakukan. Periksa data dan coba lagi.';
+          feedback.classList.remove('is-ready');
+          confirm.disabled = false; cancel.disabled = false; confirm.textContent = cardOnly ? 'Hapus KTA ini saja' : 'Hapus KTA + data';
+        }
       });
       nameInput.focus();
     }
@@ -4708,9 +5252,9 @@
       return completeError ? `Berkas foto sudah dihapus, tetapi audit pembersihan belum selesai: ${completeError.message || 'coba lagi.'}` : null;
     }
 
-    async function permanentlyDeleteRevokedCard(card, typedName, typedNumber, reason) {
+    async function permanentlyDeleteRevokedCard(card, typedName, typedNumber, reason, cardOnly = false) {
       setMessage('Memeriksa keterkaitan KTA dan menghapus data secara aman…', 'warning');
-      const { data, error } = await client.rpc('owner_delete_revoked_member_card', {
+      const { data, error } = await client.rpc(cardOnly ? 'owner_delete_card_only' : 'owner_delete_revoked_member_card', {
         p_card_id: card.id,
         p_confirm_member_number: typedNumber.trim(),
         p_confirm_name: typedName.trim(),
@@ -4756,7 +5300,7 @@
       }
       setMessage(data.registration_deleted
         ? `KTA ${card.member_number}, pendaftaran, foto profil, dan foto KTP terkait berhasil dihapus permanen. Catatan audit tanpa nama/NIK tetap disimpan.`
-        : `KTA ${card.member_number} berhasil dihapus permanen. Foto privat KTA (bila ada) ikut dibersihkan; tidak ada pendaftaran atau dokumen pendaftaran yang tertaut.`);
+        : (cardOnly ? `KTA ${card.member_number} dihapus. Pendaftaran, dokumen pendaftaran, dan KTA lain tetap ada.` : `KTA ${card.member_number} berhasil dihapus permanen. Foto privat KTA (bila ada) ikut dibersihkan; tidak ada pendaftaran atau dokumen pendaftaran yang tertaut.`));
       return true;
     }
 
@@ -4853,8 +5397,15 @@
         checkLink.href = `verifikasi.html?k=${encodeURIComponent(card.card_token)}`;
         checkLink.target = '_blank'; checkLink.rel = 'noopener';
         actions.append(openBtn, checkLink);
+        if (isOwner() && ['dicabut', 'menunggu', 'ditolak'].includes(card.status)) {
+          const cardOnlyBtn = make('button', 'admin-link-button card-permanent-delete', 'Hapus KTA saja…');
+          cardOnlyBtn.type = 'button';
+          cardOnlyBtn.title = 'Hapus hanya KTA ini, tanpa menghapus pendaftaran atau dokumen pendaftar.';
+          cardOnlyBtn.addEventListener('click', () => openRevokedCardPurgeDialog(card, true));
+          actions.append(cardOnlyBtn);
+        }
         if (isOwner() && card.status === 'dicabut') {
-          const purgeBtn = make('button', 'admin-link-button card-permanent-delete', 'Hapus permanen…');
+          const purgeBtn = make('button', 'admin-link-button card-permanent-delete', 'Hapus KTA + data pendaftaran…');
           purgeBtn.type = 'button';
           purgeBtn.title = 'Hapus KTA dicabut dan data pendaftaran beserta berkas privat bila tidak dipakai KTA lain.';
           purgeBtn.addEventListener('click', () => openRevokedCardPurgeDialog(card));

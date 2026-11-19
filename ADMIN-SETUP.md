@@ -26,6 +26,15 @@ where lower(email) = lower('EMAIL-OWNER-ANDA');
 
 6. Masuk melalui halaman Admin. Owner dapat menambahkan peran lain untuk email yang sudah diundang. Beri `registrar` hanya kepada petugas yang memang perlu melihat NIK/KTP. Untuk membatasi agar pemilik tidak melihat data itu, jangan beri peran `registrar` kepada akun pemilik.
 
+## Undangan dan pengaturan kata sandi Admin
+
+- Penambahan peran di **Admin → Hak akses** tidak mengirim undangan dan bukan bukti akun Auth sudah aktif. Email yang sama juga harus ada di **Supabase → Authentication → Users**, dan perannya harus aktif.
+- Undang pengguna baru melalui **Authentication → Users → Invite user**. Penerima membuka tautan di email, lalu membuat kata sandi sendiri di halaman `https://www.gmpisidoarjo.com/admin-aktivasi`. Setelah itu ia masuk melalui `/admin`. Kata sandi tersebut bukan kata sandi emailnya.
+- Pengguna yang telah diundang tidak perlu dihapus. Jika undangan lama menuju localhost, sudah digunakan, atau kedaluwarsa, minta pengguna membuka `/admin` → **Belum membuat atau lupa kata sandi?**, lalu mengisi email yang sama. Tautan pemulihan dikirim bila akun dan layanan email mendukungnya. Jangan bagikan tautan atau kata sandi.
+- Di **Authentication → URL Configuration**, Site URL untuk undangan adalah `https://www.gmpisidoarjo.com/admin-aktivasi`; cantumkan juga alamat itu dalam Redirect URLs. Perubahan ini memengaruhi tujuan default tautan Auth lain di proyek tersebut.
+- Periksa kotak spam dan batas pengiriman. SMTP bawaan Supabase memiliki batas penerima (umumnya hanya alamat anggota tim proyek) dan laju pengiriman; agar dapat mengirim ke email admin lain, pengelola perlu mengatur SMTP khusus di Supabase. Jangan memasukkan kredensial SMTP ke repo atau membagikannya di chat.
+- Jika email tidak sampai atau akun belum terdaftar di Auth, periksa status pengguna dan log pengiriman di Supabase; jangan menghapus akun untuk mencoba lagi. Pesan di halaman sengaja tidak mengungkapkan apakah email terdaftar.
+
 ## Sebelum mengunggah perubahan ke GitHub
 
 Arsip perubahan harus mencakup `admin.html`, `admin.css`, `admin.js`, `supabase-config.js`, dan migrasi kedua. Setelah berkas-berkas baru masuk ke branch `main`, Vercel akan membuat deployment baru karena repo telah tersambung.

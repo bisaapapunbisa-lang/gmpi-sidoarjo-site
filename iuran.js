@@ -430,6 +430,14 @@
     const checkForm = $('#dues-check-form');
     const checkMsg = $('#dues-check-msg');
     const checkResult = $('#dues-check-result');
+    const reportCard = $('#laporan');
+    const reportTitle = $('#dues-report-title');
+    const reportMeta = $('#dues-report-meta');
+    const reportStats = $('#dues-report-stats');
+    const reportNote = $('#dues-report-note');
+    const reportForm = $('#dues-report-form');
+    const reportMsg = $('#dues-report-msg');
+    const reportResult = $('#dues-report-result');
     const closedBox = $('#dues-closed');
     const configWarning = $('#dues-config-warning');
     const canvas = $('#dues-qris-canvas');
@@ -459,6 +467,12 @@
       checkMsg.hidden = !text;
       checkMsg.classList.toggle('is-error', type === 'error');
       checkMsg.classList.toggle('is-ok', type === 'ok');
+    }
+    function setReportMessage(text, type) {
+      reportMsg.textContent = text || '';
+      reportMsg.hidden = !text;
+      reportMsg.classList.toggle('is-error', type === 'error');
+      reportMsg.classList.toggle('is-ok', type === 'ok');
     }
 
     // Jumlah bulan yang dibayar: mengikuti tagihan bila ada, atau pilihan anggota.
@@ -1063,6 +1077,160 @@
       }
     }
 
+    // ---------- laporan resmi (ringkasan publik + rincian berlapis) ----------
+    // Ringkasan: RPC dues_report_public_summary (agregat tanpa nama, aman untuk publik).
+    // Rincian: RPC dues_report_member_detail — server mencocokkan nomor anggota + nama
+    // dengan kartu anggota aktif/nonaktif; bila gagal, rincian tidak dibuka.
+    function paintReportSummary(payload) {
+      if (!reportCard) return;
+      if (!payload || !payload.has_report || !payload.report) {
+        reportCard.hidden = true;
+        return;
+      }
+      const report = payload.report || {};
+      const stats = payload.stats || {};
+      reportTitle.textContent = `Laporan iuran: ${report.title || 'Iuran Keanggotaan'}`;
+      const published = report.published_at
+        ? new Date(report.published_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+        : '';
+      reportMeta.textContent = `Periode ${periodRangeLabels(report.period, report.months).join(' – ')}` +
+        (published ? ` · diterbitkan ${published}` : '') +
+        ' · oleh Bendahara DPD. Ringkasan terbuka untuk publik; rincian per anggota hanya terbuka setelah identitas kartu anggota cocok di server.';
+      reportStats.replaceChildren();
+      const items = [
+        ['Terkumpul (terverifikasi)', rupiah(stats.collected)],
+        ['Anggota sudah membayar', `${Number(stats.payers) || 0} orang`],
+        ['Tercatat dalam laporan', `${Number(stats.entries) || 0} pembayaran`],
+        ['Cakupan anggota', stats.members_scope ? `${stats.members_scope} anggota aktif/nonaktif` : '—']
+      ];
+      items.forEach(([label, value]) => {
+        const box = document.createElement('div');
+        box.className = 'dues-report-stat';
+        const strong = document.createElement('b');
+        strong.textContent = value;
+        const span = document.createElement('span');
+        span.textContent = label;
+        box.append(strong, span);
+        reportStats.append(box);
+      });
+      if (report.note) {
+        reportNote.textContent = `Catatan pengurus: ${report.note}`;
+        reportNote.hidden = false;
+      } else {
+        reportNote.hidden = true;
+      }
+      reportCard.hidden = false;
+    }
+
+    async function loadPublicReport() {
+      if (!reportCard) return;
+      const supabase = ensureClient();
+      if (!supabase) return;
+      try {
+        const { data, error } = await supabase.rpc('dues_report_public_summary');
+        if (error) return; // migrasi laporan belum dipasang → kartu tetap tersembunyi
+        paintReportSummary(data && typeof data === 'object' ? data : null);
+      } catch (error) {
+        reportCard.hidden = true;
+      }
+    }
+
+    function renderReportEntries(entries, member) {
+      reportResult.replaceChildren();
+      const hello = document.createElement('p');
+      hello.className = 'dues-help';
+      hello.textContent = `Terverifikasi: ${member.full_name} · ${member.member_number}` +
+        (member.district ? ` · ${member.district}` : '') + '. Daftar di bawah hanya memuat pembayaran terverifikasi.';
+      hello.style.marginBottom = '10px';
+      if (!entries.length) {
+        const empty = document.createElement('p');
+        empty.className = 'dues-help';
+        empty.textContent = 'Belum ada pembayaran terverifikasi pada laporan ini.';
+        reportResult.replaceChildren(hello, empty);
+        reportResult.hidden = false;
+        return;
+      }
+      const wrap = document.createElement('div');
+      wrap.style.overflowX = 'auto';
+      const table = document.createElement('table');
+      table.className = 'dues-check-table';
+      const thead = document.createElement('thead');
+      const headRow = document.createElement('tr');
+      ['Nama', 'Kecamatan', 'Bulan dibayar', 'Jumlah', 'Tanggal'].forEach(title => {
+        const th = document.createElement('th');
+        th.textContent = title;
+        headRow.append(th);
+      });
+      thead.append(headRow);
+      const tbody = document.createElement('tbody');
+      entries.forEach(row => {
+        const tr = document.createElement('tr');
+        const name = document.createElement('td');
+        name.textContent = row.member_name || '—';
+        const district = document.createElement('td');
+        district.textContent = row.district || '—';
+        const months = document.createElement('td');
+        const list = Array.isArray(row.periods) ? row.periods.map(monthShortLabel).filter(Boolean) : [];
+        months.textContent = list.length ? list.join(', ') : `${Number(row.months) || 1} bulan`;
+        const amount = document.createElement('td');
+        amount.textContent = rupiah(row.amount);
+        const paid = document.createElement('td');
+        paid.textContent = prettyDate(row.paid_at);
+        tr.append(name, district, months, amount, paid);
+        tbody.append(tr);
+      });
+      table.append(thead, tbody);
+      wrap.append(table);
+      const foot = document.createElement('p');
+      foot.className = 'dues-help';
+      foot.style.marginTop = '10px';
+      foot.textContent = 'Jaga kerahasiaan isi rincian — jangan diteruskan ke luar keanggotaan GMPI DPD Sidoarjo.';
+      reportResult.replaceChildren(hello, wrap, foot);
+      reportResult.hidden = false;
+    }
+
+    async function handleReportOpen(event) {
+      event.preventDefault();
+      setReportMessage('');
+      reportResult.hidden = true;
+      reportResult.replaceChildren();
+      const supabase = ensureClient();
+      if (!supabase) {
+        setReportMessage('Koneksi ke server belum siap. Muat ulang halaman lalu coba lagi.', 'error');
+        return;
+      }
+      const nomor = String(reportForm.elements.nomor.value || '').trim().toUpperCase();
+      const nama = String(reportForm.elements.nama.value || '').trim();
+      if (nomor.length < 3) return setReportMessage('Nomor anggota belum diisi dengan benar.', 'error');
+      if (nama.length < 2) return setReportMessage('Nama lengkap wajib diisi.', 'error');
+
+      const button = $('#dues-report-submit');
+      if (button) { button.disabled = true; button.textContent = 'Memeriksa kartu…'; }
+      try {
+        const { data, error } = await supabase.rpc('dues_report_member_detail', { p_nomor: nomor, p_nama: nama });
+        if (error) throw error;
+        if (!data || !data.has_report) {
+          setReportMessage('Laporan sudah ditarik atau belum diterbitkan ulang. Muat ulang halaman ini.', 'error');
+          reportCard.hidden = true;
+          return;
+        }
+        const entries = Array.isArray(data.entries) ? data.entries : [];
+        renderReportEntries(entries, data.verified_member || {});
+        setReportMessage('Rincian dibuka untuk Anda.', 'ok');
+      } catch (error) {
+        const raw = String((error && error.message) || '');
+        if (/Data tidak cocok/i.test(raw)) {
+          setReportMessage('Nama dan nomor anggota tidak cocok dengan kartu anggota aktif. Periksa ejaan persis seperti di kartu anggota.', 'error');
+        } else if (/function .*dues_report_member_detail|does not exist|schema cache/i.test(raw)) {
+          setReportMessage('Fitur rincian laporan belum diaktifkan di server. Minta Pemilik menjalankan migrasi laporan iuran di Supabase.', 'error');
+        } else {
+          setReportMessage(raw.replace(/^.*?:\s*/, '') || 'Gagal membuka rincian. Coba lagi.', 'error');
+        }
+      } finally {
+        if (button) { button.disabled = false; button.textContent = 'Buka rincian laporan'; }
+      }
+    }
+
     // ---------- pencarian teks di dalam elemen ----------
     function bindCopy() {
       $$('[data-copy]').forEach(button => {
@@ -1177,6 +1345,8 @@
 
     form?.addEventListener('submit', handleSubmit);
     checkForm?.addEventListener('submit', handleCheck);
+    reportForm?.addEventListener('submit', handleReportOpen);
+    loadPublicReport();
 
     $('#dues-success-again')?.addEventListener('click', () => {
       successPanel.hidden = true;
