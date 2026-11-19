@@ -4458,12 +4458,11 @@
     const zoomIn = input('card-zoom', 'range', { min: 100, max: 250, value: 100 });
     const xIn = input('card-x', 'range', { min: -100, max: 100, value: 0 });
     const yIn = input('card-y', 'range', { min: -100, max: 100, value: 0 });
-    const SIGNER_KEY = 'gmpi-card-signer';
+    const SIGNER_KEY = 'gmpi-card-signer-dpd-v2';
     const savedSigner = (() => { try { return JSON.parse(localStorage.getItem(SIGNER_KEY) || '{}'); } catch (e) { return {}; } })();
     ['name', 'title'].forEach(k => { if (typeof savedSigner[k] === 'string') savedSigner[k] = savedSigner[k].replace(/\bDPC\b/g, 'DPD'); });
-    if (/^Ketua DP[CD] GMPI Sidoarjo$/i.test(savedSigner.title || '')) delete savedSigner.title; // bawaan lama → ikuti ART Pasal 4f (Ketua Umum)
-    const signerNameIn = input('card-signer-name', 'text', { maxLength: 80, placeholder: 'Nama Ketua Umum GMPI', value: savedSigner.name || '' });
-    const signerTitleIn = input('card-signer-title', 'text', { maxLength: 60, value: savedSigner.title || 'Ketua Umum GMPI' });
+    const signerNameIn = input('card-signer-name', 'text', { maxLength: 80, placeholder: 'Nama Ketua DPD', value: savedSigner.name || 'HASMIN MARJAN' });
+    const signerTitleIn = input('card-signer-title', 'text', { maxLength: 60, value: savedSigner.title || 'KETUA DPD' });
     const signatureIn = input('card-signature', 'file', { accept: 'image/png,image/webp' });
 
     const reservedPick = make('select'); reservedPick.id = 'card-number-kind'; reservedPick.className = 'card-number-kind';
@@ -4779,8 +4778,8 @@
     function resetForm() {
       editing = null;
       formEl.reset();
-      signerNameIn.value = savedSigner.name || signerNameIn.defaultValue || '';
-      signerTitleIn.value = savedSigner.title || 'Ketua Umum GMPI';
+      signerNameIn.value = savedSigner.name || signerNameIn.defaultValue || 'HASMIN MARJAN';
+      signerTitleIn.value = savedSigner.title || 'KETUA DPD';
       try { const s2 = JSON.parse(localStorage.getItem(SIGNER_KEY) || '{}'); if (s2.name) signerNameIn.value = s2.name; if (s2.title) signerTitleIn.value = s2.title; } catch (e) { /* abaikan */ }
       fillReservedPick(); reservedPick.value = '';
       numberIn.value = suggestNumber();
